@@ -8,17 +8,14 @@ namespace RemoteDesktop.Host.Diagnostics;
 
 /// <summary>
 /// Runs a fixed, repeatable benchmark and writes the numbers to a text file, so measurement does not
-/// depend on a person reading a moving window. Two conditions, each at JPEG quality 70/85/95:
+/// depend on a person reading a moving window. Three conditions, each at JPEG quality 70/85/95:
 ///
-///   IDLE    — the real capture path against the untouched screen, paced at the production frame
-///             rate; shows how many bytes a still session actually sends.
-///   PATTERN — a program-generated full-motion 1920x1080 image (identical on every machine and every
-///             run), encoded as fast as possible; shows encoder throughput and byte cost. Comparing
-///             PATTERN between two machines at the same quality isolates the machine, since the
-///             content is byte-for-byte identical.
-///
-/// The whole run needs no human input and produces numbers that are comparable across stages and
-/// machines.
+///   IDLE       — real capture against the untouched screen, paced at 30 fps; what a still session costs.
+///   PATTERN    — a program-generated full-motion 1920x1080 image (identical on every machine and run),
+///                encoded as fast as possible; isolates encoder throughput and byte cost.
+///   END-TO-END — the REAL capture path plus real encode, against a real moving screen, run flat out.
+///                This is the only phase that measures capture + encode TOGETHER — the number that
+///                actually decides whether a machine (especially one on the GDI fallback) is usable.
 /// </summary>
 public static class DiagnosticRunner
 {
@@ -52,24 +49,29 @@ public static class DiagnosticRunner
         report.AppendLine($"Pattern size    : {PatternWidth} x {PatternHeight} (identical on every machine)");
         report.AppendLine($"Settings        : tile {ProtocolConstants.TileSize}px, idle {idleSeconds}s, pattern {patternFrames} frames");
         report.AppendLine();
-        report.AppendLine("IDLE    = untouched screen, paced at 15 fps, real capture path.");
-        report.AppendLine("PATTERN = program-drawn full-motion frames, encoded as fast as possible.");
+        report.AppendLine("IDLE       = untouched screen, paced at 30 fps, real capture path.");
+        report.AppendLine("PATTERN    = program-drawn full-motion frames, encoded as fast as possible (no capture).");
+        report.AppendLine("END-TO-END = real capture + real encode against a real moving screen, flat out. THE usability number.");
         report.AppendLine();
-        report.AppendLine("Quality  Condition   fps      KB/s       encode ms/frame  capture ms/frame  tiles/frame");
-        report.AppendLine("-------  ---------  ------  ----------  ---------------  ----------------  -----------");
+        report.AppendLine("Quality  Condition    fps      KB/s       encode ms/frame  capture ms/frame  tiles/frame");
+        report.AppendLine("-------  ----------  ------  ----------  ---------------  ----------------  -----------");
+
+        // END-TO-END for all qualities is measured in one continuous motion session (one flash).
+        var endToEnd = MeasureEndToEndAll(capture, 5);
 
         foreach (int quality in Qualities)
         {
             report.AppendLine(Row(quality, "IDLE", MeasureIdle(capture, quality, idleSeconds)));
             report.AppendLine(Row(quality, "PATTERN", MeasurePattern(quality, patternFrames)));
+            report.AppendLine(Row(quality, "END-TO-END", endToEnd[quality]));
         }
 
         report.AppendLine();
         report.AppendLine("How to read this:");
-        report.AppendLine("- IDLE KB/s is what a still session costs. It should be a fraction of a KB/s at every quality.");
-        report.AppendLine("  If it is large, something on the screen is changing every frame (or the encoder is being fed).");
-        report.AppendLine("- PATTERN fps under 15 means this machine cannot encode a fully-changing screen at the target rate.");
-        report.AppendLine("- PATTERN capture ms is blank on purpose: that phase uses generated frames, not the capture path.");
+        report.AppendLine("- IDLE KB/s is what a still session costs; it should be small at every quality.");
+        report.AppendLine("- PATTERN measures the encoder alone on identical content — compare it between two machines.");
+        report.AppendLine("- END-TO-END fps is real capture+encode together. On the GDI fallback this is the true ceiling;");
+        report.AppendLine("  if it is well under 30, that machine will feel slow no matter what else is right.");
 
         outputPath ??= Path.Combine(
             DesktopOrBase(),
@@ -83,7 +85,7 @@ public static class DiagnosticRunner
     private static string Row(int quality, string condition, Result r)
     {
         string capture = r.HasCapture ? $"{r.CaptureMs,16:0.00}" : $"{"-",16}";
-        return $"{quality,-7}  {condition,-9}  {r.Fps,6:0.0}  {r.KbPerSec,10:0.0}  {r.EncodeMs,15:0.00}  {capture}  {r.TilesPerFrame,11:0.0}";
+        return $"{quality,-7}  {condition,-10}  {r.Fps,6:0.0}  {r.KbPerSec,10:0.0}  {r.EncodeMs,15:0.00}  {capture}  {r.TilesPerFrame,11:0.0}";
     }
 
     private static Result MeasureIdle(IScreenCapture capture, int quality, int seconds)
@@ -92,19 +94,18 @@ public static class DiagnosticRunner
         differ.Configure(capture.Width, capture.Height);
         var encoder = new JpegTileEncoder(quality);
 
-        // Warm up: the first diff reports every tile; skip it so we measure the steady state.
         if (capture.TryCapture(50, out var warm)) differ.Diff(warm.Pixels, warm.Width, warm.Height);
 
         long frames = 0, totalBytes = 0, tiles = 0;
         double captureMs = 0, encodeMs = 0;
-        int intervalMs = 1000 / 15;
+        int intervalMs = 1000 / 30;
         var sw = Stopwatch.StartNew();
         var timer = new Stopwatch();
 
         while (sw.ElapsedMilliseconds < seconds * 1000L)
         {
             long frameStart = sw.ElapsedMilliseconds;
-            int frameBytes = 8 + 4 + 4 + 1 + 4; // FramePacket header including the cursor fields
+            int frameBytes = 8 + 4 + 4 + 1 + 4;
             int frameTiles = 0;
 
             timer.Restart();
@@ -145,7 +146,6 @@ public static class DiagnosticRunner
         var encoder = new JpegTileEncoder(quality);
         var buffer = new byte[PatternWidth * PatternHeight * 4];
 
-        // Warm up one frame (the first diff reports all tiles).
         FillPattern(buffer, 0);
         differ.Diff(buffer, PatternWidth, PatternHeight);
 
@@ -177,8 +177,73 @@ public static class DiagnosticRunner
             encodeMs / frameCount, 0, (double)tiles / frameCount, HasCapture: false);
     }
 
+    // Real capture + real encode against a real moving screen, flat out, for each quality — measured
+    // in one continuous motion session so the screen only flashes once.
+    private static Dictionary<int, Result> MeasureEndToEndAll(IScreenCapture capture, int secondsEach)
+    {
+        var results = new Dictionary<int, Result>();
+        var motion = new MotionWindow();
+        motion.Start();
+        try
+        {
+            foreach (int quality in Qualities)
+                results[quality] = MeasureEndToEnd(capture, quality, secondsEach);
+        }
+        finally
+        {
+            motion.Stop();
+        }
+        return results;
+    }
+
+    private static Result MeasureEndToEnd(IScreenCapture capture, int quality, int seconds)
+    {
+        var differ = new TileDiffer(ProtocolConstants.TileSize);
+        differ.Configure(capture.Width, capture.Height);
+        var encoder = new JpegTileEncoder(quality);
+
+        if (capture.TryCapture(200, out var warm)) differ.Diff(warm.Pixels, warm.Width, warm.Height);
+
+        long frames = 0, totalBytes = 0, tiles = 0;
+        double captureMs = 0, encodeMs = 0;
+        var sw = Stopwatch.StartNew();
+        var timer = new Stopwatch();
+
+        while (sw.ElapsedMilliseconds < seconds * 1000L)
+        {
+            int frameBytes = 8 + 4 + 4 + 1 + 4;
+            int frameTiles = 0;
+
+            timer.Restart();
+            bool got = capture.TryCapture(100, out var frame);
+            captureMs += timer.Elapsed.TotalMilliseconds;
+
+            if (got)
+            {
+                foreach (var t in differ.Diff(frame.Pixels, frame.Width, frame.Height))
+                {
+                    timer.Restart();
+                    var jpeg = encoder.Encode(frame.Pixels, frame.Width, t.X, t.Y, t.Width, t.Height);
+                    encodeMs += timer.Elapsed.TotalMilliseconds;
+                    frameBytes += 12 + jpeg.Length;
+                    frameTiles++;
+                }
+            }
+
+            frames++;
+            totalBytes += frameBytes;
+            tiles += frameTiles;
+        }
+        sw.Stop();
+
+        double s = sw.Elapsed.TotalSeconds;
+        return new Result(frames / s, totalBytes / 1024.0 / s,
+            frames > 0 ? encodeMs / frames : 0, frames > 0 ? captureMs / frames : 0,
+            frames > 0 ? (double)tiles / frames : 0, HasCapture: true);
+    }
+
     // Deterministic moving pattern: colour gradients plus a moving blocky field so every tile changes
-    // every frame and the JPEG encoder has real, repeatable work. Identical on every machine and run.
+    // every frame and the encoder has real, repeatable work. Identical on every machine and run.
     private static void FillPattern(byte[] bgra, int frame)
     {
         int i = 0;

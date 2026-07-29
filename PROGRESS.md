@@ -131,4 +131,18 @@ static the captured screen happened to be at each reading, not a regression.
 
 **Investigation B (stutter) — pending .222 numbers.** On .223 (2 cores) a fully-changing screen maxes
 ~16 fps, and encoding is the cost (~36 ms/frame). The VM (GDI, no GPU) is expected to be slower;
-confirm by running diagnostics on .222 and comparing the identical PATTERN rows.
+confirm by running diagnostics on .222 and comparing the END-TO-END rows.
+
+### Frame rate + end-to-end measurement (2026-07-29)
+
+- **Frame-rate cap raised 15 → 30.** Frames are **dropped, never queued** (comment in
+  `HostServer.FrameLoopAsync`): one frame in flight at a time, capture returns the *latest* screen
+  (DXGI coalesces, GDI grabs current), and `await SendAsync` back-pressure throttles capture instead
+  of building a backlog. A higher cap only adds smoothness when there is spare time — it can never
+  become queued input lag.
+- **Added an END-TO-END diagnostic phase** (real capture + real encode against a program-animated
+  moving screen — the only phase measuring capture and encode together). Baseline **.223 (DXGI,
+  Release, 2 cores), full motion:** q70 11.5 fps, q85 12.7, q95 12.9; ~1.4–1.7 MB/s; encode
+  ~43–50 ms/frame. So a fully-changing screen tops out ~13 fps on .223 even on DXGI — encode is the
+  ceiling. Real support screens change little and hit the 30 fps cap; full motion is the worst case.
+  For Investigation B, run diagnostics on .222 (GDI) and compare the END-TO-END rows directly.

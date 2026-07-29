@@ -44,7 +44,7 @@ public sealed class HostServer : IDisposable
         set => _encoder.SetQuality(value);
     }
 
-    public HostServer(int port = ProtocolConstants.TcpPort, int targetFps = 15)
+    public HostServer(int port = ProtocolConstants.TcpPort, int targetFps = 30)
     {
         _port = port;
         _targetFps = targetFps;
@@ -178,6 +178,14 @@ public sealed class HostServer : IDisposable
         }
     }
 
+    // Frames are DROPPED, never QUEUED, when the machine cannot keep up. This loop handles exactly
+    // one frame at a time — capture -> encode -> send — with no frame buffer, so at most one frame is
+    // ever in flight. When a frame takes longer than the target interval, `remaining` is <= 0 and the
+    // loop immediately captures again; capture always returns the LATEST screen (DXGI coalesces the
+    // changed regions, GDI grabs the current screen), so intermediate frames are simply skipped. And
+    // `await SendAsync` applies TCP back-pressure: a slow viewer slows this loop, which throttles
+    // capture rate rather than building a backlog. So raising the target rate can only ADD smoothness
+    // when there is spare time; it can never turn into seconds of queued input lag.
     private async Task FrameLoopAsync(MessageChannel channel, CancellationToken ct)
     {
         long frameNumber = 0;
