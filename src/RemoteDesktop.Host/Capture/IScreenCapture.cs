@@ -1,0 +1,29 @@
+namespace RemoteDesktop.Host.Capture;
+
+/// <summary>Which capture technique produced the frames.</summary>
+public enum CaptureMethod
+{
+    Dxgi,
+    Gdi,
+}
+
+/// <summary>
+/// A source of screen frames. Implemented twice — DXGI Desktop Duplication (fast, needs a real GPU)
+/// and GDI BitBlt (slower, works everywhere). The rest of the host never needs to know which one is
+/// running; it just calls TryCapture. This interface is the seam that lets Stage 6 swap in
+/// session-aware capture later.
+/// </summary>
+public interface IScreenCapture : IDisposable
+{
+    CaptureMethod Method { get; }
+    int Width { get; }
+    int Height { get; }
+
+    /// <summary>
+    /// Try to get the current screen into the capture's own reusable buffer. Returns true with a
+    /// frame when pixels are available; returns false when nothing new was ready within the timeout
+    /// (only the DXGI path reports this — it means the screen did not change). The returned frame
+    /// borrows the capture's buffer and is valid only until the next TryCapture call.
+    /// </summary>
+    bool TryCapture(int timeoutMilliseconds, out CapturedFrame frame);
+}
