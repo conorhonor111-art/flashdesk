@@ -1,4 +1,5 @@
 using RemoteDesktop.Shared.Protocol;
+using RemoteDesktop.UI;
 using RemoteDesktop.Viewer.Input;
 using RemoteDesktop.Viewer.Net;
 using RemoteDesktop.Viewer.Rendering;
@@ -6,21 +7,23 @@ using RemoteDesktop.Viewer.Rendering;
 namespace RemoteDesktop.Viewer;
 
 /// <summary>
-/// The viewer window: address box, Connect button, an "Actual size" toggle and a "Control remote"
-/// toggle on top; the live picture filling the middle (inside a scrolling panel so 1:1 mode can show
-/// scrollbars); and a status bar (frames per second, latency, bandwidth) at the bottom. Networking
-/// lives in ViewerClient, pixels in RemoteScreen, input in InputCapture; this file wires them up.
+/// The viewer (operator) window — my side. It wears a graphite header so it can never be confused
+/// with the light, client-facing host window in a screenshot. A controls bar (address, Connect,
+/// Actual size, Control remote) sits under it, the live picture fills the middle inside a scrolling
+/// panel, and a status bar (fps / latency / bandwidth) sits at the bottom. Networking lives in
+/// ViewerClient, pixels in RemoteScreen, input in InputCapture; this file wires them up.
 /// </summary>
 public sealed class MainForm : Form
 {
-    private readonly TextBox _ipBox = new() { Text = "192.168.1.222", Width = 150, Margin = new Padding(3, 4, 3, 3) };
-    private readonly Button _connect = new() { Text = "Connect", AutoSize = true };
-    private readonly CheckBox _actualSize = new() { Text = "Actual size (1:1)", AutoSize = true, Margin = new Padding(14, 7, 3, 3) };
-    private readonly CheckBox _control = new() { Text = "Control remote (mouse + keyboard)", AutoSize = true, Margin = new Padding(14, 7, 3, 3) };
+    private readonly TextBox _ipBox = new() { Text = "192.168.1.222", Width = 150, Font = Theme.Body, Margin = new Padding(Theme.S2, Theme.S1, Theme.S2, 0) };
+    private readonly Button _connect = Theme.MakeButton("Connect", ButtonKind.Primary);
+    private readonly CheckBox _actualSize = new() { Text = "Actual size (1:1)", AutoSize = true, Checked = true, Font = Theme.Body, ForeColor = Theme.TextPrimary, Margin = new Padding(Theme.S3, Theme.S2, 0, 0) };
+    private readonly CheckBox _control = new() { Text = "Control remote (mouse + keyboard)", AutoSize = true, Font = Theme.Body, ForeColor = Theme.TextPrimary, Margin = new Padding(Theme.S3, Theme.S2, 0, 0) };
     private readonly Panel _canvasHost = new() { Dock = DockStyle.Fill, AutoScroll = true, BackColor = Color.Black };
     private readonly ScreenCanvas _canvas = new();
     private readonly RemoteScreen _screen = new();
     private readonly InputCapture _input;
+    private readonly StatusStrip _status = new();
     private readonly ToolStripStatusLabel _statusItem = new("Not connected");
     private readonly System.Windows.Forms.Timer _timer = new() { Interval = 500 };
 
@@ -29,44 +32,60 @@ public sealed class MainForm : Form
 
     public MainForm()
     {
-        Text = "RemoteDesktop Viewer";
+        Text = "RemoteDesktop Viewer — operator";
         StartPosition = FormStartPosition.CenterScreen;
-        ClientSize = new Size(1000, 640);
+        ClientSize = new Size(1000, 660);
+        MinimumSize = new Size(640, 480);
+        Theme.ApplyWindow(this);
 
-        var top = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, Padding = new Padding(6) };
-        top.Controls.Add(new Label { Text = "Host IP:", AutoSize = true, Margin = new Padding(3, 8, 3, 3) });
-        top.Controls.Add(_ipBox);
-        top.Controls.Add(_connect);
-        top.Controls.Add(_actualSize);
-        top.Controls.Add(_control);
+        // Graphite operator header — this is what makes my side visibly not the client side.
+        var header = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Top,
+            FlowDirection = FlowDirection.TopDown,
+            WrapContents = false,
+            AutoSize = true,
+            BackColor = Theme.OperatorHeader,
+            Padding = new Padding(Theme.S4, Theme.S3, Theme.S4, Theme.S3),
+        };
+        header.Controls.Add(new Label { Text = "Operator — my side", AutoSize = true, Font = Theme.Heading, ForeColor = Theme.OperatorHeaderText, Margin = new Padding(0) });
+        header.Controls.Add(new Label { Text = "You are viewing and controlling another computer.", AutoSize = true, Font = Theme.Small, ForeColor = Theme.OperatorHeaderText, Margin = new Padding(0, Theme.S1, 0, 0) });
 
-        var status = new StatusStrip();
-        status.Items.Add(_statusItem);
+        var controlsBar = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Top,
+            FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = true,
+            AutoSize = true,
+            BackColor = Theme.Card,
+            Padding = new Padding(Theme.S4, Theme.S2, Theme.S4, Theme.S2),
+        };
+        controlsBar.Controls.Add(new Label { Text = "Host address", AutoSize = true, Font = Theme.Body, ForeColor = Theme.TextPrimary, Margin = new Padding(0, Theme.S2, Theme.S2, 0) });
+        controlsBar.Controls.Add(_ipBox);
+        controlsBar.Controls.Add(_connect);
+        controlsBar.Controls.Add(_actualSize);
+        controlsBar.Controls.Add(_control);
+
+        _status.BackColor = Theme.Window;
+        _statusItem.Font = Theme.Body;
+        _statusItem.ForeColor = Theme.TextSecondary;
+        _status.Items.Add(_statusItem);
 
         _canvasHost.Controls.Add(_canvas);
         _canvas.Bind(_screen);
-
         _input = new InputCapture(_canvas, e => _client?.SendInput(e));
 
         _connect.Click += async (_, _) => await ToggleAsync();
-        _actualSize.CheckedChanged += (_, _) =>
-            _canvas.SetMode(_actualSize.Checked ? DisplayMode.Actual : DisplayMode.Fit);
-        _control.CheckedChanged += (_, _) =>
-        {
-            _input.Enabled = _control.Checked;
-            if (_control.Checked) _canvas.Focus();
-        };
+        _actualSize.CheckedChanged += (_, _) => _canvas.SetMode(_actualSize.Checked ? DisplayMode.Actual : DisplayMode.Fit);
+        _control.CheckedChanged += (_, _) => { _input.Enabled = _control.Checked; if (_control.Checked) _canvas.Focus(); };
 
-        // Add in reverse z-order so the fill panel sits between the top bar and the status bar.
         Controls.Add(_canvasHost);
-        Controls.Add(status);
-        Controls.Add(top);
+        Controls.Add(_status);
+        Controls.Add(controlsBar);
+        Controls.Add(header);
 
         _timer.Tick += (_, _) => _statusItem.Text = StatusText();
         _timer.Start();
-
-        // Start in 1:1 (Actual size) — it looked clearly sharper on the LAN. Fit stays available.
-        _actualSize.Checked = true;
     }
 
     private async Task ToggleAsync()
@@ -76,6 +95,7 @@ public sealed class MainForm : Form
             _client.Dispose();
             _client = null;
             _connect.Text = "Connect";
+            Theme.Style(_connect, ButtonKind.Primary);
             return;
         }
 
@@ -88,6 +108,7 @@ public sealed class MainForm : Form
             _client.Disconnected += OnDisconnected;
             await _client.ConnectAsync(_ipBox.Text.Trim());
             _connect.Text = "Disconnect";
+            Theme.Style(_connect, ButtonKind.Destructive);
         }
         catch (Exception ex)
         {
@@ -114,11 +135,9 @@ public sealed class MainForm : Form
 
     private void OnFrame(FramePacket packet)
     {
-        // Decode and stamp tiles on the network thread (RemoteScreen is internally locked)...
         foreach (var tile in packet.Tiles)
             _screen.ApplyTile(tile.Column * _tileSize, tile.Row * _tileSize, tile.Jpeg);
 
-        // ...then ask the UI thread to repaint changed tiles and move the drawn remote cursor.
         if (!IsHandleCreated) return;
         var tiles = packet.Tiles;
         int cursorX = packet.CursorX, cursorY = packet.CursorY;
@@ -137,6 +156,7 @@ public sealed class MainForm : Form
         BeginInvoke(new Action(() =>
         {
             _connect.Text = "Connect";
+            Theme.Style(_connect, ButtonKind.Primary);
             _control.Checked = false;
         }));
     }

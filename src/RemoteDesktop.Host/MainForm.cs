@@ -3,69 +3,92 @@ using RemoteDesktop.Host.Capture;
 using RemoteDesktop.Host.Diagnostics;
 using RemoteDesktop.Host.Net;
 using RemoteDesktop.Shared.Protocol;
+using RemoteDesktop.UI;
 
 namespace RemoteDesktop.Host;
 
 /// <summary>
-/// The host window. It is only a display shell: it starts the HostServer and, on a timer, shows the
-/// server's state — local IP, capture method (DXGI or GDI), whether a viewer is connected, outgoing
-/// FPS and KB/s. It also carries the live JPEG-quality control and the "Run diagnostics" button. No
-/// capture, encoding or networking happens in this file (architecture rule 1 in CLAUDE.md).
+/// The host (client-facing) window. It is only a display shell over HostServer. Styled with the
+/// shared <see cref="Theme"/>: neutral surface, green when nobody is connected, amber when a viewer
+/// is watching (never green while live — see the Design system section of CLAUDE.md). The address
+/// area is a marked placeholder: it shows the LAN address today and becomes the 6-digit code in
+/// Stage 3.
 /// </summary>
 public sealed class MainForm : Form
 {
     private readonly HostServer _server = new();
 
-    private readonly Label _ip = NewValueLabel();
-    private readonly Label _method = NewValueLabel();
-    private readonly Label _viewer = NewValueLabel();
-    private readonly Label _fps = NewValueLabel();
-    private readonly Label _kb = NewValueLabel();
-    private readonly ComboBox _quality = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 70, Margin = new Padding(3, 4, 3, 4) };
-    private readonly Button _diagnostics = new() { Text = "Run diagnostics", AutoSize = true, Margin = new Padding(3, 10, 3, 3) };
-    private readonly Button _toggle = new() { Text = "Stop sharing", AutoSize = true, Margin = new Padding(3, 10, 3, 3) };
+    private readonly Label _stateDot = new() { AutoSize = true, Font = Theme.Heading, Margin = new Padding(0, 0, Theme.S2, 0) };
+    private readonly Label _stateText = Theme.HeadingLabel("");
+    private readonly Label _address = new() { AutoSize = true, Font = Theme.Display, ForeColor = Theme.TextPrimary, Margin = new Padding(0, Theme.S1, 0, 0) };
+    private readonly Button _copy = Theme.MakeButton("Copy", ButtonKind.Neutral);
+    private readonly Label _method = new() { AutoSize = true, Font = Theme.Small, ForeColor = Theme.TextSecondary, Margin = new Padding(0, Theme.S1, 0, 0) };
+    private readonly Label _fps = new() { AutoSize = true, Font = Theme.Small, ForeColor = Theme.TextSecondary, Margin = new Padding(0, Theme.S1, 0, 0) };
+    private readonly Label _kb = new() { AutoSize = true, Font = Theme.Small, ForeColor = Theme.TextSecondary, Margin = new Padding(0, Theme.S1, 0, 0) };
+    private readonly ComboBox _quality = new() { DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = FlatStyle.Flat, Font = Theme.Body, Width = 72, Margin = new Padding(Theme.S2, 0, 0, 0) };
+    private readonly Button _diagnostics = Theme.MakeButton("Run diagnostics", ButtonKind.Neutral);
+    private readonly Button _toggle = Theme.MakeButton("Stop sharing", ButtonKind.Destructive);
     private readonly System.Windows.Forms.Timer _timer = new() { Interval = 500 };
 
     public MainForm()
     {
-        Text = "RemoteDesktop Host";
-        FormBorderStyle = FormBorderStyle.FixedSingle;
-        MaximizeBox = false;
+        Text = "RemoteDesktop — this computer";
         StartPosition = FormStartPosition.CenterScreen;
-        ClientSize = new Size(470, 270);
+        ClientSize = new Size(480, 540);
+        MinimumSize = new Size(440, 480);
+        Theme.ApplyWindow(this);
 
-        var layout = new TableLayoutPanel
+        var root = new FlowLayoutPanel
         {
             Dock = DockStyle.Fill,
-            ColumnCount = 2,
-            Padding = new Padding(14),
+            FlowDirection = FlowDirection.TopDown,
+            WrapContents = false,
+            AutoScroll = true,
+            Padding = new Padding(Theme.S4),
         };
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150));
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
-        AddRow(layout, "This machine (IP):", _ip);
-        AddRow(layout, "Capture method:", _method);
-        AddRow(layout, "Viewer:", _viewer);
-        AddRow(layout, "Frames per second:", _fps);
-        AddRow(layout, "Outgoing KB/s:", _kb);
+        root.Controls.Add(Theme.HeadingLabel("This computer"));
+        root.Controls.Add(Gap(Theme.S3));
 
-        for (int q = ProtocolConstants.MinJpegQuality; q <= ProtocolConstants.MaxJpegQuality; q += 5)
-            _quality.Items.Add(q);
+        var stateRow = HorizontalGroup();
+        stateRow.Controls.Add(_stateDot);
+        stateRow.Controls.Add(_stateText);
+        root.Controls.Add(stateRow);
+        root.Controls.Add(Gap(Theme.S4));
+
+        root.Controls.Add(Theme.Caption("Connection address"));
+        var addrRow = HorizontalGroup();
+        addrRow.Controls.Add(_address);
+        _copy.Margin = new Padding(Theme.S3, Theme.S2, 0, 0);
+        _copy.Click += (_, _) => { try { if (_address.Text.Length > 0) Clipboard.SetText(_address.Text); } catch { } };
+        addrRow.Controls.Add(_copy);
+        root.Controls.Add(addrRow);
+        root.Controls.Add(Theme.Caption("Placeholder — finalised in Stage 3. This becomes a 6-digit code you read aloud to the"));
+        root.Controls.Add(Theme.Caption("person helping you. For now it is this computer's network address."));
+        root.Controls.Add(Gap(Theme.S4));
+
+        root.Controls.Add(_method);
+        root.Controls.Add(_fps);
+        root.Controls.Add(_kb);
+        root.Controls.Add(Gap(Theme.S3));
+
+        var qualityRow = HorizontalGroup();
+        qualityRow.Controls.Add(new Label { Text = "Image quality (higher is sharper text)", AutoSize = true, Font = Theme.Body, ForeColor = Theme.TextPrimary, Margin = new Padding(0, Theme.S1, 0, 0) });
+        for (int q = ProtocolConstants.MinJpegQuality; q <= ProtocolConstants.MaxJpegQuality; q += 5) _quality.Items.Add(q);
         _quality.SelectedItem = _server.JpegQuality;
-        _quality.SelectedIndexChanged += (_, _) =>
-        {
-            if (_quality.SelectedItem is int q) _server.JpegQuality = q;
-        };
-        AddRow(layout, "JPEG quality (higher = sharper text):", _quality);
+        _quality.SelectedIndexChanged += (_, _) => { if (_quality.SelectedItem is int q) _server.JpegQuality = q; };
+        qualityRow.Controls.Add(_quality);
+        root.Controls.Add(qualityRow);
+        root.Controls.Add(Gap(Theme.S4));
 
+        var buttonRow = HorizontalGroup();
         _diagnostics.Click += OnRunDiagnostics;
         _toggle.Click += OnToggle;
-        int buttonRow = layout.RowCount;
-        layout.Controls.Add(_diagnostics, 0, buttonRow);
-        layout.Controls.Add(_toggle, 1, buttonRow);
-        layout.RowCount = buttonRow + 1;
+        buttonRow.Controls.Add(_diagnostics);
+        buttonRow.Controls.Add(_toggle);
+        root.Controls.Add(buttonRow);
 
-        Controls.Add(layout);
+        Controls.Add(root);
 
         Load += (_, _) => StartSharing();
         FormClosing += (_, _) => _server.Dispose();
@@ -76,7 +99,7 @@ public sealed class MainForm : Form
     private void StartSharing()
     {
         _server.Start();
-        _ip.Text = string.Join(", ", LocalAddresses.IPv4());
+        _address.Text = string.Join("   ", LocalAddresses.IPv4());
         _toggle.Text = "Stop sharing";
     }
 
@@ -93,7 +116,6 @@ public sealed class MainForm : Form
         }
     }
 
-    // Diagnostics need the capture exclusively, so stop sharing for the duration, then restore it.
     private async void OnRunDiagnostics(object? sender, EventArgs e)
     {
         _diagnostics.Enabled = false;
@@ -105,14 +127,8 @@ public sealed class MainForm : Form
 
         string? path = null;
         string? error = null;
-        try
-        {
-            path = await Task.Run(() => DiagnosticRunner.Run());
-        }
-        catch (Exception ex)
-        {
-            error = ex.Message;
-        }
+        try { path = await Task.Run(() => DiagnosticRunner.Run()); }
+        catch (Exception ex) { error = ex.Message; }
 
         if (wasSharing) StartSharing();
         _diagnostics.Text = "Run diagnostics";
@@ -125,46 +141,60 @@ public sealed class MainForm : Form
             return;
         }
 
-        var choice = MessageBox.Show(this,
-            $"Diagnostics written to:\n\n{path}\n\nOpen it now?",
+        var choice = MessageBox.Show(this, $"Diagnostics written to:\n\n{path}\n\nOpen it now?",
             "Diagnostics complete", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
         if (choice == DialogResult.Yes && path != null)
         {
-            try { Process.Start(new ProcessStartInfo(path) { UseShellExecute = true }); } catch { /* ignore */ }
+            try { Process.Start(new ProcessStartInfo(path) { UseShellExecute = true }); } catch { }
         }
     }
 
     private void UpdateStatus()
     {
-        if (_server.IsCapturing)
+        if (!_server.IsCapturing)
         {
-            string method = _server.Method == CaptureMethod.Dxgi ? "DXGI Desktop Duplication" : "GDI BitBlt (fallback)";
-            if (_server.Method == CaptureMethod.Gdi && _server.DxgiFallbackReason is { Length: > 0 } reason)
-                method += $"  — DXGI unavailable: {reason}";
-            _method.Text = method;
+            _stateDot.Text = "■";
+            _stateDot.ForeColor = Theme.TextSecondary;
+            _stateText.Text = "Stopped — not sharing";
+            _method.Text = _diagnostics.Enabled ? "Sharing is stopped." : "Running diagnostics…";
+            _fps.Text = "";
+            _kb.Text = "";
+            return;
+        }
 
-            _viewer.Text = _server.ViewerConnected ? "connected" : "waiting for a viewer…";
-
-            var (fps, bytesPerSecond) = _server.OutgoingMeter.Read();
-            _fps.Text = fps.ToString("0");
-            _kb.Text = (bytesPerSecond / 1024.0).ToString("0.0");
+        if (_server.ViewerConnected)
+        {
+            _stateDot.Text = "◉";
+            _stateDot.ForeColor = Theme.Amber;
+            _stateText.Text = "Someone is connected and can see this screen";
+            _stateText.ForeColor = Theme.Amber;
         }
         else
         {
-            _method.Text = _diagnostics.Enabled ? "stopped" : "running diagnostics…";
-            _viewer.Text = "—";
-            _fps.Text = "—";
-            _kb.Text = "—";
+            _stateDot.Text = "●";
+            _stateDot.ForeColor = Theme.Green;
+            _stateText.Text = "Running — nobody is connected";
+            _stateText.ForeColor = Theme.TextPrimary;
         }
+
+        string method = _server.Method == CaptureMethod.Dxgi ? "DXGI Desktop Duplication" : "GDI BitBlt (fallback)";
+        if (_server.Method == CaptureMethod.Gdi && _server.DxgiFallbackReason is { Length: > 0 } reason)
+            method += $" — DXGI unavailable: {reason}";
+        _method.Text = "Capture: " + method;
+
+        var (fps, bytesPerSecond) = _server.OutgoingMeter.Read();
+        _fps.Text = $"Frames per second: {fps:0}";
+        _kb.Text = $"Outgoing: {(bytesPerSecond / 1024.0):0.0} KB/s";
     }
 
-    private static Label NewValueLabel() => new() { AutoSize = true, Margin = new Padding(3, 6, 3, 6) };
-
-    private static void AddRow(TableLayoutPanel layout, string caption, Control value)
+    private static FlowLayoutPanel HorizontalGroup() => new()
     {
-        int row = layout.RowCount;
-        layout.Controls.Add(new Label { Text = caption, AutoSize = true, Margin = new Padding(3, 6, 3, 6) }, 0, row);
-        layout.Controls.Add(value, 1, row);
-        layout.RowCount = row + 1;
-    }
+        FlowDirection = FlowDirection.LeftToRight,
+        WrapContents = false,
+        AutoSize = true,
+        AutoSizeMode = AutoSizeMode.GrowAndShrink,
+        Margin = new Padding(0),
+    };
+
+    private static Control Gap(int height) => new Label { AutoSize = false, Height = height, Width = 1, Margin = new Padding(0) };
 }

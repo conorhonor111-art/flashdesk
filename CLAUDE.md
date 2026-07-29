@@ -347,6 +347,79 @@ performance numbers **off the HOST window on `.223`**, not off the viewer:
   (adaptive quality driven by measured bandwidth), not discover it. Real support screens are mostly
   still and cost a tiny fraction of this, but the worst case must be handled deliberately.
 
+## Design system (decided 2026-07-29 — palette, type, spacing, states, and the reasoning)
+
+UI framework re-examined once the design started to matter: **WinForms stays**, with a central
+design system in a shared library `RemoteDesktop.UI` (`Theme.cs`). Reasons, not inertia: the design
+is deliberately **flat** (no gradients/shadows/glow/rounded/animation — see "what not to do"), which
+is WinForms' comfort zone; the only genuinely custom control (the video canvas) already works and
+porting it to WPF is the project's highest-risk change for zero visual gain; custom drawing is barely
+needed here; and staying on WinForms keeps one language for Conor (§1). Full analysis was given at the
+Stage-2/3 boundary.
+
+### Palette — one colour, one meaning, used nowhere else
+
+| Meaning | Colour | Hex |
+|---|---|---|
+| Structure / no state | Neutral grey | window `#F5F6F8`, card `#FFFFFF`, border `#C6CCD4`, text `#1B1F24`, secondary text `#5A626C` |
+| Ready · running · nobody connected | **Green** | `#1E7E34` |
+| A decision being asked right now | **Blue** | `#1A73E8` |
+| A session is LIVE, someone is watching | **Amber** | text/dot `#B26A00`, fill `#F4B400` |
+| Disconnect · reject · revoke (destructive/ending only) | **Red** | `#C5221F` |
+| Operator (viewer) side chrome | Graphite | header `#242931`, text `#ECEFF3` |
+
+**THE rule that matters most — the client's live-session indicator is AMBER, never green.** Green in
+interface convention means "everything is fine, you may ignore this" — which is exactly wrong for an
+indicator whose entire job is to make sure the client never forgets someone is on their machine. It
+must stay noticeable for the whole session. Green would be comfortable and would quietly defeat hard
+rule 2 in §4. Green is correct for the *opposite* state: running, and **nobody** connected. A later
+session that has the hex values but not this reasoning will "harmonise" the indicator to green — do
+not; it is a safety control, not decoration.
+
+### Accessibility — non-negotiable
+
+- **Never signal state by colour alone.** Every state also carries a distinct icon/shape **and a
+  word**. Roughly one man in twelve cannot separate red from green.
+- Body text ≥ **4.5:1** contrast on its background; large text ≥ **3:1**.
+- **Test the whole palette in greyscale.** If two states become indistinguishable, the design has
+  failed regardless of how it looks in colour.
+
+### Typography and layout
+
+- **One typeface — the Windows system font (Segoe UI).** No downloaded fonts. Four sizes only:
+  Display 24, Heading 12 (semibold), Body 10, Small 9 (pt). Two weights: regular + semibold — note
+  WinForms/Segoe has no true "medium" (500) weight, so semibold (600) is the emphasis weight (still
+  lighter than bold, which is not used). *Exception reserved:* if Segoe UI digits prove ambiguous
+  when a stressed client reads a code aloud, the sanctioned fallback for the address hero only is
+  Consolas (a built-in Windows monospace, not a download).
+- **Sentence case everywhere.** No ALL CAPS, no Title Case on buttons.
+- **Spacing scale** `4 · 8 · 16 · 24 · 32` (px at 100%), used everywhere — uneven padding is what
+  makes software look amateur.
+- Every window must keep working when resized and at **125% and 150%** display scaling
+  (`AutoScaleMode.Font`, `TableLayoutPanel`/`Dock`/`Anchor`, no hard-coded pixel positions).
+
+### The three states of the client-facing window (Stage 4 builds them fully; recognisable across a room)
+
+1. **READY** — nobody connected. Green dot + lock + "Nobody is connected". The **address is the
+   hero**: large, grouped in threes, high contrast, one-click copy, digits set generously for reading
+   aloud over a phone.
+2. **INCOMING REQUEST** — a decision, not a status. Blue accent; shows who is asking (name + address);
+   **Accept and Reject equally weighted** — Reject is the safe default and must never be smaller,
+   greyer, or harder to hit.
+3. **LIVE SESSION** — amber. Plain words: who is connected, what they may do, how long. **Disconnect
+   always visible, always one click. No animation on the indicator** (a pulse becomes wallpaper and
+   can be mistaken for activity).
+
+The **operator (viewer) side is deliberately different** (graphite header) so the two sides can never
+be confused in a screenshot.
+
+### What not to do
+
+- No gradients, drop shadows, or glow. Flat surfaces, real (square) borders.
+- No animation anywhere a person needs to read or decide.
+- Nothing that makes Disconnect or Reject harder to find than Accept.
+- No icon without a word beside it in any state the client sees.
+
 ## Where this file must live (session working directory)
 
 Claude Code auto-loads `CLAUDE.md` from the directory the session opens in (and its

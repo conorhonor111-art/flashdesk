@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\RemoteDesktop.Shared\RemoteDesktop.Shared.csproj" />
+    <ProjectReference Include="..\RemoteDesktop.UI\RemoteDesktop.UI.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
