@@ -64,6 +64,9 @@ public sealed class MainForm : Form
 
         _timer.Tick += (_, _) => _statusItem.Text = StatusText();
         _timer.Start();
+
+        // Start in 1:1 (Actual size) — it looked clearly sharper on the LAN. Fit stays available.
+        _actualSize.Checked = true;
     }
 
     private async Task ToggleAsync()

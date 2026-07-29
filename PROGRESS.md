@@ -100,4 +100,35 @@ VIEWER, to avoid a mouse feedback loop (driving `.223`'s real cursor, which sits
 All video/capture work keeps `.223` as host. Both sides publish as self-contained single-file win-x64
 exes (Host 64.8 MB, Viewer 64.7 MB).
 
-**Not yet verified:** the first live input test. Kill-switch drill to be done first.
+**Stage 2 verified on two machines (2026-07-29):** connected, mouse + keyboard both worked, session
+usable. Trap found and now documented in CLAUDE.md: a brand-new host silently blocks TCP 7789 with
+NO firewall prompt — fixed with a `New-NetFirewallRule` one-liner from an Administrator PowerShell.
+
+### Measurement built in + defaults changed (2026-07-29)
+
+- Added a **Run diagnostics** button (and `RemoteDesktop.Host.exe --diagnostics [path] [idleSeconds]`)
+  that runs a fixed, repeatable benchmark and writes a text report — numbers now come from the
+  program, not from a human reading a moving window. Two conditions: IDLE (real capture, untouched
+  screen, paced 15 fps) and PATTERN (program-drawn full-motion 1920x1080, identical on every
+  machine), each at quality 70/85/95, recording fps, KB/s, encode ms/frame, capture ms/frame, tiles.
+- Defaults changed by eye test: JPEG quality **95** (LAN-only — Stage 3 must add adaptive quality),
+  and the viewer starts in **1:1 (Actual size)**, with Fit still available.
+
+**Baseline diagnostics — .223 (DXGI, Release, 2 logical CPUs, 1920×1080):**
+
+| Quality | IDLE fps / KB/s | PATTERN fps / KB/s | encode ms/frame |
+|---|---|---|---|
+| 70 | 12.9 / 7.2 | 17.0 / 3607 | 36.0 |
+| 85 | 12.9 / 8.1 | 16.3 / 3841 | 36.5 |
+| 95 | 12.9 / 11.9 | 15.7 / 4799 | 38.3 |
+
+**Investigation A (idle anomaly) — answered.** Stage 2's cursor field adds only ~9 bytes/frame
+(~0.1 KB/s), so it is NOT the cause. The diagnostic shows ~0.2 tiles genuinely change per frame even
+when "idle" (taskbar clock, blinking carets, etc.), and higher quality makes those few tiles bigger —
+so idle KB/s does scale with quality (q95 11.9 > q70 7.2). The earlier claim that "quality can't
+affect idle" was wrong and is corrected. Stage 1's 0.2 KB/s vs the later 13–16 KB/s reflects how
+static the captured screen happened to be at each reading, not a regression.
+
+**Investigation B (stutter) — pending .222 numbers.** On .223 (2 cores) a fully-changing screen maxes
+~16 fps, and encoding is the cost (~36 ms/frame). The VM (GDI, no GPU) is expected to be slower;
+confirm by running diagnostics on .222 and comparing the identical PATTERN rows.

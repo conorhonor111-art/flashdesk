@@ -246,6 +246,13 @@ DXGI is exactly why it is the viewer.)
   HOST role is pinned to the physical PC (see above).
 - Conor sometimes pastes example values literally and sometimes runs a command on the wrong
   machine. Give commands fully filled in with real values, and always name the machine.
+- **A brand-new host machine silently blocks the port — no firewall dialog appears** (hit on the
+  Server 2022 VM at Stage 2: the first inbound connection to TCP 7789 was just dropped, with no
+  prompt at all). Fix it once, from an **Administrator PowerShell on the host machine**, with this
+  exact line — nothing to decide:
+  `New-NetFirewallRule -DisplayName "RemoteDesktop 7789" -Direction Inbound -Protocol TCP -LocalPort 7789 -Action Allow`
+  This recurs on every new test machine, and on every client machine at Stage 4 — the client
+  packaging must add this rule automatically there.
 
 ## Environment and commands
 
@@ -298,9 +305,11 @@ naming the stage. Never commit `bin`/`obj` (already handled by `.gitignore`).
 
 ## Protocol facts
 
-- TCP port **7789** · tile size **128×128** · default JPEG quality **85** (operator-adjustable
+- TCP port **7789** · tile size **128×128** · default JPEG quality **95** (operator-adjustable
   60–95, live) — all defined once in `Shared/Protocol/ProtocolConstants.cs`, never hard-coded
-  elsewhere.
+  elsewhere. **Quality 95 is a deliberate LAN-only default** (on a local network the extra bytes are
+  free); **Stage 3 must replace it with adaptive quality driven by measured bandwidth**, because
+  there the bytes are the server's bill and the client's home connection.
 - Every message is length-prefixed with a type byte, so two frames can never run into each
   other on the wire.
 - **Latency is measured by round-trip ping, never by comparing timestamps.** The two
@@ -374,10 +383,12 @@ click. Input must arrive reliably and in order even while video frames are dropp
 Replace the typed IP with a **6-digit code**, working across different networks. Relay:
 ASP.NET Core, WebSocket over TCP 443, Linux VPS. Host registers and gets a code; codes
 expire and are safely reused; collisions and guessing prevented; rate-limit code attempts.
-Both programs switch to **outbound** connections. Full first-time-Linux deployment writeup:
-provider/size with real monthly cost, domain question, every command with what it does, TLS
-from scratch, auto-restart on crash/reboot, how to check status and read logs. Honest
-bandwidth cost at 10 and 50 clients.
+Both programs switch to **outbound** connections. **Add adaptive quality driven by measured
+bandwidth** (the LAN-only quality-95 default from Stage 2 must be revisited here). Full
+first-time-Linux deployment writeup: provider/size with real monthly cost, domain question, every
+command with what it does — each as **one literal copy-paste line** (the format that works for
+Conor, like the firewall rule), TLS from scratch, auto-restart on crash/reboot, how to check status
+and read logs. Honest bandwidth cost at 10 and 50 clients.
 
 ## Stage 4 — Safe to hand to a client  (= charter §4)
 

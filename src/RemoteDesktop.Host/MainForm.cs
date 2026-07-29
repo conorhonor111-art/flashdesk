@@ -1,4 +1,6 @@
+using System.Diagnostics;
 using RemoteDesktop.Host.Capture;
+using RemoteDesktop.Host.Diagnostics;
 using RemoteDesktop.Host.Net;
 using RemoteDesktop.Shared.Protocol;
 
@@ -6,9 +8,9 @@ namespace RemoteDesktop.Host;
 
 /// <summary>
 /// The host window. It is only a display shell: it starts the HostServer and, on a timer, shows the
-/// server's state — local IP, capture method (DXGI or GDI), whether a viewer is connected, and the
-/// outgoing frames-per-second and KB/s. It also carries the live JPEG-quality control. No capture,
-/// encoding or networking happens in this file (architecture rule 1 in CLAUDE.md).
+/// server's state — local IP, capture method (DXGI or GDI), whether a viewer is connected, outgoing
+/// FPS and KB/s. It also carries the live JPEG-quality control and the "Run diagnostics" button. No
+/// capture, encoding or networking happens in this file (architecture rule 1 in CLAUDE.md).
 /// </summary>
 public sealed class MainForm : Form
 {
@@ -20,6 +22,7 @@ public sealed class MainForm : Form
     private readonly Label _fps = NewValueLabel();
     private readonly Label _kb = NewValueLabel();
     private readonly ComboBox _quality = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 70, Margin = new Padding(3, 4, 3, 4) };
+    private readonly Button _diagnostics = new() { Text = "Run diagnostics", AutoSize = true, Margin = new Padding(3, 10, 3, 3) };
     private readonly Button _toggle = new() { Text = "Stop sharing", AutoSize = true, Margin = new Padding(3, 10, 3, 3) };
     private readonly System.Windows.Forms.Timer _timer = new() { Interval = 500 };
 
@@ -29,7 +32,7 @@ public sealed class MainForm : Form
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
         StartPosition = FormStartPosition.CenterScreen;
-        ClientSize = new Size(470, 260);
+        ClientSize = new Size(470, 270);
 
         var layout = new TableLayoutPanel
         {
@@ -55,9 +58,12 @@ public sealed class MainForm : Form
         };
         AddRow(layout, "JPEG quality (higher = sharper text):", _quality);
 
+        _diagnostics.Click += OnRunDiagnostics;
         _toggle.Click += OnToggle;
-        layout.Controls.Add(_toggle, 1, layout.RowCount);
-        layout.RowCount++;
+        int buttonRow = layout.RowCount;
+        layout.Controls.Add(_diagnostics, 0, buttonRow);
+        layout.Controls.Add(_toggle, 1, buttonRow);
+        layout.RowCount = buttonRow + 1;
 
         Controls.Add(layout);
 
@@ -87,6 +93,47 @@ public sealed class MainForm : Form
         }
     }
 
+    // Diagnostics need the capture exclusively, so stop sharing for the duration, then restore it.
+    private async void OnRunDiagnostics(object? sender, EventArgs e)
+    {
+        _diagnostics.Enabled = false;
+        _toggle.Enabled = false;
+        _diagnostics.Text = "Running… (~1 min)";
+
+        bool wasSharing = _server.IsCapturing;
+        if (wasSharing) _server.Stop();
+
+        string? path = null;
+        string? error = null;
+        try
+        {
+            path = await Task.Run(() => DiagnosticRunner.Run());
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+
+        if (wasSharing) StartSharing();
+        _diagnostics.Text = "Run diagnostics";
+        _diagnostics.Enabled = true;
+        _toggle.Enabled = true;
+
+        if (error != null)
+        {
+            MessageBox.Show(this, error, "Diagnostics failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return;
+        }
+
+        var choice = MessageBox.Show(this,
+            $"Diagnostics written to:\n\n{path}\n\nOpen it now?",
+            "Diagnostics complete", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+        if (choice == DialogResult.Yes && path != null)
+        {
+            try { Process.Start(new ProcessStartInfo(path) { UseShellExecute = true }); } catch { /* ignore */ }
+        }
+    }
+
     private void UpdateStatus()
     {
         if (_server.IsCapturing)
@@ -104,7 +151,7 @@ public sealed class MainForm : Form
         }
         else
         {
-            _method.Text = "stopped";
+            _method.Text = _diagnostics.Enabled ? "stopped" : "running diagnostics…";
             _viewer.Text = "—";
             _fps.Text = "—";
             _kb.Text = "—";
