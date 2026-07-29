@@ -336,6 +336,17 @@ performance numbers **off the HOST window on `.223`**, not off the viewer:
    - **BUSY** — a video playing fullscreen on `.223`.
    Report each as FPS and KB/s read from the HOST window.
 
+## Measured performance ceilings (from the built-in diagnostics, 2026-07-29 — they constrain later decisions)
+
+- **The dev PC `.223` has only 2 logical cores and takes ~36 ms to encode a full 1920×1080 frame**
+  (Release, DXGI). That is the real ceiling on full-motion content — about **16 fps max on `.223`** —
+  and it is a property of that machine, not of the design. Do not misread a full-motion fps limit as
+  a bug.
+- **Full-motion content costs ~3.6–4.8 MB/s** (quality 70→95). That is fine on a LAN and **impossible
+  over the internet** — a typical client's home upload cannot carry it. **Stage 3 must solve this**
+  (adaptive quality driven by measured bandwidth), not discover it. Real support screens are mostly
+  still and cost a tiny fraction of this, but the worst case must be handled deliberately.
+
 ## Where this file must live (session working directory)
 
 Claude Code auto-loads `CLAUDE.md` from the directory the session opens in (and its
