@@ -5,15 +5,18 @@ using RemoteDesktop.Viewer.Rendering;
 namespace RemoteDesktop.Viewer;
 
 /// <summary>
-/// The viewer window: an address box and Connect button on top, the live picture filling the middle,
-/// and a status bar (frames per second, latency, bandwidth) at the bottom. Networking lives in
+/// The viewer window: an address box, Connect button and an "Actual size" toggle on top; the live
+/// picture filling the middle (inside a scrolling panel so 1:1 mode can show scrollbars); and a
+/// status bar (frames per second, latency, bandwidth) at the bottom. Networking lives in
 /// ViewerClient; pixels live in RemoteScreen; this file only wires them to the controls.
 /// </summary>
 public sealed class MainForm : Form
 {
     private readonly TextBox _ipBox = new() { Text = "192.168.1.223", Width = 160, Margin = new Padding(3, 4, 3, 3) };
     private readonly Button _connect = new() { Text = "Connect", AutoSize = true };
-    private readonly ScreenCanvas _canvas = new() { Dock = DockStyle.Fill };
+    private readonly CheckBox _actualSize = new() { Text = "Actual size (1:1)", AutoSize = true, Margin = new Padding(16, 7, 3, 3) };
+    private readonly Panel _canvasHost = new() { Dock = DockStyle.Fill, AutoScroll = true, BackColor = Color.Black };
+    private readonly ScreenCanvas _canvas = new();
     private readonly RemoteScreen _screen = new();
     private readonly ToolStripStatusLabel _statusItem = new("Not connected");
     private readonly System.Windows.Forms.Timer _timer = new() { Interval = 500 };
@@ -31,15 +34,20 @@ public sealed class MainForm : Form
         top.Controls.Add(new Label { Text = "Host IP:", AutoSize = true, Margin = new Padding(3, 8, 3, 3) });
         top.Controls.Add(_ipBox);
         top.Controls.Add(_connect);
+        top.Controls.Add(_actualSize);
 
         var status = new StatusStrip();
         status.Items.Add(_statusItem);
 
+        _canvasHost.Controls.Add(_canvas);
         _canvas.Bind(_screen);
-        _connect.Click += async (_, _) => await ToggleAsync();
 
-        // Add in reverse z-order so the fill canvas sits between the top bar and status bar.
-        Controls.Add(_canvas);
+        _connect.Click += async (_, _) => await ToggleAsync();
+        _actualSize.CheckedChanged += (_, _) =>
+            _canvas.SetMode(_actualSize.Checked ? DisplayMode.Actual : DisplayMode.Fit);
+
+        // Add in reverse z-order so the fill panel sits between the top bar and the status bar.
+        Controls.Add(_canvasHost);
         Controls.Add(status);
         Controls.Add(top);
 

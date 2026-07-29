@@ -26,10 +26,10 @@ public sealed class DxgiScreenCapture : IScreenCapture
     public DxgiScreenCapture()
     {
         D3D11.D3D11CreateDevice(
-            null,
+            null!, // default adapter
             DriverType.Hardware,
             DeviceCreationFlags.BgraSupport,
-            null,
+            new[] { FeatureLevel.Level_11_1, FeatureLevel.Level_11_0 },
             out ID3D11Device? device,
             out ID3D11DeviceContext? context).CheckError();
 

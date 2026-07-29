@@ -1,13 +1,14 @@
 using RemoteDesktop.Host.Capture;
 using RemoteDesktop.Host.Net;
+using RemoteDesktop.Shared.Protocol;
 
 namespace RemoteDesktop.Host;
 
 /// <summary>
 /// The host window. It is only a display shell: it starts the HostServer and, on a timer, shows the
 /// server's state — local IP, capture method (DXGI or GDI), whether a viewer is connected, and the
-/// outgoing frames-per-second and KB/s. No capture, encoding or networking happens in this file
-/// (architecture rule 1 in CLAUDE.md).
+/// outgoing frames-per-second and KB/s. It also carries the live JPEG-quality control. No capture,
+/// encoding or networking happens in this file (architecture rule 1 in CLAUDE.md).
 /// </summary>
 public sealed class MainForm : Form
 {
@@ -18,6 +19,7 @@ public sealed class MainForm : Form
     private readonly Label _viewer = NewValueLabel();
     private readonly Label _fps = NewValueLabel();
     private readonly Label _kb = NewValueLabel();
+    private readonly ComboBox _quality = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 70, Margin = new Padding(3, 4, 3, 4) };
     private readonly Button _toggle = new() { Text = "Stop sharing", AutoSize = true, Margin = new Padding(3, 10, 3, 3) };
     private readonly System.Windows.Forms.Timer _timer = new() { Interval = 500 };
 
@@ -27,7 +29,7 @@ public sealed class MainForm : Form
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
         StartPosition = FormStartPosition.CenterScreen;
-        ClientSize = new Size(460, 220);
+        ClientSize = new Size(470, 260);
 
         var layout = new TableLayoutPanel
         {
@@ -43,6 +45,15 @@ public sealed class MainForm : Form
         AddRow(layout, "Viewer:", _viewer);
         AddRow(layout, "Frames per second:", _fps);
         AddRow(layout, "Outgoing KB/s:", _kb);
+
+        for (int q = ProtocolConstants.MinJpegQuality; q <= ProtocolConstants.MaxJpegQuality; q += 5)
+            _quality.Items.Add(q);
+        _quality.SelectedItem = _server.JpegQuality;
+        _quality.SelectedIndexChanged += (_, _) =>
+        {
+            if (_quality.SelectedItem is int q) _server.JpegQuality = q;
+        };
+        AddRow(layout, "JPEG quality (higher = sharper text):", _quality);
 
         _toggle.Click += OnToggle;
         layout.Controls.Add(_toggle, 1, layout.RowCount);
@@ -102,7 +113,7 @@ public sealed class MainForm : Form
 
     private static Label NewValueLabel() => new() { AutoSize = true, Margin = new Padding(3, 6, 3, 6) };
 
-    private static void AddRow(TableLayoutPanel layout, string caption, Label value)
+    private static void AddRow(TableLayoutPanel layout, string caption, Control value)
     {
         int row = layout.RowCount;
         layout.Controls.Add(new Label { Text = caption, AutoSize = true, Margin = new Padding(3, 6, 3, 6) }, 0, row);

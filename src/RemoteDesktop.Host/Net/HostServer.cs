@@ -25,13 +25,20 @@ public sealed class HostServer : IDisposable
     private IScreenCapture? _capture;
 
     private readonly TileDiffer _differ = new(ProtocolConstants.TileSize);
-    private readonly JpegTileEncoder _encoder = new(ProtocolConstants.JpegQuality);
+    private readonly JpegTileEncoder _encoder = new(ProtocolConstants.DefaultJpegQuality);
 
     public RateMeter OutgoingMeter { get; } = new();
     public CaptureMethod Method { get; private set; }
     public string? DxgiFallbackReason { get; private set; }
     public bool IsCapturing { get; private set; }
     public volatile bool ViewerConnected;
+
+    /// <summary>JPEG quality of encoded tiles. Can be changed live from the host window.</summary>
+    public int JpegQuality
+    {
+        get => _encoder.Quality;
+        set => _encoder.SetQuality(value);
+    }
 
     public HostServer(int port = ProtocolConstants.TcpPort, int targetFps = 15)
     {

@@ -12,8 +12,15 @@ public static class ProtocolConstants
     /// <summary>Edge length in pixels of one square tile the screen is divided into.</summary>
     public const int TileSize = 128;
 
-    /// <summary>JPEG quality (0-100) for changed tiles. 70 is the readable-but-small trade-off.</summary>
-    public const int JpegQuality = 70;
+    /// <summary>Default JPEG quality (1-100) for changed tiles. Higher = sharper text, more bytes.
+    /// Text legibility is the primary quality metric for this tool, so this starts high; an idle
+    /// desktop costs almost nothing, so the bandwidth headroom is spent on sharpness. The host can
+    /// change it live from its window.</summary>
+    public const int DefaultJpegQuality = 85;
+
+    /// <summary>Lowest and highest quality offered by the host's live quality control.</summary>
+    public const int MinJpegQuality = 60;
+    public const int MaxJpegQuality = 95;
 
     /// <summary>Identifies our protocol in the handshake, so a wrong program connecting is refused.</summary>
     public const uint HandshakeMagic = 0x52444B31; // ASCII "RDK1"
