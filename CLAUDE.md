@@ -241,9 +241,11 @@ DXGI is exactly why it is the viewer.)
 - The VIEWER VM runs Windows **Server** 2022, not desktop Windows. Fine for development, but
   anything that behaves oddly only there should get a final check on a real Windows 10/11
   desktop before it ships. (The HOST dev PC is Windows 10 Pro — genuine desktop Windows.)
-- **DXGI Desktop Duplication may not work on the VM** — virtual display adapters often cannot
-  provide it, so on the VM the GDI fallback is expected, not a bug. This is the reason the
-  HOST role is pinned to the physical PC (see above).
+- **DXGI on the VM: this one actually works.** Contrary to the earlier assumption, the `.222` VMware
+  VM's adapter DOES provide DXGI Desktop Duplication, so it captures on the fast path by default. To
+  exercise the GDI fallback for comparison, **force it** — the "Run diagnostics (force GDI)" button on
+  the host window, or `--diagnostics <path> <idleSeconds> gdi`. (Other VMs/adapters may still lack DXGI
+  and fall back automatically — that remains expected, not a bug.)
 - Conor sometimes pastes example values literally and sometimes runs a command on the wrong
   machine. Give commands fully filled in with real values, and always name the machine.
 - **A brand-new host machine silently blocks the port — no firewall dialog appears** (hit on the
@@ -336,16 +338,34 @@ performance numbers **off the HOST window on `.223`**, not off the viewer:
    - **BUSY** — a video playing fullscreen on `.223`.
    Report each as FPS and KB/s read from the HOST window.
 
-## Measured performance ceilings (from the built-in diagnostics, 2026-07-29 — they constrain later decisions)
+## Measured performance ceilings (built-in diagnostics, 2026-07-29 — they constrain later decisions)
 
-- **The dev PC `.223` has only 2 logical cores and takes ~36 ms to encode a full 1920×1080 frame**
-  (Release, DXGI). That is the real ceiling on full-motion content — about **16 fps max on `.223`** —
-  and it is a property of that machine, not of the design. Do not misread a full-motion fps limit as
-  a bug.
-- **Full-motion content costs ~3.6–4.8 MB/s** (quality 70→95). That is fine on a LAN and **impossible
-  over the internet** — a typical client's home upload cannot carry it. **Stage 3 must solve this**
-  (adaptive quality driven by measured bandwidth), not discover it. Real support screens are mostly
-  still and cost a tiny fraction of this, but the worst case must be handled deliberately.
+Two figures per machine matter and they differ:
+- **END-TO-END** (real capture + real encode + real moving screen) is the number to quote for anything
+  real, including Stage 3 bandwidth planning.
+- **PATTERN** (synthetic full-screen noise, encode only) is a **~40 % overstated upper bound**, useful
+  only for comparing machines: real desktops have large flat areas that compress far better than
+  noise, so PATTERN runs ~40 % above END-TO-END at the same tile count. Never quote PATTERN as a real
+  figure.
+
+**Full-motion END-TO-END baselines (Release, quality 95):**
+
+| Machine | Capture | fps | bytes/s |
+|---|---|---|---|
+| `.222` VM | DXGI | ~17 | ~2.2 MB/s |
+| `.223` (2 cores) | DXGI | ~13 | ~1.7 MB/s |
+| `.223` (2 cores) | GDI (forced) | ~7 | ~1.0 MB/s |
+
+- **Encode is the ceiling; a fully-changing screen never reaches the 30 fps cap.** Real support
+  screens change little and do hit 30 fps — full motion is the worst case, not the normal case.
+- **`.223` is a slow 2-core machine — the floor, not typical.** `.222` is faster.
+- **GDI roughly halves the frame rate vs DXGI on the same hardware** (`.223`: ~7 vs ~13 fps), because
+  GDI copies the whole screen every frame (~48–76 ms on `.223`) while DXGI wakes only on change.
+- **Quality 95 is nearly free on REAL content** (~7 % more bytes than q70, END-TO-END) though expensive
+  on synthetic noise (~41 % on PATTERN). Real desktop content compresses well at any quality, so the
+  quality-95 LAN default is well justified — but over the internet it still needs adaptive quality.
+- **Full-motion over the internet is impossible** on a typical home upload (~1–2 MB/s). Stage 3 must
+  handle it with adaptive quality/frame-rate, not discover it.
 
 ## Design system (decided 2026-07-29 — palette, type, spacing, states, and the reasoning)
 
@@ -467,9 +487,14 @@ click. Input must arrive reliably and in order even while video frames are dropp
 Replace the typed IP with a **6-digit code**, working across different networks. Relay:
 ASP.NET Core, WebSocket over TCP 443, Linux VPS. Host registers and gets a code; codes
 expire and are safely reused; collisions and guessing prevented; rate-limit code attempts.
-Both programs switch to **outbound** connections. **Add adaptive quality driven by measured
-bandwidth** (the LAN-only quality-95 default from Stage 2 must be revisited here). Full
-first-time-Linux deployment writeup: provider/size with real monthly cost, domain question, every
+Both programs switch to **outbound** connections. **Add adaptive quality AND adaptive frame rate**,
+driven by measured bandwidth and by whether the screen is changing. Two measured justifications:
+(1) full-motion costs ~1–2 MB/s — impossible on a home upload — so quality must fall under bandwidth
+pressure (the LAN-only quality-95 default is revisited here); (2) on the **GDI** path, polling at
+30 fps while nothing changes burns a large fraction of a CPU core continuously (GDI copies the whole
+screen every frame — ~16 ms on a fast client, ~48–76 ms on a slow one), so the client's fan runs the
+whole session and they say the tool slowed their computer. The frame rate must drop toward ~1–2 fps on
+a static screen and ramp up on change. Full first-time-Linux deployment writeup: provider/size with real monthly cost, domain question, every
 command with what it does — each as **one literal copy-paste line** (the format that works for
 Conor, like the firewall rule), TLS from scratch, auto-restart on crash/reboot, how to check status
 and read logs. Honest bandwidth cost at 10 and 50 clients.

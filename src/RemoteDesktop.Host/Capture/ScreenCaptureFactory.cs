@@ -7,19 +7,27 @@ namespace RemoteDesktop.Host.Capture;
 /// </summary>
 public static class ScreenCaptureFactory
 {
-    public static IScreenCapture Create(out string? dxgiFallbackReason)
+    public static IScreenCapture Create(out string? dxgiFallbackReason, bool forceGdi = false)
     {
         dxgiFallbackReason = null;
-        try
+        if (!forceGdi)
         {
-            return new DxgiScreenCapture();
+            try
+            {
+                return new DxgiScreenCapture();
+            }
+            catch (Exception ex)
+            {
+                dxgiFallbackReason = ex.Message;
+            }
         }
-        catch (Exception ex)
+        else
         {
-            dxgiFallbackReason = ex.Message;
-            var bounds = System.Windows.Forms.Screen.PrimaryScreen?.Bounds
-                         ?? new System.Drawing.Rectangle(0, 0, 1920, 1080);
-            return new GdiScreenCapture(bounds.Width, bounds.Height);
+            dxgiFallbackReason = "forced to GDI for the DXGI-vs-GDI comparison";
         }
+
+        var bounds = System.Windows.Forms.Screen.PrimaryScreen?.Bounds
+                     ?? new System.Drawing.Rectangle(0, 0, 1920, 1080);
+        return new GdiScreenCapture(bounds.Width, bounds.Height);
     }
 }

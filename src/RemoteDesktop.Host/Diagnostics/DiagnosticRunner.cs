@@ -29,10 +29,10 @@ public static class DiagnosticRunner
     private const int PatternWidth = 1920;
     private const int PatternHeight = 1080;
 
-    public static string Run(string? outputPath = null, int idleSeconds = 10, int patternFrames = 150)
+    public static string Run(string? outputPath = null, int idleSeconds = 10, int patternFrames = 150, bool forceGdi = false)
     {
         var report = new StringBuilder();
-        using var capture = ScreenCaptureFactory.Create(out var dxgiReason);
+        using var capture = ScreenCaptureFactory.Create(out var dxgiReason, forceGdi);
         string method = capture.Method == CaptureMethod.Dxgi ? "DXGI Desktop Duplication" : "GDI BitBlt (fallback)";
 
         report.AppendLine("RemoteDesktop diagnostics");
@@ -43,7 +43,9 @@ public static class DiagnosticRunner
         report.AppendLine($"Logical CPUs    : {Environment.ProcessorCount}");
         report.AppendLine($"Build config    : {BuildConfig}");
         report.AppendLine($"Capture method  : {method}");
-        if (capture.Method == CaptureMethod.Gdi && !string.IsNullOrEmpty(dxgiReason))
+        if (forceGdi)
+            report.AppendLine("Capture forced  : GDI (for the DXGI-vs-GDI comparison)");
+        else if (capture.Method == CaptureMethod.Gdi && !string.IsNullOrEmpty(dxgiReason))
             report.AppendLine($"                  (DXGI unavailable: {dxgiReason})");
         report.AppendLine($"Captured screen : {capture.Width} x {capture.Height}");
         report.AppendLine($"Pattern size    : {PatternWidth} x {PatternHeight} (identical on every machine)");

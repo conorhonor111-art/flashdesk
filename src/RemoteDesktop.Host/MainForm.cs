@@ -27,6 +27,7 @@ public sealed class MainForm : Form
     private readonly Label _kb = new() { AutoSize = true, Font = Theme.Small, ForeColor = Theme.TextSecondary, Margin = new Padding(0, Theme.S1, 0, 0) };
     private readonly ComboBox _quality = new() { DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = FlatStyle.Flat, Font = Theme.Body, Width = 72, Margin = new Padding(Theme.S2, 0, 0, 0) };
     private readonly Button _diagnostics = Theme.MakeButton("Run diagnostics", ButtonKind.Neutral);
+    private readonly Button _diagnosticsGdi = Theme.MakeButton("Run diagnostics (force GDI)", ButtonKind.Neutral);
     private readonly Button _toggle = Theme.MakeButton("Stop sharing", ButtonKind.Destructive);
     private readonly System.Windows.Forms.Timer _timer = new() { Interval = 500 };
 
@@ -34,8 +35,8 @@ public sealed class MainForm : Form
     {
         Text = "RemoteDesktop — this computer";
         StartPosition = FormStartPosition.CenterScreen;
-        ClientSize = new Size(480, 540);
-        MinimumSize = new Size(440, 480);
+        ClientSize = new Size(500, 560);
+        MinimumSize = new Size(460, 500);
         Theme.ApplyWindow(this);
 
         var root = new FlowLayoutPanel
@@ -81,10 +82,20 @@ public sealed class MainForm : Form
         root.Controls.Add(qualityRow);
         root.Controls.Add(Gap(Theme.S4));
 
-        var buttonRow = HorizontalGroup();
-        _diagnostics.Click += OnRunDiagnostics;
+        var buttonRow = new FlowLayoutPanel
+        {
+            FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = true,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            Margin = new Padding(0),
+            MaximumSize = new Size(440, 0),
+        };
+        _diagnostics.Click += (_, _) => RunDiagnostics(forceGdi: false);
+        _diagnosticsGdi.Click += (_, _) => RunDiagnostics(forceGdi: true);
         _toggle.Click += OnToggle;
         buttonRow.Controls.Add(_diagnostics);
+        buttonRow.Controls.Add(_diagnosticsGdi);
         buttonRow.Controls.Add(_toggle);
         root.Controls.Add(buttonRow);
 
@@ -116,23 +127,29 @@ public sealed class MainForm : Form
         }
     }
 
-    private async void OnRunDiagnostics(object? sender, EventArgs e)
+    // Runs the fixed benchmark, optionally forcing the GDI capture path so DXGI and GDI can be compared
+    // on the same machine. Sharing is stopped for the duration (diagnostics need the capture) then restored.
+    private async void RunDiagnostics(bool forceGdi)
     {
+        var running = forceGdi ? _diagnosticsGdi : _diagnostics;
+        string originalText = running.Text;
         _diagnostics.Enabled = false;
+        _diagnosticsGdi.Enabled = false;
         _toggle.Enabled = false;
-        _diagnostics.Text = "Running… (~1 min)";
+        running.Text = "Running… (~1 min)";
 
         bool wasSharing = _server.IsCapturing;
         if (wasSharing) _server.Stop();
 
         string? path = null;
         string? error = null;
-        try { path = await Task.Run(() => DiagnosticRunner.Run()); }
+        try { path = await Task.Run(() => DiagnosticRunner.Run(forceGdi: forceGdi)); }
         catch (Exception ex) { error = ex.Message; }
 
         if (wasSharing) StartSharing();
-        _diagnostics.Text = "Run diagnostics";
+        running.Text = originalText;
         _diagnostics.Enabled = true;
+        _diagnosticsGdi.Enabled = true;
         _toggle.Enabled = true;
 
         if (error != null)
@@ -156,6 +173,7 @@ public sealed class MainForm : Form
             _stateDot.Text = "■";
             _stateDot.ForeColor = Theme.TextSecondary;
             _stateText.Text = "Stopped — not sharing";
+            _stateText.ForeColor = Theme.TextPrimary;
             _method.Text = _diagnostics.Enabled ? "Sharing is stopped." : "Running diagnostics…";
             _fps.Text = "";
             _kb.Text = "";

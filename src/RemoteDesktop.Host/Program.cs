@@ -13,7 +13,8 @@ internal static class Program
         {
             string? outPath = args.Length > 1 ? args[1] : null;
             int idle = args.Length > 2 && int.TryParse(args[2], out var s) ? s : 10;
-            string written = DiagnosticRunner.Run(outPath, idle);
+            bool forceGdi = args.Contains("gdi");
+            string written = DiagnosticRunner.Run(outPath, idle, forceGdi: forceGdi);
             Console.WriteLine(written);
             return;
         }

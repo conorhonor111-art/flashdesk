@@ -146,3 +146,17 @@ confirm by running diagnostics on .222 and comparing the END-TO-END rows.
   ~43–50 ms/frame. So a fully-changing screen tops out ~13 fps on .223 even on DXGI — encode is the
   ceiling. Real support screens change little and hit the 30 fps cap; full motion is the worst case.
   For Investigation B, run diagnostics on .222 (GDI) and compare the END-TO-END rows directly.
+
+### Investigation B closed + defaults confirmed (2026-07-29)
+
+- **.222 does DXGI too** (VMware adapter provides Desktop Duplication), so the .222 run was DXGI, not
+  GDI. Added a **"Run diagnostics (force GDI)" button** (and `--diagnostics … gdi`) so the GDI path can
+  be measured without a command-line flag — deliberately a button, since Stage 4 runs this on clients.
+- **B answered on identical hardware (.223):** DXGI end-to-end ~13 fps vs **GDI ~7 fps** (GDI capture
+  ~48–76 ms/frame vs DXGI ~7 ms). GDI roughly halves the frame rate. Full-motion END-TO-END baselines
+  now in CLAUDE.md (.222 DXGI ~17, .223 DXGI ~13, .223 GDI ~7).
+- **Confirmed:** 30 fps cap is free on idle (0.6–1.0 KB/s, 0 tiles); PATTERN overstates real bytes by
+  ~40 % (quote END-TO-END, not PATTERN); quality 95 is ~7 % on real content vs ~41 % on noise, so the
+  q95 LAN default stands.
+- **GDI idle-CPU burn → Stage 3 gets adaptive frame rate** (drop to ~1–2 fps when static), with the
+  justification recorded, not just the feature name.
