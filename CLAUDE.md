@@ -90,8 +90,8 @@ any of the four and the program becomes undeployable no matter how good the code
 | Layer | Choice |
 |---|---|
 | Language | C# on .NET 8 |
-| My side (viewer) UI | WPF |
-| Client side UI | WPF, single self-contained `.exe`, no install |
+| My side (viewer) UI | WinForms |
+| Client side UI | WinForms, single self-contained `.exe`, no install |
 | Screen capture | DXGI Desktop Duplication via the `Vortice.Windows` package, GDI `BitBlt` fallback |
 | Video for Phase 1 | Tile-based JPEG diff (see §6) — **not** H.264 |
 | Input injection | Win32 `SendInput` via P/Invoke |
@@ -107,6 +107,20 @@ these choices, raise it before writing code — do not silently substitute.
 **Note on package names (my discovery, keep it):** on NuGet there is no single package
 literally named `Vortice.Windows` — that is the name of the project. The actual packages to
 reference are `Vortice.Direct3D11` and `Vortice.DXGI`. Same library the charter means.
+
+**UI framework — WinForms, not WPF (decided 2026-07-29; the original charter line said WPF,
+which is overridden here, with the reason, so no later session reopens it).** The UI in this
+project is almost nothing: one window showing an ID and status, one window showing a video
+frame. All the real work is capture, encode, network and input injection. WPF would add XAML —
+a second language for Conor to read — for no benefit at this scale, and the projects were
+already scaffolded as WinForms in Stage 0, so converting would cost time for nothing.
+
+**One WinForms constraint that must not be got wrong — the viewer's video display.** Do NOT
+use a `PictureBox` with a fresh `Bitmap` per frame: at 10–15 fps that allocates 10–15 bitmaps
+a second and the garbage collector dominates the profile. Instead use a **double-buffered
+custom control**, hold **one** `Bitmap` for the lifetime of the session, write changed tiles
+into it with **`LockBits`** (direct pixel access, no per-tile GDI+ allocation), and
+**invalidate only the changed rectangles**, not the whole control.
 
 ## 6. Architecture for Phase 1 — the two simplifications that matter
 
@@ -239,13 +253,12 @@ Solution `RemoteDesktop.sln` contains three projects under `src\`:
 
 | Project | Role | Framework |
 |---|---|---|
-| `RemoteDesktop.Host` | Screen capture + serving (runs on the controlled machine) | `net8.0-windows`, WinForms in Stage 1; charter §5 moves UI to WPF |
-| `RemoteDesktop.Viewer` | Display + control (runs where I sit) | `net8.0-windows`, WinForms in Stage 1; WPF per charter §5 |
+| `RemoteDesktop.Host` | Screen capture + serving (runs on the controlled machine) | `net8.0-windows`, WinForms |
+| `RemoteDesktop.Viewer` | Display + control (runs where I sit) | `net8.0-windows`, WinForms |
 | `RemoteDesktop.Shared` | Wire protocol both sides speak | `net8.0`, no UI, no Windows-only APIs |
 
-Note: charter §5 specifies WPF for both UIs. Stage 1 was planned in WinForms because the
-projects were scaffolded that way in Stage 0. This is a real discrepancy to resolve with
-Conor before Stage 1 UI work — do not silently pick one.
+Note: UI framework is **WinForms** for both (decided 2026-07-29, see §5). The earlier charter
+line saying WPF was arbitrary and is overridden — do not reopen it.
 
 Git: branch `main`, local only, no remote. Commit at the end of each stage with a message
 naming the stage. Never commit `bin`/`obj` (already handled by `.gitignore`).
@@ -274,6 +287,23 @@ naming the stage. Never commit `bin`/`obj` (already handled by `.gitignore`).
 - **Latency is measured by round-trip ping, never by comparing timestamps.** The two
   machines' clocks are not synchronised; subtracting them yields meaningless (sometimes
   negative) numbers.
+
+## Measurement procedure (use the same method every stage so numbers stay comparable)
+
+Because the operator sits at the HOST and opens the VIEWER VM window on the same screen, read
+performance numbers **off the HOST window on `.223`**, not off the viewer:
+
+1. On `.223` run the HOST; on `.222` run the VIEWER and connect.
+2. **Minimise the VMware/viewer window entirely.** This removes the mirror. The HOST keeps
+   capturing and sending and its own FPS / KB/s counters keep updating, because the viewer's
+   receive loop runs on a **background thread** and keeps reading and acknowledging frames even
+   while its window is minimised. If a future change makes the viewer stop pulling frames when
+   minimised, this measurement silently breaks and the numbers go stale without warning —
+   guard against it, and sanity-check that the HOST counters still move with the viewer down.
+3. Record **two** numbers every time, so stages stay comparable:
+   - **IDLE** — static desktop, nothing moving on `.223`.
+   - **BUSY** — a video playing fullscreen on `.223`.
+   Report each as FPS and KB/s read from the HOST window.
 
 ## Where this file must live (session working directory)
 
