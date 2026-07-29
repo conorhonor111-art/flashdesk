@@ -204,17 +204,29 @@ DXGI is exactly why it is the viewer.)
      survives the window moving. Watch *or* measure, not both — and treat single-monitor
      FPS/bandwidth as inflated. A second monitor is the only real fix; say so, do not pretend.
 
-2. **The HOST is the machine my hands are on.** During input tests (Stage 2), `.222` drives
-   `.223`'s mouse and keyboard while I am physically sitting at `.223`. I need a kill switch
-   that works **from `.223` itself and depends on neither the network nor the app**:
-   - **Guaranteed kill switch: press `Ctrl+Alt+Delete` on `.223`'s own keyboard.** Windows
-     handles this itself (the Secure Attention Sequence), on a secure desktop that a normal
-     user-mode program cannot touch and `SendInput` cannot reach or suppress until Stage 6. It
-     is immune to both the network and the app. From that screen choose **Task Manager →**
-     find **`RemoteDesktop.Host` → End task**, which stops all capture and injection instantly.
-   - A convenience in-app panic hotkey may be added later, but it depends on the app still
-     working, so it is **not** the guaranteed switch. `Ctrl+Alt+Del` is.
-   - **State this to me before I run the first input test, every time.**
+2. **Input has its OWN feedback loop — so input testing swaps the roles.** If `.223` stays the
+   host during an input test, the viewer inside the VM (on `.223`'s own screen) sends a mouse move
+   to `.223`, whose real cursor then lands back inside the VM window and reads as *more* movement —
+   a runaway loop, and it would look exactly like a coordinate-mapping bug when it is not. This is
+   the mouse version of the video mirror in consequence 1.
+   - **For input/control testing (Stage 2+), swap the roles: `.222` is the HOST (the machine being
+     driven), `.223` is the VIEWER (where my hands are).** The driven cursor then lives inside the
+     VM window and never touches the machine I am sitting at. DXGI is irrelevant here — input
+     injection is identical on a VM.
+   - **This swap is for input/control testing ONLY. All video and capture work keeps `.223` as the
+     HOST** — that is the whole reason the host is pinned to the physical PC (see above). Never let
+     the swap leak into capture measurements.
+   - **Kill switch — know it before the first input test, both directions:**
+     - *Swapped roles (`.222` host, `.223` viewer):* my hands are on `.223`, which is NOT being
+       driven, so the soft stop is trivial — click any window on `.223` outside the viewer, or press
+       the viewer's Disconnect; the viewer stops sending input the instant its picture loses focus.
+       Hard stop on the VM: VMware menu **VM → Send Ctrl+Alt+Del** → Task Manager → End
+       `RemoteDesktop.Host`; or suspend the VM.
+     - *Original roles (`.223` host — if I ever run input that way):* press **`Ctrl+Alt+Delete` on
+       `.223`'s own physical keyboard.** Windows handles it on a secure desktop the app and the
+       remote side cannot touch (until Stage 6) → **Task Manager → `RemoteDesktop.Host` → End
+       task**. This is the guaranteed one, because `.223` is my real machine.
+   - **State the relevant kill switch to me before the first input test, every time.**
 
 3. **Stuck modifiers.** If the connection drops while a modifier is held, `.223` is left with
    Ctrl/Shift/Alt/Win down and is unusable until reboot. The code must **release all modifier
@@ -244,10 +256,16 @@ DXGI is exactly why it is the viewer.)
   `git -C C:\Dev\RemoteDesktop`.
 
 ```
-dotnet build                                      # build everything
-dotnet run --project src\RemoteDesktop.Host       # runs on the HOST machine
-dotnet run --project src\RemoteDesktop.Viewer     # runs on the VIEWER machine
+dotnet build -c Release                                    # build everything (Release)
+dotnet run -c Release --project src\RemoteDesktop.Host      # HOST machine
+dotnet run -c Release --project src\RemoteDesktop.Viewer    # VIEWER machine
 ```
+
+**Always `-c Release` for anything Conor runs to test or measure — no exceptions.** A Debug build
+runs the JPEG encoder several times slower, and the encoder is essentially the whole cost of this
+program, so every FPS / KB-per-second number taken from a Debug host is wrong with no visible sign
+that it is. Whenever I report a measured number, I state which configuration it came from (Release
+unless explicitly noted).
 
 Solution `RemoteDesktop.sln` contains three projects under `src\`:
 
@@ -280,8 +298,9 @@ naming the stage. Never commit `bin`/`obj` (already handled by `.gitignore`).
 
 ## Protocol facts
 
-- TCP port **7789** · tile size **128×128** · JPEG quality **70** — defined once in
-  `Shared/Protocol/ProtocolConstants.cs`, never hard-coded elsewhere.
+- TCP port **7789** · tile size **128×128** · default JPEG quality **85** (operator-adjustable
+  60–95, live) — all defined once in `Shared/Protocol/ProtocolConstants.cs`, never hard-coded
+  elsewhere.
 - Every message is length-prefixed with a type byte, so two frames can never run into each
   other on the wire.
 - **Latency is measured by round-trip ping, never by comparing timestamps.** The two
@@ -289,6 +308,9 @@ naming the stage. Never commit `bin`/`obj` (already handled by `.gitignore`).
   negative) numbers.
 
 ## Measurement procedure (use the same method every stage so numbers stay comparable)
+
+**Every measurement run is a `-c Release` run** (see Environment and commands) — Debug numbers are
+meaningless because the encoder dominates the cost. State the configuration with any number reported.
 
 Because the operator sits at the HOST and opens the VIEWER VM window on the same screen, read
 performance numbers **off the HOST window on `.223`**, not off the viewer:

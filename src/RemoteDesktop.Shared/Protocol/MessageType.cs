@@ -8,4 +8,5 @@ public enum MessageType : byte
     Frame = 3,
     Ping = 4,
     Pong = 5,
+    Input = 6, // viewer -> host: one mouse or keyboard event
 }

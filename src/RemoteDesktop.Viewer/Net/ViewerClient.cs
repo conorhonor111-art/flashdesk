@@ -1,15 +1,21 @@
 using System.Diagnostics;
 using System.Net.Sockets;
+using System.Threading.Channels;
 using RemoteDesktop.Shared.Diagnostics;
 using RemoteDesktop.Shared.Protocol;
 
 namespace RemoteDesktop.Viewer.Net;
 
 /// <summary>
-/// Connects to a host, performs the handshake, then receives frames and measures latency — all on
-/// background threads, so the picture keeps flowing (and the host's counters keep moving) even when
-/// the viewer window is minimised. This is the single place all viewer socket work lives
-/// (architecture rule 2 in CLAUDE.md); Stage 3 swaps the outbound target from a host IP to the relay.
+/// Connects to a host, performs the handshake, then receives frames, measures latency, and sends
+/// input — all on background threads, so the picture keeps flowing (and the host's counters keep
+/// moving) even when the viewer window is minimised. This is the single place all viewer socket work
+/// lives (architecture rule 2 in CLAUDE.md); Stage 3 swaps the outbound target from a host IP to the
+/// relay.
+///
+/// Input is put on an ordered queue and sent by one dedicated task, so mouse and keyboard events
+/// arrive at the host reliably and in the exact order they happened — independent of the frame
+/// stream flowing the other way.
 /// </summary>
 public sealed class ViewerClient : IDisposable
 {
@@ -18,6 +24,10 @@ public sealed class ViewerClient : IDisposable
     private CancellationTokenSource? _cts;
     private Task? _receiveLoop;
     private Task? _pingLoop;
+    private Task? _inputLoop;
+
+    private readonly Channel<InputEvent> _inputQueue =
+        Channel.CreateUnbounded<InputEvent>(new UnboundedChannelOptions { SingleReader = true, SingleWriter = false });
 
     public RateMeter IncomingMeter { get; } = new();
     public double LastLatencyMs { get; private set; }
@@ -43,6 +53,13 @@ public sealed class ViewerClient : IDisposable
         _cts = new CancellationTokenSource();
         _receiveLoop = Task.Run(() => ReceiveLoopAsync(_cts.Token));
         _pingLoop = Task.Run(() => PingLoopAsync(_cts.Token));
+        _inputLoop = Task.Run(() => InputSendLoopAsync(_cts.Token));
+    }
+
+    /// <summary>Queue one input event to be sent to the host, in order. No-op if not connected.</summary>
+    public void SendInput(InputEvent e)
+    {
+        if (IsConnected) _inputQueue.Writer.TryWrite(e);
     }
 
     private async Task ReceiveLoopAsync(CancellationToken ct)
@@ -96,9 +113,21 @@ public sealed class ViewerClient : IDisposable
         catch { /* stops when the connection closes */ }
     }
 
+    // Sends queued input events in order, one at a time, so nothing is reordered on the wire.
+    private async Task InputSendLoopAsync(CancellationToken ct)
+    {
+        try
+        {
+            await foreach (var e in _inputQueue.Reader.ReadAllAsync(ct).ConfigureAwait(false))
+                await _channel!.SendAsync(MessageType.Input, e.ToBytes(), ct).ConfigureAwait(false);
+        }
+        catch { /* stops when the connection closes */ }
+    }
+
     public void Disconnect()
     {
         _cts?.Cancel();
+        _inputQueue.Writer.TryComplete();
         try { _client?.Close(); } catch { /* ignore */ }
         IsConnected = false;
     }
@@ -108,6 +137,7 @@ public sealed class ViewerClient : IDisposable
         Disconnect();
         try { _receiveLoop?.Wait(1000); } catch { /* ignore */ }
         try { _pingLoop?.Wait(1000); } catch { /* ignore */ }
+        try { _inputLoop?.Wait(1000); } catch { /* ignore */ }
         _channel?.Dispose();
         _client?.Dispose();
         _cts?.Dispose();

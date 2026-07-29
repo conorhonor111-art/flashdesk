@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Sockets;
 using RemoteDesktop.Host.Capture;
 using RemoteDesktop.Host.Encoding;
+using RemoteDesktop.Host.Input;
 using RemoteDesktop.Shared.Diagnostics;
 using RemoteDesktop.Shared.Protocol;
 
@@ -9,8 +10,10 @@ namespace RemoteDesktop.Host.Net;
 
 /// <summary>
 /// Listens for one viewer and streams the screen to it: capture -> diff -> encode changed tiles ->
-/// send, at a target frame rate. Also answers latency pings. All networking and capture happen here,
-/// off the UI thread, so the window stays a display-only shell (architecture rule 1 in CLAUDE.md).
+/// send, at a target frame rate; each frame also carries the host cursor position. Reads the
+/// viewer's latency pings and input events and injects the latter with <see cref="InputInjector"/>.
+/// All networking and capture happen here, off the UI thread, so the window stays a display-only
+/// shell (architecture rule 1 in CLAUDE.md).
 ///
 /// This is the single place all socket setup lives (architecture rule 2): Stage 3 replaces the
 /// "listen for an incoming connection" part with "dial out to the relay" and nothing else changes.
@@ -23,6 +26,7 @@ public sealed class HostServer : IDisposable
     private CancellationTokenSource? _cts;
     private Task? _acceptLoop;
     private IScreenCapture? _capture;
+    private InputInjector? _injector;
 
     private readonly TileDiffer _differ = new(ProtocolConstants.TileSize);
     private readonly JpegTileEncoder _encoder = new(ProtocolConstants.DefaultJpegQuality);
@@ -53,6 +57,7 @@ public sealed class HostServer : IDisposable
         _capture = ScreenCaptureFactory.Create(out var reason);
         Method = _capture.Method;
         DxgiFallbackReason = reason;
+        _injector = new InputInjector(_capture.Width, _capture.Height);
         _differ.Configure(_capture.Width, _capture.Height);
         IsCapturing = true;
 
@@ -68,6 +73,8 @@ public sealed class HostServer : IDisposable
         _cts?.Dispose();
         _cts = null;
 
+        _injector?.ReleaseAll();
+        _injector = null;
         _capture?.Dispose();
         _capture = null;
         IsCapturing = false;
@@ -106,6 +113,7 @@ public sealed class HostServer : IDisposable
                     finally
                     {
                         ViewerConnected = false;
+                        _injector?.ReleaseAll(); // never leave a key or button stuck down
                     }
                 }
             }
@@ -136,7 +144,7 @@ public sealed class HostServer : IDisposable
         ViewerConnected = true;
 
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        var pingResponder = PingResponderAsync(channel, linked.Token);
+        var inbound = InboundLoopAsync(channel, linked.Token);
         try
         {
             await FrameLoopAsync(channel, linked.Token).ConfigureAwait(false);
@@ -144,20 +152,29 @@ public sealed class HostServer : IDisposable
         finally
         {
             linked.Cancel();
-            try { await pingResponder.ConfigureAwait(false); } catch { /* ignore */ }
+            try { await inbound.ConfigureAwait(false); } catch { /* ignore */ }
         }
     }
 
-    // Reads incoming messages and echoes each Ping straight back as a Pong. Runs alongside the frame
-    // loop; sends are serialised inside MessageChannel so pong and frame writes never interleave.
-    private static async Task PingResponderAsync(MessageChannel channel, CancellationToken ct)
+    // Reads everything the viewer sends: echoes each Ping as a Pong, and injects each input event.
+    // Runs alongside the frame loop; sends are serialised inside MessageChannel so a Pong and a frame
+    // write never interleave.
+    private async Task InboundLoopAsync(MessageChannel channel, CancellationToken ct)
     {
         while (!ct.IsCancellationRequested)
         {
             var msg = await channel.ReceiveAsync(ct).ConfigureAwait(false);
             if (msg is null) break;
-            if (msg.Value.Type == MessageType.Ping)
-                await channel.SendAsync(MessageType.Pong, msg.Value.Payload, ct).ConfigureAwait(false);
+
+            switch (msg.Value.Type)
+            {
+                case MessageType.Ping:
+                    await channel.SendAsync(MessageType.Pong, msg.Value.Payload, ct).ConfigureAwait(false);
+                    break;
+                case MessageType.Input:
+                    _injector?.Apply(InputEvent.FromBytes(msg.Value.Payload));
+                    break;
+            }
         }
     }
 
@@ -181,7 +198,8 @@ public sealed class HostServer : IDisposable
                 }
             }
 
-            var packet = new FramePacket(frameNumber++, updates);
+            var (cursorX, cursorY, onScreen) = _injector!.GetCursor();
+            var packet = new FramePacket(frameNumber++, updates, cursorX, cursorY, onScreen);
             var bytes = packet.ToBytes();
             await channel.SendAsync(MessageType.Frame, bytes, ct).ConfigureAwait(false);
             OutgoingMeter.Record(1, bytes.Length);

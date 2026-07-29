@@ -67,3 +67,37 @@ Text legibility is now the primary quality metric, ahead of framerate. Changes:
 **Left for later:** encoding still allocates a small Bitmap per changed tile (fine for a support
 screen; revisit only if measured too slow). Re-measure IDLE/BUSY KB/s at quality 85 during the
 legibility retest.
+
+**Legibility retest result (Debug host — see the Release rule now in CLAUDE.md):** quality 80 good,
+85 better (kept 85 as default); 1:1 vs fit about the same on the tested content. Downscaling
+confirmed as the main softener. IDLE ~13–16 KB/s and BUSY 16→400 KB/s were read from a Debug host,
+so they are not trustworthy — re-measure under `-c Release`.
+
+## Stage 2 — Take control (built 2026-07-29; live input test pending, uses SWAPPED roles)
+
+Mouse and keyboard from the viewer are injected on the host with Win32 `SendInput`; each frame now
+also carries the host cursor position so the viewer can draw the remote pointer.
+
+- **Shared:** `InputEvent` (mouse move / button / wheel, and keys by **scan code**; fixed 17-byte
+  layout), `MessageType.Input`, and `FramePacket` gains cursor x / y / visible.
+- **Host:** `InputInjector` — `SendInput` with absolute mouse (0..65535 across the primary screen),
+  keys by scan code with the extended flag, wheel; tracks held keys/buttons and `ReleaseAll` on
+  disconnect, timeout and shutdown so nothing sticks. `HostServer` injects incoming input on its
+  inbound loop and reports the cursor (`GetCursorPos`) in every frame.
+- **Viewer:** `InputCapture` forwards mouse/keyboard only while **Control remote is ticked AND the
+  picture has focus** (safe opt-in). Coordinates mapped to host pixels by `ScreenCanvas` (Fit and
+  1:1); keys converted VK → scan code via `MapVirtualKey`. `ViewerClient` sends input through an
+  ordered queue (one sender task) so events stay in order regardless of the frame stream.
+  `ScreenCanvas` draws the remote pointer as an arrow at the mapped position.
+
+**Decided:** input is opt-in (Control remote default OFF) and only sends while the picture has focus,
+so the operator's own machine is never driven by accident. SendInput (not the deprecated
+`mouse_event`/`keybd_event`) because those inject one event at a time and do not integrate with the
+modern raw-input path.
+
+**Test setup swap (in CLAUDE.md):** for input testing only, `.222` is the HOST and `.223` is the
+VIEWER, to avoid a mouse feedback loop (driving `.223`'s real cursor, which sits under the VM window).
+All video/capture work keeps `.223` as host. Both sides publish as self-contained single-file win-x64
+exes (Host 64.8 MB, Viewer 64.7 MB).
+
+**Not yet verified:** the first live input test. Kill-switch drill to be done first.
