@@ -125,12 +125,11 @@ public sealed class MainForm : Form
     private void OnScreenInfo(ScreenInfo info)
     {
         _tileSize = info.TileSize;
-        if (!IsHandleCreated) return;
-        BeginInvoke(new Action(() =>
+        SafeBeginInvoke(() =>
         {
             _screen.Resize(info.Width, info.Height);
             _canvas.Bind(_screen);
-        }));
+        });
     }
 
     private void OnFrame(FramePacket packet)
@@ -138,27 +137,37 @@ public sealed class MainForm : Form
         foreach (var tile in packet.Tiles)
             _screen.ApplyTile(tile.Column * _tileSize, tile.Row * _tileSize, tile.Jpeg);
 
-        if (!IsHandleCreated) return;
         var tiles = packet.Tiles;
         int cursorX = packet.CursorX, cursorY = packet.CursorY;
         bool cursorVisible = packet.CursorVisible;
-        BeginInvoke(new Action(() =>
+        SafeBeginInvoke(() =>
         {
             foreach (var tile in tiles)
                 _canvas.InvalidateTile(tile.Column * _tileSize, tile.Row * _tileSize, _tileSize, _tileSize);
             _canvas.SetRemoteCursor(cursorX, cursorY, cursorVisible);
-        }));
+        });
     }
 
     private void OnDisconnected(string reason)
     {
-        if (!IsHandleCreated) return;
-        BeginInvoke(new Action(() =>
+        SafeBeginInvoke(() =>
         {
             _connect.Text = "Connect";
             Theme.Style(_connect, ButtonKind.Primary);
             _control.Checked = false;
-        }));
+        });
+    }
+
+    // OnFrame / OnScreenInfo / OnDisconnected fire on ViewerClient's background threads. Marshalling to
+    // the UI thread can race with the window's handle being destroyed as it closes; swallow exactly
+    // that race rather than let it crash the app on shutdown.
+    private void SafeBeginInvoke(Action action)
+    {
+        try
+        {
+            if (IsHandleCreated) BeginInvoke(action);
+        }
+        catch (InvalidOperationException) { } // includes ObjectDisposedException — the handle went away
     }
 
     private string StatusText()
@@ -170,6 +179,7 @@ public sealed class MainForm : Form
 
     protected override void OnFormClosing(FormClosingEventArgs e)
     {
+        _timer.Dispose();
         _client?.Dispose();
         _screen.Dispose();
         base.OnFormClosing(e);

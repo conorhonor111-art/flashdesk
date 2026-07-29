@@ -487,7 +487,11 @@ click. Input must arrive reliably and in order even while video frames are dropp
 Replace the typed IP with a **6-digit code**, working across different networks. Relay:
 ASP.NET Core, WebSocket over TCP 443, Linux VPS. Host registers and gets a code; codes
 expire and are safely reused; collisions and guessing prevented; rate-limit code attempts.
-Both programs switch to **outbound** connections. **Add adaptive quality AND adaptive frame rate**,
+Both programs switch to **outbound** connections. **Consent is built here, moved up from Stage 4**
+(decided 2026-07-29): an incoming connection raises an **Accept / Reject** dialog on the client (with
+the operator's ID/IP) that **times out to Reject after 30 s** — so the moment the program is reachable
+over the internet, nothing connects without a human deciding. The indicator strip, session log and
+packaging stay in Stage 4. **Add adaptive quality AND adaptive frame rate**,
 driven by measured bandwidth and by whether the screen is changing. Two measured justifications:
 (1) full-motion costs ~1–2 MB/s — impossible on a home upload — so quality must fall under bandwidth
 pressure (the LAN-only quality-95 default is revisited here); (2) on the **GDI** path, polling at
@@ -504,8 +508,9 @@ and read logs. Honest bandwidth cost at 10 and 50 clients.
 **Re-read charter §4 in full when this stage begins.** Everything the person on the other
 end needs:
 
-- Incoming connection → dialog showing who is connecting, **Accept / Reject**, **times out
-  to Reject after 30 seconds**. Silence is never yes.
+- **Accept / Reject dialog — moved to Stage 3** (built there, so nothing is ever internet-reachable
+  without a human deciding). It shows who is connecting and **times out to Reject after 30 seconds**;
+  silence is never yes. The remaining bullets stay in Stage 4.
 - Checkboxes putting the client in charge: allow keyboard/mouse, allow clipboard, allow file
   transfer. **The risky ones default to off.**
 - While a session is live, a strip stays on top of everything on the client's screen with a

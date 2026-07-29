@@ -47,20 +47,34 @@ public sealed class FramePacket
         return b;
     }
 
+    // Parses bytes that, at Stage 3, arrive over the internet and cannot be trusted. Every read is
+    // bounds-checked against what is actually present, and nothing is allocated on an attacker-
+    // supplied size, so a malformed or hostile packet fails closed (throws) instead of reading out of
+    // bounds or trying to allocate gigabytes.
+    private const int HeaderSize = 8 + 4 + 4 + 1 + 4; // frame + cursor x,y,visible + tile count
+
     public static FramePacket FromBytes(ReadOnlySpan<byte> b)
     {
+        if (b.Length < HeaderSize) throw new InvalidDataException("FramePacket too short.");
+
         int o = 0;
         long frame = BinaryPrimitives.ReadInt64LittleEndian(b.Slice(o)); o += 8;
         int cursorX = BinaryPrimitives.ReadInt32LittleEndian(b.Slice(o)); o += 4;
         int cursorY = BinaryPrimitives.ReadInt32LittleEndian(b.Slice(o)); o += 4;
         bool cursorVisible = b[o] != 0; o += 1;
         int count = BinaryPrimitives.ReadInt32LittleEndian(b.Slice(o)); o += 4;
-        var tiles = new List<TileUpdate>(count);
+        if (count < 0) throw new InvalidDataException("Negative tile count.");
+
+        // Cap the pre-allocation; the loop still reads all `count` tiles but never trusts `count` for a
+        // huge up-front allocation.
+        var tiles = new List<TileUpdate>(Math.Min(count, 1024));
         for (int i = 0; i < count; i++)
         {
+            if (b.Length - o < 12) throw new InvalidDataException("Truncated tile header.");
             int col = BinaryPrimitives.ReadInt32LittleEndian(b.Slice(o)); o += 4;
             int row = BinaryPrimitives.ReadInt32LittleEndian(b.Slice(o)); o += 4;
             int len = BinaryPrimitives.ReadInt32LittleEndian(b.Slice(o)); o += 4;
+            if (len < 0 || len > b.Length - o) throw new InvalidDataException("Tile length out of range.");
             var jpeg = b.Slice(o, len).ToArray(); o += len;
             tiles.Add(new TileUpdate(col, row, jpeg));
         }

@@ -102,7 +102,7 @@ public sealed class MainForm : Form
         Controls.Add(root);
 
         Load += (_, _) => StartSharing();
-        FormClosing += (_, _) => _server.Dispose();
+        FormClosing += (_, _) => { _server.Dispose(); _timer.Dispose(); };
         _timer.Tick += (_, _) => UpdateStatus();
         _timer.Start();
     }
