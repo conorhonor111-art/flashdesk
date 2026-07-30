@@ -187,7 +187,13 @@ weeks that I cannot see coming.
   or just cheap.
 - **ACCESS_LOST recovery — NOT yet verified by Conor.** The capture-resilience fix has not been run on
   a real session (lock/unlock, UAC prompt, resolution change). The survived/failures counters + capture
-  log exist for exactly this test; Conor reads two numbers.
+  log exist for exactly this test; Conor reads two numbers. (Now runnable ALONE — the host keeps capture
+  alive for health tracking even with no viewer connected.)
+- **Biggest performance lever — option for later, do NOT act now.** `.223` is allocated **2 of the
+  host's 24 cores**; that is a VMware setting, not hardware, so raising it costs nothing. Combined with
+  **parallelising tile encoding across cores** (ruled out earlier only because we assumed the hardware
+  was fixed), this is the largest performance lever the project has — the single-threaded ~36–50 ms/frame
+  encode is the current ceiling. Revisit once the tool works end-to-end.
 
 *(Resolved 2026-07-29, no longer open: `.223` has **2** logical processors — confirmed by OS query, not
 a guess — so "encoding is the ceiling" holds. See the performance-ceilings note.)*
@@ -196,16 +202,16 @@ a guess — so "encoding is the ceiling" holds. See the performance-ceilings not
 
 | Test role | Address | Machine | Prompt |
 |---|---|---|---|
-| **HOST** — screen is captured and controlled; runs `RemoteDesktop.Host` | `192.168.1.223` | Physical dev PC. Also where all code, building and git live. | `C:\Users\PC>` |
+| **HOST** — screen is captured and controlled; runs `RemoteDesktop.Host` | `192.168.1.223` | **VMware VM** (Task Manager: Virtual machine = Yes), **2 vCPU** on a host with a **24-core Intel Xeon Gold 6262 @ 1.9 GHz**, 16 GB RAM. Where all code, building and git live — the dev machine. | `C:\Users\PC>` |
 | **VIEWER** — where I sit to watch and control; runs `RemoteDesktop.Viewer` | `192.168.1.222` | Windows Server 2022 21H2 (build 20348), VMware, user `Administrator`, network profile Private. | `C:\Users\Administrator>` |
 
-**Why the physical PC is the HOST, not the VM — do not reverse this.** DXGI Desktop
-Duplication is the main capture path and it needs a real GPU. The VM has only a virtual
-display adapter, so on the VM capture falls back to GDI. If I only ever captured the VM, I
-would only ever exercise the GDI fallback — while my real clients' machines all have real
-GPUs and will run the DXGI path. That path would then ship completely untested. Capturing the
-physical PC exercises the path that actually matters in production. (The VM's weakness at
-DXGI is exactly why it is the viewer.)
+**Why `.223` is the HOST for video/capture work — do not reverse it.** `.223` is the dev machine
+(code, build, git) and the screen Conor actually sits at, so capturing it is the realistic test.
+**Correction to an earlier belief:** `.223` and `.222` are *both* VMware VMs, and — contrary to the
+original assumption that a VM forces the GDI fallback — **both provide DXGI Desktop Duplication**, so
+the DXGI path real clients use is exercised on `.223` by default. (`.222` is the viewer for video, and
+the roles **swap for input testing** — see consequence 2. Neither machine is a physical PC; the
+earlier "physical dev PC" wording was wrong.)
 
 ### Three consequences of this arrangement — handle each in code, warn me at test time
 
@@ -392,9 +398,10 @@ Two figures per machine matter and they differ:
   count **CONFIRMED = 2** via OS query 2026-07-29 — an Intel Xeon Gold 6262 @ 1.90 GHz presented as two
   single-core sockets, i.e. a slow virtualised allocation. Because the tile encoder is single-threaded,
   the ~36–50 ms/frame full-motion encode is the ceiling regardless; more cores would only help if tile
-  encoding were parallelised later. NB: that CPU signature means `.223` is itself almost certainly
-  virtualised — the "physical dev PC" label elsewhere is probably inaccurate; worth confirming, though
-  it changes nothing, since `.223` does run the DXGI path.)
+  encoding were parallelised later. **CONFIRMED by Task Manager 2026-07-30: `.223` is a VMware VM**
+  (Virtual machine = Yes, Sockets 2, Virtual processors 2), on a 24-core Xeon Gold 6262 host; the
+  RTX 3060 Ti and 180 Hz monitor belong to that host, not to `.223`. So `.223` sees 2 vCPU, no GPU
+  passthrough beyond the virtual adapter, and DXGI still works.)
 - **GDI roughly halves the frame rate vs DXGI on the same hardware** (`.223`: ~7 vs ~13 fps), because
   GDI copies the whole screen every frame (~48–76 ms on `.223`) while DXGI wakes only on change.
 - **Quality 95 is nearly free on REAL content** (~7 % more bytes than q70, END-TO-END) though expensive
@@ -555,7 +562,8 @@ driven by measured bandwidth and by whether the screen is changing. Two measured
 (1) full-motion costs ~1–2 MB/s — impossible on a home upload — so quality must fall under bandwidth
 pressure (the LAN-only quality-95 default is revisited here); (2) on the **GDI** path, polling at
 30 fps while nothing changes burns a large fraction of a CPU core continuously (GDI copies the whole
-screen every frame — ~16 ms on a fast client, ~48–76 ms on a slow one), so the client's fan runs the
+screen every frame — ~16 ms is an *estimate for a hypothetical fast client*, **never a measured `.223`
+figure**; `.223`'s *measured* GDI capture is ~47 ms idle / ~65–76 ms busy), so the client's fan runs the
 whole session and they say the tool slowed their computer. The frame rate must drop toward ~1–2 fps on
 a static screen and ramp up on change. Full first-time-Linux deployment writeup: provider/size with real monthly cost, domain question, every
 command with what it does — each as **one literal copy-paste line** (the format that works for

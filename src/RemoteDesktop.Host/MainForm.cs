@@ -26,6 +26,7 @@ public sealed class MainForm : Form
     private readonly Label _method = NewDetail();
     private readonly Label _fps = NewDetail();
     private readonly Label _kb = NewDetail();
+    private readonly Label _monitoring = NewDetail();
     private readonly Label _survived = NewDetail();
     private readonly Label _failures = NewDetail();
     private readonly ComboBox _quality = new() { DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = FlatStyle.Flat, Font = Theme.Body, Width = 72, Margin = new Padding(Theme.S2, 0, 0, 0) };
@@ -75,6 +76,7 @@ public sealed class MainForm : Form
         root.Controls.Add(_method);
         root.Controls.Add(_fps);
         root.Controls.Add(_kb);
+        root.Controls.Add(_monitoring);
         root.Controls.Add(_survived);
         root.Controls.Add(_failures);
         root.Controls.Add(Gap(Theme.S3));
@@ -143,6 +145,7 @@ public sealed class MainForm : Form
         _diagnosticsGdi.Enabled = false;
         _toggle.Enabled = false;
         running.Text = "Running… (~1 min)";
+        _timer.Stop(); // freeze this window's own readouts so it doesn't contaminate the IDLE measurement
 
         bool wasSharing = _server.IsCapturing;
         if (wasSharing) _server.Stop();
@@ -157,6 +160,7 @@ public sealed class MainForm : Form
         _diagnostics.Enabled = true;
         _diagnosticsGdi.Enabled = true;
         _toggle.Enabled = true;
+        _timer.Start();
 
         if (error != null)
         {
@@ -171,7 +175,13 @@ public sealed class MainForm : Form
 
     private void UpdateStatus()
     {
-        // Capture-health counters persist across start/stop, so show them regardless of state.
+        // Capture-health counters persist across start/stop. Show whether they are actually being
+        // tracked, so a 0 that means "nothing broke" is never mistaken for a 0 that means "nothing watched".
+        bool monitoring = _server.IsCapturing;
+        _monitoring.Text = monitoring
+            ? "Capture health monitoring: active (this window watches even with nobody connected)"
+            : "Capture health monitoring: paused — start sharing to monitor";
+        _monitoring.ForeColor = monitoring ? Theme.Green : Theme.TextSecondary;
         _survived.Text = $"Interruptions survived: {_server.Health.Survived}";
         _failures.Text = $"Capture failures: {_server.Health.Failures}";
         _failures.ForeColor = _server.Health.Failures > 0 ? Theme.Red : Theme.TextSecondary;

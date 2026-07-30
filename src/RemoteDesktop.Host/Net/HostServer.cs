@@ -25,6 +25,8 @@ public sealed class HostServer : IDisposable
 
     private CancellationTokenSource? _cts;
     private Task? _acceptLoop;
+    private Task? _healthLoop;
+    private readonly object _captureLock = new();
     private IScreenCapture? _capture;
     private InputInjector? _injector;
 
@@ -64,20 +66,26 @@ public sealed class HostServer : IDisposable
 
         _cts = new CancellationTokenSource();
         _acceptLoop = Task.Run(() => AcceptLoopAsync(_cts.Token));
+        _healthLoop = Task.Run(() => HealthPollLoopAsync(_cts.Token));
     }
 
     public void Stop()
     {
         _cts?.Cancel();
         try { _acceptLoop?.Wait(2000); } catch { /* ignore shutdown races */ }
+        try { _healthLoop?.Wait(2000); } catch { /* ignore */ }
         _acceptLoop = null;
+        _healthLoop = null;
         _cts?.Dispose();
         _cts = null;
 
         _injector?.ReleaseAll();
         _injector = null;
-        _capture?.Dispose();
-        _capture = null;
+        lock (_captureLock)
+        {
+            _capture?.Dispose();
+            _capture = null;
+        }
         IsCapturing = false;
         ViewerConnected = false;
     }
@@ -199,15 +207,23 @@ public sealed class HostServer : IDisposable
         {
             long loopStart = stopwatch.ElapsedMilliseconds;
 
+            var capture = _capture;
+            if (capture is null) break;
+
             var updates = new List<TileUpdate>();
-            bool captured = _capture.TryCapture(frameIntervalMs, out var frame);
+            CapturedFrame frame = default;
+            bool captured;
+            lock (_captureLock)
+            {
+                captured = capture.TryCapture(frameIntervalMs, out frame);
+            }
 
             // The captured resolution can change mid-session (DXGI recovering at a new resolution after a
             // mode change, or a fall-back to GDI). Reconfigure and tell the viewer the new size.
-            if (_capture.Width != lastWidth || _capture.Height != lastHeight)
+            if (capture.Width != lastWidth || capture.Height != lastHeight)
             {
-                lastWidth = _capture.Width;
-                lastHeight = _capture.Height;
+                lastWidth = capture.Width;
+                lastHeight = capture.Height;
                 _differ.Configure(lastWidth, lastHeight);
                 _injector?.SetScreenSize(lastWidth, lastHeight);
                 await channel.SendAsync(MessageType.ScreenInfo,
@@ -233,6 +249,34 @@ public sealed class HostServer : IDisposable
             int remaining = frameIntervalMs - (int)(stopwatch.ElapsedMilliseconds - loopStart);
             if (remaining > 0)
                 await Task.Delay(remaining, ct).ConfigureAwait(false);
+        }
+    }
+
+    // Keeps capture exercised — and therefore capture-health tracked — even when no viewer is
+    // connected, so locking the screen moves the survived/failures counters without anyone having to
+    // connect a viewer first. Runs at a low rate (~2 fps); while a viewer IS connected the per-session
+    // frame loop does the capturing and this yields (the lock guards the hand-off).
+    private async Task HealthPollLoopAsync(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
+        {
+            int delayMs;
+            if (IsCapturing && !ViewerConnected)
+            {
+                lock (_captureLock)
+                {
+                    try { _capture?.TryCapture(100, out _); }
+                    catch { /* the resilient wrapper handles DXGI failures; never crash the poll */ }
+                }
+                delayMs = 400;
+            }
+            else
+            {
+                delayMs = 200;
+            }
+
+            try { await Task.Delay(delayMs, ct).ConfigureAwait(false); }
+            catch (OperationCanceledException) { break; }
         }
     }
 

@@ -61,9 +61,12 @@ public static class DiagnosticRunner
         // END-TO-END for all qualities is measured in one continuous motion session (one flash).
         var endToEnd = MeasureEndToEndAll(capture, 5);
 
+        double maxIdleTiles = 0;
         foreach (int quality in Qualities)
         {
-            report.AppendLine(Row(quality, "IDLE", MeasureIdle(capture, quality, idleSeconds)));
+            var idle = MeasureIdle(capture, quality, idleSeconds);
+            maxIdleTiles = Math.Max(maxIdleTiles, idle.TilesPerFrame);
+            report.AppendLine(Row(quality, "IDLE", idle));
             report.AppendLine(Row(quality, "PATTERN", MeasurePattern(quality, patternFrames)));
             report.AppendLine(Row(quality, "END-TO-END", endToEnd[quality]));
         }
@@ -74,6 +77,14 @@ public static class DiagnosticRunner
         report.AppendLine("- PATTERN measures the encoder alone on identical content — compare it between two machines.");
         report.AppendLine("- END-TO-END fps is real capture+encode together. On the GDI fallback this is the true ceiling;");
         report.AppendLine("  if it is well under 30, that machine will feel slow no matter what else is right.");
+
+        if (maxIdleTiles > 0.5)
+        {
+            report.AppendLine();
+            report.AppendLine($"** IDLE CONTAMINATED: {maxIdleTiles:0.0} tiles/frame changed during the idle measurement.");
+            report.AppendLine("   Something on screen was updating (a visible window, the taskbar clock, a notification).");
+            report.AppendLine("   A clean idle is ~0 tiles/frame — minimise other windows and rerun for a trustworthy idle figure.");
+        }
 
         outputPath ??= Path.Combine(
             DesktopOrBase(),

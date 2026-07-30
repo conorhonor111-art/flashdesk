@@ -16,7 +16,9 @@ namespace RemoteDesktop.Host.Capture;
 /// </summary>
 public sealed class DxgiScreenCapture : IScreenCapture
 {
-    private const int GiveUpAfterFailedTicks = 150; // ~5 seconds at 30 fps before giving up on DXGI
+    private const int GiveUpAfterMs = 30_000; // ~30 s of continuous failure before giving up on DXGI — a
+                                              // lock/UAC recovers well inside this, and it is rate-
+                                              // independent (a tick count would give up sooner at 2 fps).
 
     private readonly CaptureHealthLog? _health;
     private readonly ID3D11Device _device;
@@ -24,7 +26,7 @@ public sealed class DxgiScreenCapture : IScreenCapture
     private IDXGIOutputDuplication? _duplication;
     private ID3D11Texture2D? _staging;
     private byte[] _buffer = Array.Empty<byte>();
-    private int _failedTicks;
+    private long _failingSince; // Environment.TickCount64 when the current failure streak began; 0 = healthy
 
     public CaptureMethod Method => CaptureMethod.Dxgi;
     public int Width { get; private set; }
@@ -55,7 +57,8 @@ public sealed class DxgiScreenCapture : IScreenCapture
 
         if (!EnsureDuplication())
         {
-            if (++_failedTicks >= GiveUpAfterFailedTicks)
+            if (_failingSince == 0) _failingSince = Environment.TickCount64;
+            else if (Environment.TickCount64 - _failingSince >= GiveUpAfterMs)
                 throw new InvalidOperationException("DXGI Desktop Duplication could not recover.");
             return false;
         }
@@ -93,7 +96,7 @@ public sealed class DxgiScreenCapture : IScreenCapture
                 _context.Unmap(_staging!, 0);
             }
 
-            _failedTicks = 0;
+            _failingSince = 0;
             frame = new CapturedFrame(Width, Height, _buffer);
             return true;
         }
@@ -142,6 +145,7 @@ public sealed class DxgiScreenCapture : IScreenCapture
                 _buffer = new byte[w * h * 4];
             }
 
+            _failingSince = 0;
             _health?.Recovered(CaptureMethod.Dxgi); // no-op unless we were interrupted
             return true;
         }
