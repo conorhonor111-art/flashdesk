@@ -58,10 +58,9 @@ sitting at that machine.
 
 Reference product: AnyDesk (anydesk.com).
 
-**The product is named FlashDesk (2026-07-30).** Conor has bought the domain (the exact domain
-string is not recorded here yet — ask for it when Stage 3 needs it for TLS and the download link,
-and record it then). FlashDesk appears everywhere a person can see; internals deliberately keep
-the RemoteDesktop name — see "Naming — FlashDesk" under Project facts.
+**The product is named FlashDesk (2026-07-30). The domain is `flashdesk.org` (bought,
+confirmed by Conor same day).** FlashDesk appears everywhere a person can see; internals
+deliberately keep the RemoteDesktop name — see "Naming — FlashDesk" under Project facts.
 
 ### Phase 1 — what we are doing now
 
@@ -195,9 +194,8 @@ weeks that I cannot see coming.
   deferred until the datacentre-region recommendation, because location decides it.
 - **Datacentre location — NOT chosen.** Must be the option nearest **Kyiv**; Conor needs a way to
   measure real latency to a candidate **before** paying.
-- **Domain purchase — DONE 2026-07-30.** Conor bought the domain and named the product
-  **FlashDesk**. The exact domain string is not recorded here yet — ask for it when Stage 3 (relay
-  TLS + download link) needs it, and record it then. (The earlier where-to-buy question is moot.)
+- **Domain purchase — DONE 2026-07-30: `flashdesk.org`.** (The earlier where-to-buy question is
+  moot; registrar details to be collected when the DNS record is added.)
 - **Relay sizing — unanswered.** Whether 1 vCPU / 1 GB is genuinely enough at ~3 simultaneous sessions,
   or just cheap.
 - **ACCESS_LOST recovery — VERIFIED by hand 2026-07-30: 3 interruptions survived, 0 failures** (a screen
@@ -825,6 +823,52 @@ governs every later access decision.
   on flaky Wi-Fi losing its ID to itself; a genuinely relocated machine waits at most ~60 s. What
   the client sees during the gap: a neutral "Connection lost — reconnecting…" status (not an
   error, not a changed ID); the number changes only if re-registration is actually refused.
+
+### The download site — flashdesk.org (spec'd by Conor 2026-07-30; built as one static file)
+
+**The site is NARROW on purpose:** one situation — Conor is on the phone with a client whose
+computer is broken; they go to flashdesk.org, get the file, run it, read out a number. No
+marketing, no pricing, no features grid, no cookie banner, no analytics. Anything that is not
+"get the file and run it" lengthens the phone call. The client may be on their PHONE (the broken
+machine is the one that needs help) — phone-first layout, and one line for exactly that case:
+"Open this page on the computer you need help with."
+
+- **The page's real work is TRUST, not looks:** Conor's real name and a real contact that is not
+  the website; a plain what-it-does/what-it-does-not section ("you see everything; close it and
+  it is gone; you can end it any time"); NOTHING invented — no fake company, no "trusted by
+  thousands", no fake address. Placeholders stay visible placeholders until Conor supplies real
+  details.
+- **The scam warning is not optional** and lives where it will be read, not in a footer, verbatim:
+  "If someone phoned you out of the blue and told you to come here, hang up. Only download this
+  if you contacted us yourself."
+- **The SmartScreen paragraph is on the page BEFORE it happens** ("Windows shows a blue warning
+  for new software. Click More info, then Run anyway.") — otherwise every first run produces a
+  frightened phone call at that exact moment.
+- **Page order (fixed):** small mark+name · one line what it is · THE download button (file size,
+  Windows, above the fold on phone) · three read-aloud steps · the SmartScreen paragraph · what
+  it does/does not · the scam warning · who I am + contact. Nothing else.
+- **Palette lock (site ↔ Theme, must never drift):** page background = `Theme.BrandTile #17191E`;
+  the ONE clickable green = `Theme.BrandGreen #2BD16B`; text = `Theme.OperatorHeaderText #ECEFF3`.
+  System fonts only, no downloaded fonts, no animation, no JavaScript. Recorded as a comment in
+  `Theme.cs` and in `site/index.html` — a change in one place must be repeated in the other.
+- **The download URL is STABLE forever:** `https://flashdesk.org/download` serves the current
+  file; new versions replace the file, never the link.
+- **Site must not be able to break the relay:** the relay is its own systemd service; Caddy
+  serves the static site and reverse-proxies the relay; a bad site file cannot touch the relay
+  process, and Caddy refuses to apply an invalid config (keeps running the old one). Health
+  check for Conor after ANY site change: open `https://flashdesk.org/health` — the relay answers
+  with OK + version; if that opens, the relay is alive.
+- **Until Stage 3 makes the file real, the public page must not lie:** the deployed root shows an
+  honest one-line holding page (name + "being set up" + contact), with NO download promise; the
+  real file lives at a private random URL only Conor knows, for his own cross-network testing.
+  The full page goes live only when the 9-digit build actually works over the relay.
+- **The installer question (Conor's own correction):** the public download stays ONE portable
+  file — double-click and it runs, no admin. Inside the app, later, a quiet "Install on this
+  computer" option (Apps & Features entry, uninstaller, firewall rule, autostart; warns BEFORE
+  the admin prompt). **Install must keep the existing 9-digit ID** — implemented as the same
+  adopt-never-regenerate rule as the Stage 6 migration; the install moment IS the migration
+  moment (elevation is available and the installing user is known), so the two compose rather
+  than collide.
 
 **Relay location + provider + domain (location FIRST, price second):** every byte of every session
 crosses the relay, so its physical location sets the whole product's latency (LAN was 1 ms; a

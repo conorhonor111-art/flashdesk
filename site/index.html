@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FlashDesk — remote support for your computer</title>
+<!--
+  PALETTE LOCK with src/RemoteDesktop.UI/Theme.cs (must never drift — see the comment there):
+    background = Theme.BrandTile  #17191E
+    the ONE clickable green = Theme.BrandGreen  #2BD16B
+    text = Theme.OperatorHeaderText  #ECEFF3
+  Rules from CLAUDE.md "The download site": one page, phone-first, no JS, no fonts, no tracking.
+  Placeholders {{LIKE THIS}} are deliberate — Conor fills them; nothing on this page is invented.
+-->
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Crect%20x='1'%20y='1'%20width='14'%20height='14'%20rx='3.5'%20fill='%2317191E'/%3E%3Cpolyline%20points='4.8,2.8%2010.2,13%2012.4,8.6'%20fill='none'%20stroke='%232BD16B'%20stroke-width='2.6'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --tile: #17191E;      /* Theme.BrandTile */
+    --green: #2BD16B;     /* Theme.BrandGreen */
+    --text: #ECEFF3;      /* Theme.OperatorHeaderText */
+    --muted: #A9B1BC;
+    --line: #2E3440;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--tile);
+    color: var(--text);
+    font-family: system-ui, "Segoe UI", Arial, sans-serif;
+    font-size: 1.2rem;
+    line-height: 1.55;
+    padding: 1.5rem 1.25rem 3rem;
+  }
+  main { max-width: 40rem; margin: 0 auto; }
+  header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 2rem; }
+  header svg { width: 2rem; height: 2rem; flex: none; }
+  header span { font-weight: 600; font-size: 1.1rem; letter-spacing: 0.01em; }
+  h1 { font-size: 1.7rem; line-height: 1.25; margin-bottom: 0.75rem; font-weight: 650; }
+  .phone-note { color: var(--muted); margin-bottom: 1.75rem; }
+  .download {
+    display: block;
+    background: var(--green);
+    color: var(--tile);
+    text-align: center;
+    text-decoration: none;
+    font-size: 1.35rem;
+    font-weight: 650;
+    padding: 1.1rem 1.5rem;
+    border-radius: 14px;
+    margin-bottom: 0.6rem;
+  }
+  .download:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; }
+  .download-meta { text-align: center; color: var(--muted); font-size: 1rem; margin-bottom: 2.5rem; }
+  section { margin-bottom: 2.5rem; }
+  h2 { font-size: 1.25rem; margin-bottom: 0.75rem; font-weight: 650; }
+  ol.steps { list-style: none; counter-reset: step; }
+  ol.steps li {
+    counter-increment: step;
+    display: flex; gap: 0.9rem; align-items: baseline;
+    padding: 0.55rem 0;
+  }
+  ol.steps li::before {
+    content: counter(step);
+    color: var(--green);
+    font-weight: 700;
+    font-size: 1.35rem;
+    min-width: 1.4rem;
+    text-align: center;
+  }
+  .plain li { margin: 0.45rem 0 0.45rem 1.2rem; }
+  .warnbox {
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--green);
+    border-radius: 10px;
+    padding: 1rem 1.15rem;
+  }
+  .scam {
+    font-size: 1.3rem;
+    line-height: 1.5;
+    border: 2px solid var(--green);
+    border-radius: 14px;
+    padding: 1.3rem 1.4rem;
+    margin-bottom: 2.5rem;
+  }
+  .who p { margin-bottom: 0.6rem; }
+  a { color: var(--text); }
+  footer { color: var(--muted); font-size: 0.95rem; margin-top: 3rem; }
+  @media (min-width: 640px) {
+    body { padding-top: 3rem; font-size: 1.25rem; }
+    h1 { font-size: 2.1rem; }
+    .download { font-size: 1.5rem; padding: 1.25rem 2rem; }
+  }
+</style>
+</head>
+<body>
+<main>
+
+  <header>
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      <rect x="1" y="1" width="14" height="14" rx="3.5" fill="#17191E" stroke="#2E3440" stroke-width="0.5"/>
+      <polyline points="4.8,2.8 10.2,13 12.4,8.6" fill="none" stroke="#2BD16B" stroke-width="2.6"/>
+    </svg>
+    <span>FlashDesk</span>
+  </header>
+
+  <h1>Remote support for your computer.</h1>
+  <p class="phone-note">Open this page on the computer you need help with.</p>
+
+  <a class="download" href="/download">Download FlashDesk for Windows</a>
+  <p class="download-meta">Free &middot; about 65&nbsp;MB &middot; Windows 10 and 11</p>
+
+  <p class="scam">If someone phoned you out of the blue and told you to come here,
+  <strong>hang up</strong>. Only download this if you contacted us yourself.</p>
+
+  <section>
+    <h2>Three steps</h2>
+    <ol class="steps">
+      <li>Download the file and open it. Nothing installs.</li>
+      <li>It shows you a 9-digit number.</li>
+      <li>Read that number to the person helping you.</li>
+    </ol>
+  </section>
+
+  <section>
+    <div class="warnbox">
+      <h2>Windows will show a blue warning</h2>
+      <p>Windows shows a blue warning for new software it has not seen before. Click
+      <strong>More&nbsp;info</strong>, then <strong>Run&nbsp;anyway</strong>. That is all.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>What this does — and what it does not</h2>
+    <ul class="plain">
+      <li>It lets your helper see and control your screen — <strong>while you watch everything they do</strong>.</li>
+      <li>You can <strong>end the session at any moment</strong> with one click.</li>
+      <li>It <strong>does not run when you close it</strong>. Close the window and it is gone.</li>
+      <li>Nothing is installed unless you choose to install it.</li>
+    </ul>
+  </section>
+
+  <section class="who">
+    <h2>Who is behind this</h2>
+    <p>FlashDesk is made and run by Michael, Billionaire Club CEO.</p>
+    <p>If you want to check who you are talking to, reach me directly —
+    not through this website:
+    <a href="mailto:conor.honor111@gmail.com">conor.honor111@gmail.com</a></p>
+  </section>
+
+  <footer>FlashDesk &middot; flashdesk.org</footer>
+
+</main>
+</body>
+</html>

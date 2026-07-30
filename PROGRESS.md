@@ -440,6 +440,44 @@ colour/size literals outside Theme.cs across Host + UI + Viewer**; only the 4 de
 diagnostics benchmark constants remain. Next: Conor's viewer verdict → commit → Stage 3 (relay,
 FlashDesk ID system, consent + allow-list, adaptive quality/frame rate, deployment writeup).
 
+## Stage 3 planning facts (measured 2026-07-30 from `.223` — keep, they decide the relay)
+
+- **SSH works from `.223`**: OpenSSH_for_Windows 9.5p1 at `C:\Windows\System32\OpenSSH\ssh.exe`
+  (no `~/.ssh` yet — created at key generation). Conor's server workflow (he clicks the provider
+  UI, hands over the address, the session does everything over SSH) is feasible as specified.
+- **Latency from `.223` (8 ICMP pings each, avg/min/max):** Vultr Warsaw **14.0 / 14 / 14 ms** ·
+  Vultr Frankfurt 27 / 27 / 27 · Hetzner Falkenstein 27 / 27 / 27 · Hetzner Nuremberg 29 ·
+  Hetzner Helsinki 44.6 · DigitalOcean FRA/AMS and OVH Warsaw: no ICMP reply (endpoints block
+  ping — but no Frankfurt/Amsterdam location can beat Warsaw's geography anyway).
+- **Conclusion offered to Conor: Vultr Warsaw**, Cloud Compute 1 vCPU / 1 GB (~$5–6/mo, hourly
+  billed, 1 TB traffic). Sizing question answered: the relay is traffic-bound, not CPU-bound —
+  1 vCPU/1 GB genuinely holds ~3 concurrent sessions (relay CPU is trivial byte-piping; RAM
+  ~200 MB; 1 TB/month ≈ hundreds of session-hours at 0.2–1 MB/s). TLS is free (Let's Encrypt via
+  Caddy); the domain is already bought; no other purchases in Phase 1.
+- Stage 3 plan sent for approval: his 6 testable steps, SSH-key workflow (public key pasted at
+  server creation — no passwords in chat), DNS = one A record added by Conor with literal click
+  instructions once the IP exists, third-machine test minimum = any Windows laptop on a phone
+  hotspot. **No Stage 3 code until Conor approves the plan.**
+
+## The download site — flashdesk.org (built 2026-07-30, AWAITING Conor's approval + details)
+
+Domain confirmed and recorded everywhere: **flashdesk.org**. Full site spec (Conor's brief) now in
+CLAUDE.md "The download site": one narrow job (phone call → get file → run → read number),
+trust over looks, the scam warning verbatim and prominent, SmartScreen handled BEFORE it happens,
+phone-first, palette locked to Theme (BrandTile bg / BrandGreen as the ONE clickable green /
+OperatorHeaderText text — lock comments in both Theme.cs and the HTML), stable /download URL,
+site-cannot-break-relay separation with a /health check URL, honest holding page until the
+9-digit build is real (public page never lies; private random URL for Conor's own testing), and
+the installer answer: portable file stays THE download, in-app "Install on this computer" later,
+install ADOPTS the existing ID (same adopt-never-regenerate rule as the Stage-6 migration — the
+install elevation moment IS the migration moment; no collision). Built as ONE static file —
+`site/index.html`, no JS, no fonts, no tracking — with visible {{PLACEHOLDER}}s for Conor's name,
+one-line who/where, phone, email. Verified at a true 375 px viewport (headless-Chrome-on-Windows
+has a ~500 px minimum window that CROPS screenshots — caught and worked around with an iframe
+harness; the page itself was fine) and at 1280 px. NOT committed — awaiting Conor's approval,
+his contact details, and his call on page language (currently English; clients may need
+Ukrainian). Deploys alongside the relay at Stage 3 step 1.
+
 ## Session handover (2026-07-30) — read this and CLAUDE.md before doing anything
 
 Everything below is durable because the conversation it came from is gone. Reasoning is included on
