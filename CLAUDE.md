@@ -58,6 +58,11 @@ sitting at that machine.
 
 Reference product: AnyDesk (anydesk.com).
 
+**The product is named FlashDesk (2026-07-30).** Conor has bought the domain (the exact domain
+string is not recorded here yet — ask for it when Stage 3 needs it for TLS and the download link,
+and record it then). FlashDesk appears everywhere a person can see; internals deliberately keep
+the RemoteDesktop name — see "Naming — FlashDesk" under Project facts.
+
 ### Phase 1 — what we are doing now
 
 A working private tool for me and my own clients. Perhaps 5–30 client machines. It has to be
@@ -79,6 +84,10 @@ phone. I type it in, they press Accept, and I fix the problem on their machine, 
 steps that require an administrator prompt.
 
 Nothing is finished until that full sequence works on a real client machine.
+
+*(2026-07-30 update: the "6-digit code" became the permanent 9-digit **FlashDesk ID** — a
+researched spec from Conor replaces the ephemeral-code idea. See "The FlashDesk ID system" under
+Stage 3.)*
 
 ## 4. Hard rules — do not design around these
 
@@ -186,8 +195,9 @@ weeks that I cannot see coming.
   deferred until the datacentre-region recommendation, because location decides it.
 - **Datacentre location — NOT chosen.** Must be the option nearest **Kyiv**; Conor needs a way to
   measure real latency to a candidate **before** paying.
-- **Domain purchase — NOT done.** Conor has *decided to use* a bought `.com` (not DuckDNS) but has
-  **not bought one**; still needs where to buy and what to avoid at checkout.
+- **Domain purchase — DONE 2026-07-30.** Conor bought the domain and named the product
+  **FlashDesk**. The exact domain string is not recorded here yet — ask for it when Stage 3 (relay
+  TLS + download link) needs it, and record it then. (The earlier where-to-buy question is moot.)
 - **Relay sizing — unanswered.** Whether 1 vCPU / 1 GB is genuinely enough at ~3 simultaneous sessions,
   or just cheap.
 - **ACCESS_LOST recovery — VERIFIED by hand 2026-07-30: 3 interruptions survived, 0 failures** (a screen
@@ -214,6 +224,21 @@ weeks that I cannot see coming.
 
 *(Resolved 2026-07-29, no longer open: `.223` has **2** logical processors — confirmed by OS query, not
 a guess — so "encoding is the ceiling" holds. See the performance-ceilings note.)*
+
+## Naming — FlashDesk (2026-07-30)
+
+The product is **FlashDesk** everywhere a person can see: window titles, headings, the
+executables (`FlashDesk.exe` for the host, `FlashDeskViewer.exe` for the viewer — set via
+`<AssemblyName>`, so Task Manager shows the same names), the capture log
+(`FlashDesk-capture-log.txt` on the Desktop), the diagnostics report
+(`FlashDesk-diagnostics-<machine>-<timestamp>.txt`), and the icons (`assets\FlashDesk.ico` idle +
+`assets\FlashDesk-live.ico` live — see "The icon is an instrument").
+
+**Deliberately NOT renamed (Conor's call): C# namespaces, project names and folders
+(`src\RemoteDesktop.*`), the solution file, and the git repo** — mechanical churn with real
+breakage risk that buys nothing visible. That rename is a recorded LATER task, to be done as its
+own deliberate pass with nothing else mixed in. Until then `dotnet run --project
+src\RemoteDesktop.Host` etc. keep their current paths.
 
 ## Machines and their test roles
 
@@ -273,11 +298,12 @@ earlier "physical dev PC" wording was wrong.)
        driven, so the soft stop is trivial — click any window on `.223` outside the viewer, or press
        the viewer's Disconnect; the viewer stops sending input the instant its picture loses focus.
        Hard stop on the VM: VMware menu **VM → Send Ctrl+Alt+Del** → Task Manager → End
-       `RemoteDesktop.Host`; or suspend the VM.
+       `FlashDesk` (the host process name since the 2026-07-30 rename); or suspend the VM.
      - *Original roles (`.223` host — if I ever run input that way):* press **`Ctrl+Alt+Delete` on
        `.223`'s own physical keyboard.** Windows handles it on a secure desktop the app and the
-       remote side cannot touch (until Stage 6) → **Task Manager → `RemoteDesktop.Host` → End
-       task**. This is the guaranteed one, because `.223` is my real machine.
+       remote side cannot touch (until Stage 6) → **Task Manager → `FlashDesk` → End
+       task** (the host process is named FlashDesk since the 2026-07-30 rename). This is the
+       guaranteed one, because `.223` is my real machine.
    - **State the relevant kill switch to me before the first input test, every time.**
 
 3. **Stuck modifiers.** If the connection drops while a modifier is held, `.223` is left with
@@ -448,20 +474,30 @@ Stage-2/3 boundary.
 
 | Meaning | Colour | Hex |
 |---|---|---|
-| Structure / no state | Neutral grey | window `#F5F6F8`, card `#FFFFFF`, border `#C6CCD4`, text `#1B1F24`, secondary text `#5A626C` |
-| Ready · running · nobody connected | **Green** | `#1E7E34` |
+| Structure / no state | Neutral grey | window `#F5F6F8`, card `#FFFFFF`, border `#C6CCD4`, text `#1B1F24`, secondary text `#606266` (nudged hue-neutral 2026-07-30 from `#5A626C`, which read greenish at Small sizes through ClearType fringing) |
+| Ready · running · nobody connected | **Neutral grey** (dot ● + word; was green until 2026-07-30 — idle should not attract the eye, and freeing green gave it to the brand) | dot/text `#606266` |
+| The brand — the mark ONLY, never a state | **Vivid green on a near-black tile** (decided 2026-07-30) | green `#2BD16B`, tile `#17191E` |
 | A decision being asked right now | **Blue** | `#1A73E8` |
 | A session is LIVE, someone is watching | **Amber** | text/dot `#B26A00`, fill `#F4B400` |
 | Disconnect · reject · revoke (destructive/ending only) | **Red** | `#C5221F` |
 | Operator (viewer) side chrome | Graphite | header `#242931`, text `#ECEFF3` |
 
-**THE rule that matters most — the client's live-session indicator is AMBER, never green.** Green in
-interface convention means "everything is fine, you may ignore this" — which is exactly wrong for an
-indicator whose entire job is to make sure the client never forgets someone is on their machine. It
-must stay noticeable for the whole session. Green would be comfortable and would quietly defeat hard
-rule 2 in §4. Green is correct for the *opposite* state: running, and **nobody** connected. A later
-session that has the hex values but not this reasoning will "harmonise" the indicator to green — do
-not; it is a safety control, not decoration.
+**THE rule that matters most — the client's live-session indicator is AMBER, never green and never
+any "everything is fine" colour.** Green in interface convention means "fine, you may ignore this" —
+exactly wrong for an indicator whose entire job is to make sure the client never forgets someone is
+on their machine. It must stay noticeable for the whole session. A later session that has the hex
+values but not this reasoning will "harmonise" the indicator to something calmer — do not; it is a
+safety control, not decoration. *(Updated 2026-07-30: idle is now a neutral GREY dot + word — idle
+should not attract the eye at all — which gives amber an even calmer field to shout against. Ready
+● and Stopped ■ stay apart by glyph + word, never by colour alone. Green left the semantic set
+entirely and belongs to the brand.)*
+
+**Brand colour rule (2026-07-30, revised same day):** the FlashDesk brand/mark colour must NOT be
+any semantic state colour. One colour one meaning: a colour cannot be both "the brand" and a state
+(AnyDesk made this mistake with red and now cannot use red cleanly for danger). The semantic set
+is now **amber / blue / red**; green was REMOVED from that set precisely so the brand could take
+it — Conor wanted the green, so the system changed instead of the mark: idle became neutral grey,
+and **brand green (`#2BD16B` on tile `#17191E`) lives ONLY in the mark**, never as a signal.
 
 ### Accessibility — non-negotiable
 
@@ -473,8 +509,12 @@ not; it is a safety control, not decoration.
 
 ### Typography and layout
 
-- **One typeface — the Windows system font (Segoe UI).** No downloaded fonts. Four sizes only:
-  Display 24, Heading 12 (semibold), Body 10, Small 9 (pt). Two weights: regular + semibold — note
+- **One typeface — the Windows system font (Segoe UI).** No downloaded fonts. Four sizes:
+  Display 24, Heading 12 (semibold), Body 10, Small 9 (pt) — plus ONE sanctioned exception added
+  2026-07-30: **Hero 30 (semibold), reserved exclusively for the connection code/address hero.**
+  The code is the product's most-seen artifact — a number a stressed person reads aloud over a
+  phone — so it gets the one size outside the scale; using Hero for anything else is a defect.
+  Two weights: regular + semibold — note
   WinForms/Segoe has no true "medium" (500) weight, so semibold (600) is the emphasis weight (still
   lighter than bold, which is not used). *Exception reserved:* if Segoe UI digits prove ambiguous
   when a stressed client reads a code aloud, the sanctioned fallback for the address hero only is
@@ -487,7 +527,8 @@ not; it is a safety control, not decoration.
 
 ### The three states of the client-facing window (Stage 4 builds them fully; recognisable across a room)
 
-1. **READY** — nobody connected. Green dot + lock + "Nobody is connected". The **address is the
+1. **READY** — nobody connected. Neutral grey dot + lock + "Nobody is connected" (grey since
+   2026-07-30 — idle must not attract the eye). The **address is the
    hero**: large, grouped in threes, high contrast, one-click copy, digits set generously for reading
    aloud over a phone.
 2. **INCOMING REQUEST** — a decision, not a status. Blue accent; shows who is asking (name + address);
@@ -512,7 +553,9 @@ is the worst trade available.
 How, specifically, so a later session gets it right:
 - **`GraphicsPath` + `SmoothingMode.AntiAlias`, never `Control.Region`** — Region gives jagged aliased
   edges.
-- **The radius is a `Theme` value and scales with DPI.**
+- **The radius is a `Theme` value and scales with DPI.** Set to **12** (2026-07-30, raised from
+  8 — a timid radius reads as an accident) and there is exactly ONE radius, used everywhere; two
+  radii in one window look like a mistake.
 - **Outer window frame:** try `DwmSetWindowAttribute` with `DWMWA_WINDOW_CORNER_PREFERENCE` (Windows 11
   rounds it at the OS level for free); **degrade cleanly on Windows 10.**
 
@@ -521,6 +564,74 @@ The rest of the pending "design pass": a simple embedded **app icon in both exec
 pressed states on every button** (currently dead surfaces); **real vertical rhythm** (everything on the
 spacing scale, nothing eyeballed); **deliberate default window sizes**; and the **address/code area
 treated as the hero** of the client window. Every value still goes through `Theme` (radius included).
+
+### The icon is an instrument, not a logo (decided + built 2026-07-30)
+
+Six exploration rounds ended in this conclusion: **originality does not exist at 16 px** — every
+depiction lands on a software cliché (a bolt), on this category's own cliché (a monitor — Windows
+RDC, TeamViewer and VNC all use one), or on a competitor's shape. Chrome, Explorer and PowerShell
+are memorable through colour and repetition, not invention. The mark (final, 2026-07-30 — it
+replaced the earlier K1 `#473D8C` disc, which had been chosen by elimination; Conor found a shape
+he actually responds to, and the evidence strip confirmed the new mark beats the disc on
+findability in all three rows): **a bold two-stroke angular form in vivid brand green `#2BD16B`
+on a near-black tile `#17191E`, proportion P3 — the DESCENDING stroke is the long one.** That
+proportion is load-bearing: a checkmark is short-down/long-up, and the inverse is what stops the
+mark reading as a check ("done / verified" is the wrong message on a remote-access tool). Flat,
+no gloss, sharp miter corner. The icon's real job is safety:
+
+- **IDLE** — the green mark on the tile. Quiet, no state meaning (idle status in the window is a
+  grey dot + word).
+- **LIVE** — **the whole mark turns AMBER `#F4B400` and a badge bump appears top-right**
+  (bottom-right is owned by the long stroke), breaking the silhouette — colour change AND shape
+  change, never colour alone — shown the whole time a viewer is connected. This extends hard
+  rule 2 (§4) into the operating system: a minimised window still shows, on the taskbar, that
+  someone is watching.
+
+Mechanics (verified on Windows 10, 2026-07-30, with a real loopback viewer handshake):
+- Swapping `Form.Icon` at runtime updates the title bar and taskbar button instantly
+  (`WM_SETICON`); Windows neither animates nor caches across the swap.
+- **`ShowIcon = false` KILLS the live badge** (verified by test, same day): hiding the title-bar
+  icon makes the taskbar fall back to the exe's static icon, so the runtime swap never reaches
+  the taskbar. The title-bar icon is therefore mandatory — it is the handle that feeds the
+  taskbar, not decoration. Consequence for branding: the brand appears exactly ONCE, in the
+  title bar (icon + "FlashDesk"); the in-window lockup was removed to avoid duplication, and the
+  designed lockup belongs on surfaces that don't carry the safety icon (Stage 3/4 dialogs, the
+  viewer header, the download page).
+- The **exe-file icon stays IDLE always** (Explorer, pinned shortcuts, the emailed file) — right,
+  because a closed program cannot be live.
+- **The tray must never be the safety surface**: Windows 10/11 hide new tray icons in the
+  overflow by default.
+- **ITaskbarList3 overlay badges must never be the mechanism**: Windows 10 does not draw them
+  when "use small taskbar buttons" is on. Reinforcement at best, later.
+
+Files: `assets\FlashDesk.ico` (idle, also the `ApplicationIcon`) and `assets\FlashDesk-live.ico`,
+generated by `assets\make-icon.ps1`, embedded as `FlashDesk.AppIcon` / `FlashDesk.AppIconLive`.
+The identity does NOT live in the icon — it lives in the code hero (`Theme.Hero`), the lockup
+(mark + "FlashDesk" in Segoe UI Semibold at Heading size, K1 on the mark only), and the craft of
+the window itself. Replacing the icon takes five minutes at any point; do not spend rounds on it.
+
+### The host window has TWO VIEWS — simple and technical (decided + BUILT 2026-07-30)
+
+The host window serves two audiences and must never show both the same surface. **Simple view —
+the default, what the client sees:** the FlashDesk mark and name, ONE plain-language status line,
+the connection code as the hero (large — read aloud over a phone by a stressed person), Copy, ONE
+action (Stop sharing), and one small quiet "Technical details" link. **Not one number.**
+**Technical view — behind that link, for Conor:** capture method, fps, KB/s, the health counters,
+the quality selector, both diagnostics buttons, the log button. Why the split is load-bearing: the
+client is non-technical and already anxious that someone is connecting to their machine; developer
+readouts turn the window into a debugging console, and a line like "Capture failures: 0" is
+reassuring to a developer and frightening to a client — they read the word "failures". A later
+session will be tempted to "helpfully" surface a status number in the simple view. Do not — the
+simple view stays number-free.
+
+**The live state must read at a glance, from across a room, without reading a word (Conor,
+2026-07-30):** a full-width status band at the top of the window blends into the window surface
+when idle (neutral grey dot + word — idle does not attract the eye; brand green appears only in
+the mark) and turns SOLID AMBER fill with dark icon + words while a viewer is connected. No animation; never colour alone. The one action
+changes weight with state: **quiet neutral "Stop sharing" while idle** (red shouting when nothing
+is wrong drains red), **full-weight red while live**, blue "Start sharing" when stopped. The
+action row is anchored to the BOTTOM of the window in both views, so the primary action never
+moves when the technical panel opens.
 
 ### What not to do
 
@@ -573,13 +684,16 @@ click. Input must arrive reliably and in order even while video frames are dropp
 
 ## Stage 3 — Work over the internet
 
-Replace the typed IP with a **6-digit code**, working across different networks. Relay:
-ASP.NET Core, WebSocket over TCP 443, Linux VPS. Host registers and gets a code; codes
-expire and are safely reused; collisions and guessing prevented; rate-limit code attempts.
+Replace the typed IP with the **FlashDesk ID** — a permanent 9-digit per-installation address
+(Conor's researched spec, 2026-07-30, replaces the earlier ephemeral 6-digit-code idea; full spec
+in "The FlashDesk ID system" below). Relay: ASP.NET Core, WebSocket over TCP 443, Linux VPS.
+Rate-limit connection attempts per ID and per source.
 Both programs switch to **outbound** connections. **Consent is built here, moved up from Stage 4**
 (decided 2026-07-29): an incoming connection raises an **Accept / Reject** dialog on the client (with
 the operator's ID/IP) that **times out to Reject after 30 s** — so the moment the program is reachable
-over the internet, nothing connects without a human deciding. The indicator strip, session log and
+over the internet, nothing connects without a human deciding. **The allow-list gates this dialog**
+(2026-07-30, see the ID system): a request from an operator ID not on the client's trusted list is
+refused before any dialog appears; an empty list falls back to the dialog. The indicator strip, session log and
 packaging stay in Stage 4. **Add adaptive quality AND adaptive frame rate**,
 driven by measured bandwidth and by whether the screen is changing. Two measured justifications:
 (1) full-motion costs ~1–2 MB/s — impossible on a home upload — so quality must fall under bandwidth
@@ -606,6 +720,106 @@ and read logs. Honest bandwidth cost at 10 and 50 clients.
 - **Serve the client download** as a static file from the same web server that fronts the relay
   (`https://<domain>/download`) — a normal link with my own name on it, same URL across updates, one
   static file, no extra cost.
+
+### The FlashDesk ID system (Stage 3 spec — researched by Conor 2026-07-30)
+
+**THE PRINCIPLE — the ID is an ADDRESS, not a credential.** Nine digits is a billion
+combinations, which sounds like a lot and is not: an internet-facing service WILL be scanned, so
+knowing an ID must never, on its own, get anyone anywhere. What actually protects the machine, in
+order: **(1) the allow-list, when set; (2) the consent dialog the client must actively accept;
+(3) the unattended-access password, if the client ever sets one** — and that last one, when built
+in a later stage, gets rate limiting, exponential backoff, lockout, a visible record of failed
+attempts on the client's own machine, and never a short numeric PIN (reported AnyDesk incidents
+include unattended access that appeared brute-forced despite a complex password). This principle
+governs every later access decision.
+
+- **Permanent per-installation ID: 9 digits, three groups of three (`418 205 793`), digits
+  only.** Nine, not 10-11: the number exists to be read aloud down a phone by a flustered
+  non-technical person, and nine in threes is the edge of reliable; letters would need a phone
+  alphabet clients don't have. First digit 1–9 (a leading zero gets dropped in dictation).
+- **Born on FIRST RUN on the client's machine — never baked into the download.** One exe for
+  everyone; an ID inside the file would give every downloader the same number.
+- **Generated with a cryptographic RNG; NEVER derived from MAC, hostname or any hardware value**
+  — derived IDs leak hardware information and are predictable (RustDesk's MAC-derived path is
+  the cautionary tale).
+- **Public ID + private SECRET** (RustDesk's UUID-mismatch mechanism, done properly): first run
+  also generates a long random secret, stored locally, never displayed, never read aloud, never
+  in the UI. The relay binds ID → secret (server side stores a salted HASH of the secret, so a
+  relay DB leak exposes nothing) and refuses any claim on an ID with the wrong secret. ID taken
+  at first registration → generate a new one, capped retries (~5), then a clear error — never a
+  loop.
+- **Clones — CERTAIN, not hypothetical** (Conor works on VMs; clients' IT clone machines too).
+  **Correction to the naive design: a clone carries the same ID AND the same secret, so
+  wrong-secret refusal does NOT catch it.** The relay must also refuse a second LIVE registration
+  of an ID that is already online — with heartbeat/liveness so a crashed session's stale binding
+  expires instead of locking the real machine out. The refused copy auto-generates a fresh
+  ID + secret and says plainly in the window that its number changed and why. **The window never
+  shows an ID the relay has not accepted** — a valid-looking unreachable number is worse than an
+  error. Known limit (AnyDesk has it too): with identical secrets the relay cannot know which
+  copy is "real"; whichever connects second gets the new number. Deliberate Stage 3 test: clone
+  `.222`, run both, show Conor what happens.
+- **Storage:** `%APPDATA%\FlashDesk\` — user-writable, needs NO administrator rights, and never
+  lives next to the exe. So the ID **survives** program updates, deleting and re-downloading the
+  exe, and emptying the Downloads folder. The secret is DPAPI-protected (CurrentUser). The ID
+  does **not** survive: deleting that folder, a wiped Windows profile, or a different Windows
+  user account on the same machine (per-user config — each account gets its own ID; fine at
+  Phase 1 scale, recorded so it never surprises).
+- **The allow-list — the deliberate advantage over AnyDesk.** The client's copy holds a short
+  list of trusted operator IDs. A request from an ID not on the list is refused BEFORE the
+  consent dialog — the client is never asked, so they cannot be talked into yes. This targets
+  the category's primary abuse pattern (scam calls that walk a person into accepting; in early
+  2025 attackers in the region impersonated CERT-UA with fake "security audit" connection
+  requests). Adding an entry requires action on the client's machine; an empty list falls back
+  to the normal consent dialog so the tool works before setup. **Honest limits, recorded so
+  nobody oversells it:** (a) it guards the FlashDesk door only — it cannot stop a scammer from
+  talking the client into installing a DIFFERENT remote tool; (b) it is only as strong as
+  operator AUTHENTICATION — the relay must verify the connecting operator owns the claimed ID
+  via its secret, and at Stage 5 the allow-list entry pins the operator's PUBLIC KEY with the
+  number as its label, because a bare number can be claimed by anyone who learns it; (c) the
+  empty-list fallback is a persistence vector — one socially-engineered Accept would let an
+  attacker add themselves to the list — so the add-operator confirmation must IGNORE INJECTED
+  INPUT (the host knows which input it injected itself; the remote hand cannot sign its own
+  permission slip); (d) refusals are logged visibly on the client, so a legitimate new operator
+  ID (e.g., after a clone regeneration) can be confirmed over the phone and added deliberately.
+- **Display — the most-seen element of the whole product:** three groups generously spaced,
+  Hero-sized (larger than feels comfortable), digits unambiguous in the typeface, Copy beside it
+  with a VISIBLE copied-confirmation, findable within two seconds of the window opening, and one
+  quiet sentence beneath: **"Only give this number to someone you contacted yourself."** Not a
+  warning box — one line a person actually reads. The AnyDesk-style Alias (name@namespace) stays
+  OUT of Phase 1.
+- **Stage 6 migration is a REQUIREMENT, designed now (Conor, 2026-07-30):** at Stage 6 capture
+  moves into a service running as SYSTEM, and SYSTEM cannot read a user's `%APPDATA%` — so the ID
+  must move to a machine-wide store (e.g. `%ProgramData%\FlashDesk`). **On its first run the
+  service ADOPTS the existing per-user ID and secret rather than generating new ones** —
+  otherwise every client's number changes on update day, exactly when Conor has them written
+  down against client names. Cheap now, expensive then. **Which user's ID, when the machine has
+  several accounts each holding one (rule, 2026-07-30):** the account that performs the
+  install/elevation; if that account has none but others do, the most recently used (latest
+  last-run timestamp in each profile's config); the not-adopted IDs are retired, and those
+  accounts' windows say so plainly on their next open — never a silent change.
+- **Clones are ALSO detected locally, not only at the server — best-effort, with the server as
+  the backstop.** Alongside the ID, store a machine fingerprint and compare it on startup.
+  **NOT the Windows `MachineGuid`** — it lives on the disk, a clone copies the disk, so that
+  check would never fire (Conor's catch 2026-07-30; sysprep exists precisely because of such
+  values). The real candidates are what the hypervisor reassigns when a copy is acknowledged:
+  the **SMBIOS UUID and the MAC address** — and they move together on VMware, where the
+  auto-MAC's last three bytes ARE the UUID tail (read directly off `.223`: UUID `…3FD9AEFB`,
+  MAC `00-0C-29-D9-AE-FB`). **The final pick comes from the Stage 3 clone A/B test** (read the
+  values on `.222`, clone it, read both, choose from what actually differed), not from what
+  sounds like an identifier. Honest limit: an operator answering "I moved it" (or an
+  identity-preserving cloning tool) changes nothing, and local detection stays silent — the
+  relay's second-live-registration refusal is the backstop that always fires. **False-alarm
+  guard:** a changed fingerprint does NOT regenerate the ID by itself; the client first asks the
+  relay whether this ID is live elsewhere — yes → regenerate, no → keep the ID and adopt the new
+  fingerprint (a swapped network card or a docked laptop must never cost a client their number).
+  The no-hardware-derivation rule stays intact: the ID is random; the fingerprint is a separate
+  value used only for change detection.
+- **Heartbeat numbers (decided 2026-07-30): client heartbeats every 20 s; the relay expires a
+  registration after 60 s (three misses); the client retries from ~5 s with backoff to ~30 s.**
+  Why: consumer connections routinely drop for 10–30 s, and 60 s tolerates that without a client
+  on flaky Wi-Fi losing its ID to itself; a genuinely relocated machine waits at most ~60 s. What
+  the client sees during the gap: a neutral "Connection lost — reconnecting…" status (not an
+  error, not a changed ID); the number changes only if re-registration is actually refused.
 
 **Relay location + provider + domain (location FIRST, price second):** every byte of every session
 crosses the relay, so its physical location sets the whole product's latency (LAN was 1 ms; a
@@ -655,7 +869,12 @@ defeat a man-in-the-middle. Explain the whole scheme in plain language before wr
 
 The stage that decides whether the tool is genuinely useful. Today, when Windows shows the
 UAC "allow this app to make changes?" prompt, the operator's screen goes black — exactly when
-control is most needed. Capture and input move into a **Windows service running as LOCAL
+control is most needed.
+
+**Requirement carried from the ID system (see Stage 3): the service must ADOPT the existing
+per-user FlashDesk ID on first run** — SYSTEM cannot read `%APPDATA%`, so the ID moves to a
+machine-wide store, and regenerating instead of migrating would change every client's number on
+update day. The migration is designed into the Stage 3 storage code, not bolted on here. Capture and input move into a **Windows service running as LOCAL
 SYSTEM**; a small **agent in the logged-in user's session** provides dialog, strip and tray
 icon, launched via `WTSQueryUserToken` + `CreateProcessAsUser`; they talk over a **named
 pipe**; the service detects desktop switches, calls `OpenInputDesktop` / `SetThreadDesktop`
@@ -668,7 +887,9 @@ coexist. Write an **automated test for the secure-desktop path**.
 
 Only after Stage 6 works, **one feature at a time**: multiple monitors · clipboard sync ·
 file transfer · auto-reconnect · saved client list · unattended access (password set by the
-client in person, no remote path to enabling it) · in-session chat · quality selector ·
+client in person, no remote path to enabling it — and hardened per the ID principle: rate
+limiting, exponential backoff, lockout, a visible failed-attempt record on the client's machine,
+never a short numeric PIN) · in-session chat · quality selector ·
 H.264 with hardware encoding (only once JPEG tiles are **measured** too slow).
 
 ---

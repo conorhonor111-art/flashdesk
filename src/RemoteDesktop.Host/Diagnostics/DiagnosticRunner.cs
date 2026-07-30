@@ -35,8 +35,8 @@ public static class DiagnosticRunner
         using var capture = ScreenCaptureFactory.Create(out var dxgiReason, forceGdi);
         string method = capture.Method == CaptureMethod.Dxgi ? "DXGI Desktop Duplication" : "GDI BitBlt (fallback)";
 
-        report.AppendLine("RemoteDesktop diagnostics");
-        report.AppendLine("=========================");
+        report.AppendLine("FlashDesk diagnostics");
+        report.AppendLine("=====================");
         report.AppendLine($"Time            : {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
         report.AppendLine($"Machine         : {Environment.MachineName}");
         report.AppendLine($"OS              : {Environment.OSVersion.VersionString}");
@@ -88,7 +88,7 @@ public static class DiagnosticRunner
 
         outputPath ??= Path.Combine(
             DesktopOrBase(),
-            $"RemoteDesktop-diagnostics-{Environment.MachineName}-{DateTime.Now:yyyyMMdd-HHmmss}.txt");
+            $"FlashDesk-diagnostics-{Environment.MachineName}-{DateTime.Now:yyyyMMdd-HHmmss}.txt");
         File.WriteAllText(outputPath, report.ToString());
         return outputPath;
     }

@@ -24,7 +24,7 @@ public sealed class CaptureHealthLog
     {
         var dir = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
         if (string.IsNullOrEmpty(dir)) dir = AppContext.BaseDirectory;
-        LogPath = Path.Combine(dir, "RemoteDesktop-capture-log.txt");
+        LogPath = Path.Combine(dir, "FlashDesk-capture-log.txt");
         Write($"=== Capture log started {DateTime.Now:yyyy-MM-dd HH:mm:ss} ===");
     }
 

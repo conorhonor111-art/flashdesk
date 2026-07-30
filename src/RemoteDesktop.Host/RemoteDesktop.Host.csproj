@@ -6,7 +6,20 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWindowsForms>true</UseWindowsForms>
+    <!-- The product name a client sees: the exe is FlashDesk.exe. Namespaces, project and folder
+         names deliberately stay RemoteDesktop (renaming them is churn with breakage risk and no
+         visible gain — recorded as a separate later task in CLAUDE.md). -->
+    <AssemblyName>FlashDesk</AssemblyName>
+    <ApplicationIcon>..\..\assets\FlashDesk.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Both icons embedded so MainForm can swap the window/taskbar icon at runtime: idle disc
+         normally, amber-badged LIVE while a viewer is connected (extends hard rule 2 to the
+         taskbar). The exe-file icon above stays idle — a closed app cannot be live. -->
+    <EmbeddedResource Include="..\..\assets\FlashDesk.ico" LogicalName="FlashDesk.AppIcon" />
+    <EmbeddedResource Include="..\..\assets\FlashDesk-live.ico" LogicalName="FlashDesk.AppIconLive" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\RemoteDesktop.Shared\RemoteDesktop.Shared.csproj" />

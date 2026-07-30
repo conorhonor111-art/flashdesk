@@ -10,6 +10,8 @@
     <TargetFramework>net8.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
+    <!-- Visible product name (see the note in the Host csproj): the exe is FlashDeskViewer.exe. -->
+    <AssemblyName>FlashDeskViewer</AssemblyName>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 

@@ -32,7 +32,7 @@ public sealed class MainForm : Form
 
     public MainForm()
     {
-        Text = "RemoteDesktop Viewer — operator";
+        Text = "FlashDesk Viewer — operator";
         StartPosition = FormStartPosition.CenterScreen;
         ClientSize = new Size(1000, 660);
         MinimumSize = new Size(640, 480);
