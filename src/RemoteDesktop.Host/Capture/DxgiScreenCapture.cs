@@ -7,21 +7,26 @@ using Vortice.DXGI;
 namespace RemoteDesktop.Host.Capture;
 
 /// <summary>
-/// DXGI Desktop Duplication capture — the fast path. Asks Windows, through the GPU, for the desktop
-/// image and only wakes when it changes. Needs a real graphics adapter, so construction can fail on
-/// a virtual machine; the factory catches that and falls back to GDI.
+/// DXGI Desktop Duplication capture — the fast path. The duplication is fragile: Windows revokes it
+/// (ACCESS_LOST) on a UAC secure-desktop prompt, a lock, a resolution or monitor change, or a user
+/// switch — all routine with a real client. Rather than let that crash the session, this recreates the
+/// duplication (picking up any new resolution) and carries on. If it truly cannot recover after a few
+/// seconds it throws, and <see cref="ResilientScreenCapture"/> drops to GDI for the rest of the session.
 /// </summary>
 public sealed class DxgiScreenCapture : IScreenCapture
 {
+    private const int GiveUpAfterFailedTicks = 150; // ~5 seconds at 30 fps before giving up on DXGI
+
     private readonly ID3D11Device _device;
     private readonly ID3D11DeviceContext _context;
-    private readonly IDXGIOutputDuplication _duplication;
-    private readonly ID3D11Texture2D _staging;
-    private readonly byte[] _buffer;
+    private IDXGIOutputDuplication? _duplication;
+    private ID3D11Texture2D? _staging;
+    private byte[] _buffer = Array.Empty<byte>();
+    private int _failedTicks;
 
     public CaptureMethod Method => CaptureMethod.Dxgi;
-    public int Width { get; }
-    public int Height { get; }
+    public int Width { get; private set; }
+    public int Height { get; private set; }
 
     public DxgiScreenCapture()
     {
@@ -36,49 +41,41 @@ public sealed class DxgiScreenCapture : IScreenCapture
         _device = device!;
         _context = context!;
 
-        using var dxgiDevice = _device.QueryInterface<IDXGIDevice>();
-        using var adapter = dxgiDevice.GetAdapter();
-        adapter.EnumOutputs(0, out IDXGIOutput? output).CheckError();
-        using var output0 = output!;
-        using var output1 = output0.QueryInterface<IDXGIOutput1>();
-        _duplication = output1.DuplicateOutput(_device);
-
-        var desc = _duplication.Description;
-        Width = (int)desc.ModeDescription.Width;
-        Height = (int)desc.ModeDescription.Height;
-
-        var stagingDesc = new Texture2DDescription
-        {
-            Width = (uint)Width,
-            Height = (uint)Height,
-            MipLevels = 1,
-            ArraySize = 1,
-            Format = Format.B8G8R8A8_UNorm,
-            SampleDescription = new SampleDescription(1, 0),
-            Usage = ResourceUsage.Staging,
-            BindFlags = BindFlags.None,
-            CPUAccessFlags = CpuAccessFlags.Read,
-            MiscFlags = ResourceOptionFlags.None,
-        };
-        _staging = _device.CreateTexture2D(stagingDesc);
-        _buffer = new byte[Width * Height * 4];
+        if (!EnsureDuplication())
+            throw new InvalidOperationException("DXGI Desktop Duplication is not available on this display.");
     }
 
     public bool TryCapture(int timeoutMilliseconds, out CapturedFrame frame)
     {
         frame = default;
 
-        Result result = _duplication.AcquireNextFrame((uint)timeoutMilliseconds, out _, out IDXGIResource? desktopResource);
+        if (!EnsureDuplication())
+        {
+            // Could not recreate (e.g. mid mode-switch). Try again next tick; give up after a while.
+            if (++_failedTicks >= GiveUpAfterFailedTicks)
+                throw new InvalidOperationException("DXGI Desktop Duplication could not recover.");
+            return false;
+        }
+
+        Result result = _duplication!.AcquireNextFrame((uint)timeoutMilliseconds, out _, out IDXGIResource? desktopResource);
         if (result == Vortice.DXGI.ResultCode.WaitTimeout)
-            return false;                       // screen unchanged within the timeout
-        result.CheckError();
+            return false; // screen unchanged within the timeout
+
+        if (result == Vortice.DXGI.ResultCode.AccessLost)
+        {
+            // The UAC prompt / lock / resolution-change path. Drop the duplication and rebuild it next
+            // tick. This is exactly the case that used to crash the session.
+            DropDuplication();
+            return false;
+        }
+        result.CheckError(); // anything else is unexpected — let the wrapper fall back to GDI
 
         try
         {
             using var texture = desktopResource!.QueryInterface<ID3D11Texture2D>();
-            _context.CopyResource(_staging, texture);
+            _context.CopyResource(_staging!, texture);
 
-            MappedSubresource map = _context.Map(_staging, 0, MapMode.Read, Vortice.Direct3D11.MapFlags.None);
+            MappedSubresource map = _context.Map(_staging!, 0, MapMode.Read, Vortice.Direct3D11.MapFlags.None);
             try
             {
                 int stride = Width * 4;
@@ -90,23 +87,76 @@ public sealed class DxgiScreenCapture : IScreenCapture
             }
             finally
             {
-                _context.Unmap(_staging, 0);
+                _context.Unmap(_staging!, 0);
             }
 
+            _failedTicks = 0;
             frame = new CapturedFrame(Width, Height, _buffer);
             return true;
         }
         finally
         {
             desktopResource?.Dispose();
-            _duplication.ReleaseFrame();
+            _duplication!.ReleaseFrame();
         }
+    }
+
+    // (Re)create the duplication if we don't have one, adopting a new resolution if it changed. Returns
+    // false — without throwing — when it cannot be created right now (e.g. during a mode switch).
+    private bool EnsureDuplication()
+    {
+        if (_duplication != null) return true;
+        try
+        {
+            using var dxgiDevice = _device.QueryInterface<IDXGIDevice>();
+            using var adapter = dxgiDevice.GetAdapter();
+            adapter.EnumOutputs(0, out IDXGIOutput? output).CheckError();
+            using var output0 = output!;
+            using var output1 = output0.QueryInterface<IDXGIOutput1>();
+            _duplication = output1.DuplicateOutput(_device);
+
+            var desc = _duplication.Description;
+            int w = (int)desc.ModeDescription.Width;
+            int h = (int)desc.ModeDescription.Height;
+            if (w != Width || h != Height || _staging is null)
+            {
+                Width = w;
+                Height = h;
+                _staging?.Dispose();
+                _staging = _device.CreateTexture2D(new Texture2DDescription
+                {
+                    Width = (uint)w,
+                    Height = (uint)h,
+                    MipLevels = 1,
+                    ArraySize = 1,
+                    Format = Format.B8G8R8A8_UNorm,
+                    SampleDescription = new SampleDescription(1, 0),
+                    Usage = ResourceUsage.Staging,
+                    BindFlags = BindFlags.None,
+                    CPUAccessFlags = CpuAccessFlags.Read,
+                    MiscFlags = ResourceOptionFlags.None,
+                });
+                _buffer = new byte[w * h * 4];
+            }
+            return true;
+        }
+        catch
+        {
+            DropDuplication();
+            return false;
+        }
+    }
+
+    private void DropDuplication()
+    {
+        _duplication?.Dispose();
+        _duplication = null;
     }
 
     public void Dispose()
     {
-        _staging.Dispose();
-        _duplication.Dispose();
+        DropDuplication();
+        _staging?.Dispose();
         _context.Dispose();
         _device.Dispose();
     }

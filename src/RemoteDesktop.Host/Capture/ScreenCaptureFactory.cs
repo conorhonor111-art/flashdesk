@@ -2,19 +2,20 @@ namespace RemoteDesktop.Host.Capture;
 
 /// <summary>
 /// Builds a screen capture, trying DXGI Desktop Duplication first and falling back to GDI BitBlt if
-/// DXGI cannot start (for example on a virtual machine without a real GPU). Reports which one won so
-/// the window can display it.
+/// DXGI cannot start. The result is wrapped in <see cref="ResilientScreenCapture"/>, so a DXGI failure
+/// mid-session also falls back to GDI rather than crashing.
 /// </summary>
 public static class ScreenCaptureFactory
 {
     public static IScreenCapture Create(out string? dxgiFallbackReason, bool forceGdi = false)
     {
         dxgiFallbackReason = null;
+
         if (!forceGdi)
         {
             try
             {
-                return new DxgiScreenCapture();
+                return new ResilientScreenCapture(new DxgiScreenCapture());
             }
             catch (Exception ex)
             {
@@ -28,6 +29,6 @@ public static class ScreenCaptureFactory
 
         var bounds = System.Windows.Forms.Screen.PrimaryScreen?.Bounds
                      ?? new System.Drawing.Rectangle(0, 0, 1920, 1080);
-        return new GdiScreenCapture(bounds.Width, bounds.Height);
+        return new ResilientScreenCapture(new GdiScreenCapture(bounds.Width, bounds.Height));
     }
 }

@@ -18,8 +18,8 @@ namespace RemoteDesktop.Host.Input;
 /// </summary>
 public sealed class InputInjector
 {
-    private readonly int _screenWidth;
-    private readonly int _screenHeight;
+    private int _screenWidth;
+    private int _screenHeight;
     private readonly object _gate = new();
     private readonly HashSet<ushort> _downScanCodes = new();
     private readonly HashSet<MouseButton> _downButtons = new();
@@ -28,6 +28,14 @@ public sealed class InputInjector
     {
         _screenWidth = Math.Max(1, screenWidth);
         _screenHeight = Math.Max(1, screenHeight);
+    }
+
+    /// <summary>Update the target screen size after a mid-session resolution change, so absolute mouse
+    /// coordinates keep mapping correctly.</summary>
+    public void SetScreenSize(int width, int height)
+    {
+        _screenWidth = Math.Max(1, width);
+        _screenHeight = Math.Max(1, height);
     }
 
     /// <summary>Inject one event that arrived from the viewer.</summary>

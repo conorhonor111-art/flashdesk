@@ -266,9 +266,16 @@ DXGI is exactly why it is the viewer.)
 
 ```
 dotnet build -c Release                                    # build everything (Release)
+dotnet test  -c Release                                    # run the protocol tests (after EVERY stage)
 dotnet run -c Release --project src\RemoteDesktop.Host      # HOST machine
 dotnet run -c Release --project src\RemoteDesktop.Viewer    # VIEWER machine
 ```
+
+**Run `dotnet test` after every stage.** `RemoteDesktop.Tests` covers the wire protocol only —
+round-trip encode/decode, truncated message, an oversized length prefix, a malformed handshake — and
+holds the hardening in place so a later tidy-up cannot silently reintroduce a bug (e.g. the length
+prefix that once would have allocated 32 GB). Protocol only, by design; do not grow it into a general
+suite.
 
 **Always `-c Release` for anything Conor runs to test or measure — no exceptions.** A Debug build
 runs the JPEG encoder several times slower, and the encoder is essentially the whole cost of this
@@ -503,6 +510,19 @@ command with what it does — each as **one literal copy-paste line** (the forma
 Conor, like the firewall rule), TLS from scratch, auto-restart on crash/reboot, how to check status
 and read logs. Honest bandwidth cost at 10 and 50 clients.
 
+**Stage 3 also carries these (2026-07-29 audit + decisions), each a required line item:**
+- **Consent dialog + session log** move here from Stage 4 (see the consent note above). The session
+  log is a line appended to a plain-text file on the client — who connected, when, operator ID/IP; it
+  is the record of what the consent dialog decided, so the two ship together. (The button that opens
+  the log in Notepad can stay in Stage 4.)
+- **Handshake read timeout:** a peer that connects then sends nothing is dropped after a few seconds,
+  so a stalled or hostile connection cannot hold a slot. Theoretical on the LAN; not on the internet.
+- **Message cap → 16 MB** (from 64 MB) in `MessageChannel`: a frame is normally under 2 MB, so a
+  tighter cap shrinks what an abusive peer can force us to allocate.
+- **Serve the client download** as a static file from the same web server that fronts the relay
+  (`https://<domain>/download`) — a normal link with my own name on it, same URL across updates, one
+  static file, no extra cost.
+
 ## Stage 4 — Safe to hand to a client  (= charter §4)
 
 **Re-read charter §4 in full when this stage begins.** Everything the person on the other
@@ -516,7 +536,8 @@ end needs:
 - While a session is live, a strip stays on top of everything on the client's screen with a
   **Disconnect** button. The operator must have **no way to hide, move or suppress it** —
   the enforcing code must be pointed out explicitly, not merely claimed.
-- Plain-text session log: start, end, operator ID, operator IP. A button opens it in Notepad.
+- **Session log — moved to Stage 3** (it records what the consent dialog decided, so it ships with
+  consent). Stage 4 keeps only the convenience button that opens that log in Notepad.
 - Package the client side as a **single self-contained `.exe`**: no installer, no admin, no
   .NET runtime on the client machine; double-click to a visible code within a couple of
   seconds; closing the window ends everything; target under **40 MB** (report the real size

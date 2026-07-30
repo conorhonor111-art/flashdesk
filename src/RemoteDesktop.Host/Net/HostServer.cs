@@ -32,7 +32,7 @@ public sealed class HostServer : IDisposable
     private readonly JpegTileEncoder _encoder = new(ProtocolConstants.DefaultJpegQuality);
 
     public RateMeter OutgoingMeter { get; } = new();
-    public CaptureMethod Method { get; private set; }
+    public CaptureMethod Method => _capture?.Method ?? CaptureMethod.Dxgi; // live, so a mid-session GDI fallback shows
     public string? DxgiFallbackReason { get; private set; }
     public bool IsCapturing { get; private set; }
     public volatile bool ViewerConnected;
@@ -55,9 +55,9 @@ public sealed class HostServer : IDisposable
         if (_acceptLoop != null) return;
 
         _capture = ScreenCaptureFactory.Create(out var reason);
-        Method = _capture.Method;
         DxgiFallbackReason = reason;
         _injector = new InputInjector(_capture.Width, _capture.Height);
+        _injector.ReleaseAll(); // clear any modifier a previous crashed run left stuck down on this machine
         _differ.Configure(_capture.Width, _capture.Height);
         IsCapturing = true;
 
@@ -192,12 +192,29 @@ public sealed class HostServer : IDisposable
         int frameIntervalMs = Math.Max(1, 1000 / _targetFps);
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
+        int lastWidth = _capture!.Width, lastHeight = _capture.Height;
+
         while (!ct.IsCancellationRequested)
         {
             long loopStart = stopwatch.ElapsedMilliseconds;
 
             var updates = new List<TileUpdate>();
-            if (_capture!.TryCapture(frameIntervalMs, out var frame))
+            bool captured = _capture.TryCapture(frameIntervalMs, out var frame);
+
+            // The captured resolution can change mid-session (DXGI recovering at a new resolution after a
+            // mode change, or a fall-back to GDI). Reconfigure and tell the viewer the new size.
+            if (_capture.Width != lastWidth || _capture.Height != lastHeight)
+            {
+                lastWidth = _capture.Width;
+                lastHeight = _capture.Height;
+                _differ.Configure(lastWidth, lastHeight);
+                _injector?.SetScreenSize(lastWidth, lastHeight);
+                await channel.SendAsync(MessageType.ScreenInfo,
+                    new ScreenInfo(lastWidth, lastHeight, ProtocolConstants.TileSize).ToBytes(), ct).ConfigureAwait(false);
+                captured = false; // send a clean full frame at the new size next tick
+            }
+
+            if (captured)
             {
                 foreach (var tile in _differ.Diff(frame.Pixels, frame.Width, frame.Height))
                 {
