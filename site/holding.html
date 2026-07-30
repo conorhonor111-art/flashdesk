@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FlashDesk</title>
+<!--
+  The honest holding page (CLAUDE.md, "The download site"): served at flashdesk.org until the
+  9-digit client build actually works through the relay. NO download promise — the public page
+  must never lie. Palette locked to Theme.cs: BrandTile / BrandGreen / OperatorHeaderText.
+  When the real line about Conor arrives, it replaces the contact-only paragraph here AND in
+  index.html in the same commit.
+-->
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Crect%20x='1'%20y='1'%20width='14'%20height='14'%20rx='3.5'%20fill='%2317191E'/%3E%3Cpolyline%20points='4.8,2.8%2010.2,13%2012.4,8.6'%20fill='none'%20stroke='%232BD16B'%20stroke-width='2.6'/%3E%3C/svg%3E">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #17191E;            /* Theme.BrandTile */
+    color: #ECEFF3;                 /* Theme.OperatorHeaderText */
+    font-family: system-ui, "Segoe UI", Arial, sans-serif;
+    font-size: 1.25rem;
+    line-height: 1.55;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.25rem;
+  }
+  main { max-width: 34rem; }
+  header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1.5rem; }
+  header svg { width: 2.2rem; height: 2.2rem; flex: none; }
+  header span { font-weight: 650; font-size: 1.2rem; }
+  h1 { font-size: 1.6rem; line-height: 1.3; margin-bottom: 0.9rem; font-weight: 650; }
+  p { color: #A9B1BC; margin-bottom: 0.9rem; }
+  a { color: #ECEFF3; }
+  .accent { color: #2BD16B; }       /* Theme.BrandGreen — text accent only, nothing clickable is green */
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      <rect x="1" y="1" width="14" height="14" rx="3.5" fill="#17191E" stroke="#2E3440" stroke-width="0.5"/>
+      <polyline points="4.8,2.8 10.2,13 12.4,8.6" fill="none" stroke="#2BD16B" stroke-width="2.6"/>
+    </svg>
+    <span>FlashDesk</span>
+  </header>
+  <h1>FlashDesk is being set up.</h1>
+  <p>Remote support for your computer — <span class="accent">coming soon</span>.
+  There is nothing to download here yet.</p>
+  <p>If your helper sent you to this page, they will tell you what to do next.</p>
+  <p>Contact: <a href="mailto:conor.honor111@gmail.com">conor.honor111@gmail.com</a></p>
+</main>
+</body>
+</html>

@@ -853,11 +853,14 @@ machine is the one that needs help) — phone-first layout, and one line for exa
   `Theme.cs` and in `site/index.html` — a change in one place must be repeated in the other.
 - **The download URL is STABLE forever:** `https://flashdesk.org/download` serves the current
   file; new versions replace the file, never the link.
-- **Site must not be able to break the relay:** the relay is its own systemd service; Caddy
-  serves the static site and reverse-proxies the relay; a bad site file cannot touch the relay
-  process, and Caddy refuses to apply an invalid config (keeps running the old one). Health
-  check for Conor after ANY site change: open `https://flashdesk.org/health` — the relay answers
-  with OK + version; if that opens, the relay is alive.
+- **Architecture (revised 2026-07-30 — Conor already OWNS hosting and wants it used):**
+  `flashdesk.org` → his existing web hosting → the site + the `/download` file;
+  `relay.flashdesk.org` → the small Warsaw VPS → the relay ONLY (unless his hosting proves able
+  to run a long-lived custom process — assessed from his control-panel screenshot, never
+  guessed). This makes the site/relay separation PHYSICAL: a broken site cannot touch the relay
+  at all. Health check for Conor after any change: open `https://relay.flashdesk.org/health` —
+  the relay answers OK + version; if that opens, the relay is alive. The Warsaw location
+  decision is unchanged (14 ms / zero jitter, measured twice).
 - **Until Stage 3 makes the file real, the public page must not lie:** the deployed root shows an
   honest one-line holding page (name + "being set up" + contact), with NO download promise; the
   real file lives at a private random URL only Conor knows, for his own cross-network testing.

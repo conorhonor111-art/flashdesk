@@ -478,6 +478,22 @@ harness; the page itself was fine) and at 1280 px. NOT committed — awaiting Co
 his contact details, and his call on page language (currently English; clients may need
 Ukrainian). Deploys alongside the relay at Stage 3 step 1.
 
+## Site approved + committed; Stage 3 step 1 begins (2026-07-30)
+
+Conor approved the page; details filled (name "Michael", line "Billionaire Club CEO", contact
+conor.honor111@gmail.com, language English — one language per page, a second language would be a
+separate URL later). The scam warning moved ABOVE the fold, directly under the download button,
+with more presence (his call: it outranks the SmartScreen box; kept calm, no red). Committed as
+`8af8d98`. **Flag raised to Conor before deploy (charter §8 duty): the "Billionaire Club CEO"
+line and the Michael-vs-conor.honor111 mismatch work against the page's own trust spec — the
+deploy is gated behind the holding page anyway, and the line is a 30-second swap when he supplies
+a real one.** Latency RE-measured before purchase, 20 pings: Vultr Warsaw 14.0 avg (14/14, 20/20
+replies, zero jitter) vs Vultr Frankfurt 27.0 and Hetzner Falkenstein 27.0 — Warsaw stands.
+**Step 1 started:** ed25519 keypair generated at `C:\Users\PC\.ssh\flashdesk_relay` (private key
+never leaves `.223`); public key + literal Vultr click-path handed to Conor (Warsaw, Ubuntu 24.04
+LTS, $5–6 shared-CPU plan, paste the public key at deploy, hostname flashdesk-relay); waiting on
+the server IP, then the whole server setup runs over SSH from `.223`.
+
 ## Session handover (2026-07-30) — read this and CLAUDE.md before doing anything
 
 Everything below is durable because the conversation it came from is gone. Reasoning is included on
