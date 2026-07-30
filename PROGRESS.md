@@ -237,3 +237,54 @@ datacentre, the `.com` purchase, whether 1 vCPU is enough, and Conor's own ACCES
 (not yet run). **Resolved:** `.223` has **2** logical processors — confirmed by OS query, not a guess
 (Xeon Gold 6262 @ 1.9 GHz, two single-core sockets), so "encoding is the ceiling" stands; and that CPU
 signature means `.223` is itself likely virtualised (the "physical PC" label is probably loose).
+
+## Session handover (2026-07-30) — read this and CLAUDE.md before doing anything
+
+Everything below is durable because the conversation it came from is gone. Reasoning is included on
+purpose: a conclusion without its argument gets reversed by a later session (that has already happened
+here — the amber-vs-green indicator, and the square-vs-rounded corners).
+
+- **`.223` is a VMware VM — 2 vCPU on a 24-core Intel Xeon Gold 6262 @ 1.9 GHz host, 16 GB RAM — and
+  Conor reaches it over a REMOTE DESKTOP connection. It is not a physical PC and he is not sitting at
+  it.** Why it matters: it changes how to read every `.223` measurement (capture over RDP is not the
+  same as capture on a machine someone sits at), and it blocks some actions from his side (he could not
+  change the refresh rate for the ACCESS_LOST test — RDP forbids display-settings changes).
+
+- **Biggest performance lever, for later, do NOT act now:** `.223`'s 2 cores are a VMware *setting*,
+  not fixed hardware (24 are available on the host), so raising the allocation is free. Combined with
+  **parallelising the tile encoder** (single-threaded today; ~36–50 ms/frame full-motion encode is the
+  ceiling), this is the largest performance lever the project has. It was ruled out earlier only on the
+  assumption the hardware was fixed — which is now known to be wrong.
+
+- **ACCESS_LOST recovery VERIFIED by hand: 3 interruptions survived, 0 failures** (screen lock + a UAC
+  prompt, no viewer). Item closed. The resilience fix (recreate the DXGI duplication; fall back to GDI
+  only if it can't recover in ~30 s; never crash the session) works.
+
+- **Capture-health monitoring runs even with no viewer connected, on purpose.** The host keeps capture
+  alive at ~2 fps (a low-rate health poll) whenever it is sharing, so a screen lock moves the counters
+  without anyone connecting a viewer first. The window shows "monitoring: active / paused" because a
+  zero that means "nothing broke" and a zero that means "nothing was watched" must never look the same.
+
+- **Open: the `.223` GDI capture number is unresolved (16.1 ms vs ~47 ms).** Both were real readings;
+  do not relabel one as an estimate. Two hypotheses (full detail in CLAUDE.md "Open — not yet
+  decided"): (a) the app window was refreshing during the higher reading; (b) the RDP path changes
+  capture behaviour. Every `.223` number came through RDP, so `.223` figures may not represent a client
+  at a real machine. Resolve before Stage 4 quotes any performance figure.
+
+- **GDI is capture-bound even on an idle screen.** GDI copies the whole screen every frame regardless
+  of change (~47 ms on `.223`), which both caps the frame rate when nothing is happening (~20 fps on
+  `.223`) and burns ~half a core continuously — a client on the GDI fallback gets a hot, fan-spinning
+  machine. Stage 3's adaptive frame rate (drop to ~1–2 fps when static) is the fix, with that
+  justification, not just as a feature name. (Most machines — even VMs — have DXGI, so GDI is rare.)
+
+- **Working rule now in CLAUDE.md §1:** when reporting something as built, verify it the same turn
+  (grep / run / show output) and state how in one line ("Confirmed by X"); if it can't be verified, say
+  so rather than report it done. Prompted by a "20-tile warning" that had been reported as built but
+  never written — Conor can't read code, so the gap must be closed by process.
+
+**State:** Stages 0–2 done and audited; capture resilience + health verified; protocol tests green
+(`dotnet test`, 16/16); host + viewer publish as ~65 MB single-file exes; 0 warnings. **Next: the
+design pass** (rounded corners via GraphicsPath+AntiAlias with a DPI-scaled Theme radius and DWM corner
+preference; app icon in both exes; button hover/pressed; vertical rhythm; deliberate window sizes;
+address/code area as the hero), then show both windows, then the relay-location answer (nearest DC to
+Kyiv + a way to measure latency before paying), then Stage 3.

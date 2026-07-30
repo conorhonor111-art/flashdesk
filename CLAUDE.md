@@ -42,6 +42,11 @@ This governs how you communicate, never how deeply you think:
   prompt. When you genuinely need my eyes, ask ONE yes/no about ONE specific thing, not a table to
   fill in. (This principle produced the diagnostics tool, the END-TO-END measurement, and the
   capture-health counters.)
+- **When you report something as built, verify it in the SAME turn** — grep for it, run it, show the
+  output — and say in one line how ("Confirmed by X"). If you cannot verify it, say so instead of
+  reporting it as done. A report of work done is all Conor has (he cannot read code), so the gap
+  between "intended" and "done" must be closed by process, not good intentions. This is a working
+  rule, not a reaction to any one miss.
 
 ## 2. What we are building
 
@@ -185,10 +190,22 @@ weeks that I cannot see coming.
   **not bought one**; still needs where to buy and what to avoid at checkout.
 - **Relay sizing — unanswered.** Whether 1 vCPU / 1 GB is genuinely enough at ~3 simultaneous sessions,
   or just cheap.
-- **ACCESS_LOST recovery — NOT yet verified by Conor.** The capture-resilience fix has not been run on
-  a real session (lock/unlock, UAC prompt, resolution change). The survived/failures counters + capture
-  log exist for exactly this test; Conor reads two numbers. (Now runnable ALONE — the host keeps capture
-  alive for health tracking even with no viewer connected.)
+- **ACCESS_LOST recovery — VERIFIED by hand 2026-07-30: 3 interruptions survived, 0 failures** (a screen
+  lock + a UAC prompt, no viewer connected). The refresh-rate step could not be run — Conor is on RDP
+  and display settings are blocked over RDP — and 3-survived / 0-failed is enough. **Item closed;** left
+  here only so the resolution and its RDP caveat are not lost. (Runnable ALONE because the host keeps
+  capture alive for health tracking even with no viewer connected.)
+- **The `.223` GDI capture number is UNRESOLVED: 16.1 ms vs ~47 ms.** Both were real readings given to
+  Conor — do **not** settle this by relabelling one as a mere estimate (that was wrong). Two live
+  hypotheses, both worth resolving **before Stage 4 quotes any performance figure to anyone**:
+  (a) **the window** — 16.1 ms came from a headless command-line run; ~47 ms from a run launched with
+  the app window open and refreshing. The idle-contamination fix (stopping the window's refresh timer
+  during diagnostics) concedes the window was a variable, and it may move capture timing, not just idle
+  tile counts. (b) **the remote-desktop path** — Conor reaches `.223` over RDP, and screen capture over
+  RDP behaves differently from capture on a machine someone sits at, and differs again by whether the
+  RDP session is attached or detached. **Every `.223` number this project has produced came through
+  RDP**, so `.223` figures may not represent a client at a real machine. Do not spend diagnostics runs
+  on this mid-handover; resolve it deliberately before quoting numbers.
 - **Biggest performance lever — option for later, do NOT act now.** `.223` is allocated **2 of the
   host's 24 cores**; that is a VMware setting, not hardware, so raising it costs nothing. Combined with
   **parallelising tile encoding across cores** (ruled out earlier only because we assumed the hardware
@@ -204,6 +221,12 @@ a guess — so "encoding is the ceiling" holds. See the performance-ceilings not
 |---|---|---|---|
 | **HOST** — screen is captured and controlled; runs `RemoteDesktop.Host` | `192.168.1.223` | **VMware VM** (Task Manager: Virtual machine = Yes), **2 vCPU** on a host with a **24-core Intel Xeon Gold 6262 @ 1.9 GHz**, 16 GB RAM. Where all code, building and git live — the dev machine. | `C:\Users\PC>` |
 | **VIEWER** — where I sit to watch and control; runs `RemoteDesktop.Viewer` | `192.168.1.222` | Windows Server 2022 21H2 (build 20348), VMware, user `Administrator`, network profile Private. | `C:\Users\Administrator>` |
+
+**Conor reaches `.223` over a REMOTE DESKTOP connection — he is NOT sitting at it.** This affects the
+interpretation of *every* measurement taken on `.223` (screen capture over RDP does not behave like
+capture on a machine someone sits at — see the open capture-timing question), and it blocks some
+actions from his side: he could not change the refresh rate for the ACCESS_LOST test because RDP does
+not allow display-settings changes. Keep this in mind whenever reading a `.223` figure.
 
 **Why `.223` is the HOST for video/capture work — do not reverse it.** `.223` is the dev machine
 (code, build, git) and the screen Conor actually sits at, so capturing it is the realistic test.
@@ -561,11 +584,12 @@ packaging stay in Stage 4. **Add adaptive quality AND adaptive frame rate**,
 driven by measured bandwidth and by whether the screen is changing. Two measured justifications:
 (1) full-motion costs ~1–2 MB/s — impossible on a home upload — so quality must fall under bandwidth
 pressure (the LAN-only quality-95 default is revisited here); (2) on the **GDI** path, polling at
-30 fps while nothing changes burns a large fraction of a CPU core continuously (GDI copies the whole
-screen every frame — ~16 ms is an *estimate for a hypothetical fast client*, **never a measured `.223`
-figure**; `.223`'s *measured* GDI capture is ~47 ms idle / ~65–76 ms busy), so the client's fan runs the
-whole session and they say the tool slowed their computer. The frame rate must drop toward ~1–2 fps on
-a static screen and ramp up on change. Full first-time-Linux deployment writeup: provider/size with real monthly cost, domain question, every
+30 fps while nothing changes both **burns a large fraction of a CPU core continuously** (GDI copies the
+whole screen every frame) **and is capture-bound even on a still screen** — the full-screen copy takes
+longer than a 30 fps interval (~47 ms measured on `.223` → a ~20 fps ceiling with nothing happening),
+so the client's fan runs the whole session and they say the tool slowed their computer. (The `.223`
+GDI capture figure itself is disputed — see "Open — not yet decided".) The frame rate must drop toward
+~1–2 fps on a static screen and ramp up on change. Full first-time-Linux deployment writeup: provider/size with real monthly cost, domain question, every
 command with what it does — each as **one literal copy-paste line** (the format that works for
 Conor, like the firewall rule), TLS from scratch, auto-restart on crash/reboot, how to check status
 and read logs. Honest bandwidth cost at 10 and 50 clients.
