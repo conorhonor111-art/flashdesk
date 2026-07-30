@@ -3,14 +3,20 @@ namespace RemoteDesktop.Host.Capture;
 /// <summary>
 /// Wraps the real capture so a DXGI failure can never crash a session. It runs the inner capture
 /// (DXGI when possible); if DXGI throws — having exhausted its own recovery — this switches to GDI for
-/// the rest of the session instead of letting the exception tear the session down. Because the window
-/// reads the capture method live, the display updates itself when a switch happens.
+/// the rest of the session, records the failure in the <see cref="CaptureHealthLog"/>, and keeps
+/// going. Because the window reads the capture method live, the display updates itself when a switch
+/// happens.
 /// </summary>
 public sealed class ResilientScreenCapture : IScreenCapture
 {
+    private readonly CaptureHealthLog? _health;
     private IScreenCapture _inner;
 
-    public ResilientScreenCapture(IScreenCapture inner) => _inner = inner;
+    public ResilientScreenCapture(IScreenCapture inner, CaptureHealthLog? health = null)
+    {
+        _inner = inner;
+        _health = health;
+    }
 
     public CaptureMethod Method => _inner.Method;
     public int Width => _inner.Width;
@@ -26,6 +32,7 @@ public sealed class ResilientScreenCapture : IScreenCapture
         {
             // DXGI has given up. Fall back to GDI and keep the session alive.
             frame = default;
+            _health?.FellBack(CaptureMethod.Dxgi, CaptureMethod.Gdi);
             var dead = _inner;
             _inner = NewGdi();
             try { dead.Dispose(); } catch { /* ignore */ }

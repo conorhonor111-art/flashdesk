@@ -10,13 +10,15 @@ namespace RemoteDesktop.Host.Capture;
 /// DXGI Desktop Duplication capture — the fast path. The duplication is fragile: Windows revokes it
 /// (ACCESS_LOST) on a UAC secure-desktop prompt, a lock, a resolution or monitor change, or a user
 /// switch — all routine with a real client. Rather than let that crash the session, this recreates the
-/// duplication (picking up any new resolution) and carries on. If it truly cannot recover after a few
-/// seconds it throws, and <see cref="ResilientScreenCapture"/> drops to GDI for the rest of the session.
+/// duplication (picking up any new resolution) and carries on, reporting each loss and recovery to the
+/// <see cref="CaptureHealthLog"/>. If it truly cannot recover after a few seconds it throws, and
+/// <see cref="ResilientScreenCapture"/> drops to GDI for the rest of the session.
 /// </summary>
 public sealed class DxgiScreenCapture : IScreenCapture
 {
     private const int GiveUpAfterFailedTicks = 150; // ~5 seconds at 30 fps before giving up on DXGI
 
+    private readonly CaptureHealthLog? _health;
     private readonly ID3D11Device _device;
     private readonly ID3D11DeviceContext _context;
     private IDXGIOutputDuplication? _duplication;
@@ -28,8 +30,10 @@ public sealed class DxgiScreenCapture : IScreenCapture
     public int Width { get; private set; }
     public int Height { get; private set; }
 
-    public DxgiScreenCapture()
+    public DxgiScreenCapture(CaptureHealthLog? health = null)
     {
+        _health = health;
+
         D3D11.D3D11CreateDevice(
             null!, // default adapter
             DriverType.Hardware,
@@ -51,7 +55,6 @@ public sealed class DxgiScreenCapture : IScreenCapture
 
         if (!EnsureDuplication())
         {
-            // Could not recreate (e.g. mid mode-switch). Try again next tick; give up after a while.
             if (++_failedTicks >= GiveUpAfterFailedTicks)
                 throw new InvalidOperationException("DXGI Desktop Duplication could not recover.");
             return false;
@@ -63,8 +66,8 @@ public sealed class DxgiScreenCapture : IScreenCapture
 
         if (result == Vortice.DXGI.ResultCode.AccessLost)
         {
-            // The UAC prompt / lock / resolution-change path. Drop the duplication and rebuild it next
-            // tick. This is exactly the case that used to crash the session.
+            // The UAC prompt / lock / resolution-change path. Rebuild the duplication next tick.
+            _health?.Interrupted(CaptureMethod.Dxgi, "DXGI access lost (UAC prompt, lock, or resolution/monitor change)");
             DropDuplication();
             return false;
         }
@@ -138,10 +141,13 @@ public sealed class DxgiScreenCapture : IScreenCapture
                 });
                 _buffer = new byte[w * h * 4];
             }
+
+            _health?.Recovered(CaptureMethod.Dxgi); // no-op unless we were interrupted
             return true;
         }
         catch
         {
+            _health?.Interrupted(CaptureMethod.Dxgi, "DXGI duplication could not be recreated yet");
             DropDuplication();
             return false;
         }

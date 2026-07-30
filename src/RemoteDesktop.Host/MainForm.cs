@@ -9,10 +9,11 @@ namespace RemoteDesktop.Host;
 
 /// <summary>
 /// The host (client-facing) window. It is only a display shell over HostServer. Styled with the
-/// shared <see cref="Theme"/>: neutral surface, green when nobody is connected, amber when a viewer
-/// is watching (never green while live — see the Design system section of CLAUDE.md). The address
-/// area is a marked placeholder: it shows the LAN address today and becomes the 6-digit code in
-/// Stage 3.
+/// shared <see cref="Theme"/>: green when nobody is connected, amber when a viewer is watching. It
+/// also shows the capture-health counters (interruptions survived / capture failures) and a button to
+/// open the capture log, so a non-technical person can verify the session survived a lock or a UAC
+/// prompt by reading two numbers instead of watching indicators. The address area is a marked
+/// placeholder that becomes the 6-digit code in Stage 3.
 /// </summary>
 public sealed class MainForm : Form
 {
@@ -22,12 +23,15 @@ public sealed class MainForm : Form
     private readonly Label _stateText = Theme.HeadingLabel("");
     private readonly Label _address = new() { AutoSize = true, Font = Theme.Display, ForeColor = Theme.TextPrimary, Margin = new Padding(0, Theme.S1, 0, 0) };
     private readonly Button _copy = Theme.MakeButton("Copy", ButtonKind.Neutral);
-    private readonly Label _method = new() { AutoSize = true, Font = Theme.Small, ForeColor = Theme.TextSecondary, Margin = new Padding(0, Theme.S1, 0, 0) };
-    private readonly Label _fps = new() { AutoSize = true, Font = Theme.Small, ForeColor = Theme.TextSecondary, Margin = new Padding(0, Theme.S1, 0, 0) };
-    private readonly Label _kb = new() { AutoSize = true, Font = Theme.Small, ForeColor = Theme.TextSecondary, Margin = new Padding(0, Theme.S1, 0, 0) };
+    private readonly Label _method = NewDetail();
+    private readonly Label _fps = NewDetail();
+    private readonly Label _kb = NewDetail();
+    private readonly Label _survived = NewDetail();
+    private readonly Label _failures = NewDetail();
     private readonly ComboBox _quality = new() { DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = FlatStyle.Flat, Font = Theme.Body, Width = 72, Margin = new Padding(Theme.S2, 0, 0, 0) };
     private readonly Button _diagnostics = Theme.MakeButton("Run diagnostics", ButtonKind.Neutral);
     private readonly Button _diagnosticsGdi = Theme.MakeButton("Run diagnostics (force GDI)", ButtonKind.Neutral);
+    private readonly Button _openLog = Theme.MakeButton("Open capture log", ButtonKind.Neutral);
     private readonly Button _toggle = Theme.MakeButton("Stop sharing", ButtonKind.Destructive);
     private readonly System.Windows.Forms.Timer _timer = new() { Interval = 500 };
 
@@ -35,8 +39,8 @@ public sealed class MainForm : Form
     {
         Text = "RemoteDesktop — this computer";
         StartPosition = FormStartPosition.CenterScreen;
-        ClientSize = new Size(500, 560);
-        MinimumSize = new Size(460, 500);
+        ClientSize = new Size(500, 600);
+        MinimumSize = new Size(460, 540);
         Theme.ApplyWindow(this);
 
         var root = new FlowLayoutPanel
@@ -71,6 +75,8 @@ public sealed class MainForm : Form
         root.Controls.Add(_method);
         root.Controls.Add(_fps);
         root.Controls.Add(_kb);
+        root.Controls.Add(_survived);
+        root.Controls.Add(_failures);
         root.Controls.Add(Gap(Theme.S3));
 
         var qualityRow = HorizontalGroup();
@@ -89,13 +95,15 @@ public sealed class MainForm : Form
             AutoSize = true,
             AutoSizeMode = AutoSizeMode.GrowAndShrink,
             Margin = new Padding(0),
-            MaximumSize = new Size(440, 0),
+            MaximumSize = new Size(452, 0),
         };
         _diagnostics.Click += (_, _) => RunDiagnostics(forceGdi: false);
         _diagnosticsGdi.Click += (_, _) => RunDiagnostics(forceGdi: true);
+        _openLog.Click += (_, _) => OpenFile(_server.Health.LogPath);
         _toggle.Click += OnToggle;
         buttonRow.Controls.Add(_diagnostics);
         buttonRow.Controls.Add(_diagnosticsGdi);
+        buttonRow.Controls.Add(_openLog);
         buttonRow.Controls.Add(_toggle);
         root.Controls.Add(buttonRow);
 
@@ -127,8 +135,6 @@ public sealed class MainForm : Form
         }
     }
 
-    // Runs the fixed benchmark, optionally forcing the GDI capture path so DXGI and GDI can be compared
-    // on the same machine. Sharing is stopped for the duration (diagnostics need the capture) then restored.
     private async void RunDiagnostics(bool forceGdi)
     {
         var running = forceGdi ? _diagnosticsGdi : _diagnostics;
@@ -160,14 +166,16 @@ public sealed class MainForm : Form
 
         var choice = MessageBox.Show(this, $"Diagnostics written to:\n\n{path}\n\nOpen it now?",
             "Diagnostics complete", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
-        if (choice == DialogResult.Yes && path != null)
-        {
-            try { Process.Start(new ProcessStartInfo(path) { UseShellExecute = true }); } catch { }
-        }
+        if (choice == DialogResult.Yes && path != null) OpenFile(path);
     }
 
     private void UpdateStatus()
     {
+        // Capture-health counters persist across start/stop, so show them regardless of state.
+        _survived.Text = $"Interruptions survived: {_server.Health.Survived}";
+        _failures.Text = $"Capture failures: {_server.Health.Failures}";
+        _failures.ForeColor = _server.Health.Failures > 0 ? Theme.Red : Theme.TextSecondary;
+
         if (!_server.IsCapturing)
         {
             _stateDot.Text = "■";
@@ -204,6 +212,13 @@ public sealed class MainForm : Form
         _fps.Text = $"Frames per second: {fps:0}";
         _kb.Text = $"Outgoing: {(bytesPerSecond / 1024.0):0.0} KB/s";
     }
+
+    private static void OpenFile(string path)
+    {
+        try { Process.Start(new ProcessStartInfo(path) { UseShellExecute = true }); } catch { /* ignore */ }
+    }
+
+    private static Label NewDetail() => new() { AutoSize = true, Font = Theme.Small, ForeColor = Theme.TextSecondary, Margin = new Padding(0, Theme.S1, 0, 0) };
 
     private static FlowLayoutPanel HorizontalGroup() => new()
     {

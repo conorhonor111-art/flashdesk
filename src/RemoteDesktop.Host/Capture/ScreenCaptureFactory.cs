@@ -7,7 +7,7 @@ namespace RemoteDesktop.Host.Capture;
 /// </summary>
 public static class ScreenCaptureFactory
 {
-    public static IScreenCapture Create(out string? dxgiFallbackReason, bool forceGdi = false)
+    public static IScreenCapture Create(out string? dxgiFallbackReason, bool forceGdi = false, CaptureHealthLog? health = null)
     {
         dxgiFallbackReason = null;
 
@@ -15,7 +15,7 @@ public static class ScreenCaptureFactory
         {
             try
             {
-                return new ResilientScreenCapture(new DxgiScreenCapture());
+                return new ResilientScreenCapture(new DxgiScreenCapture(health), health);
             }
             catch (Exception ex)
             {
@@ -29,6 +29,6 @@ public static class ScreenCaptureFactory
 
         var bounds = System.Windows.Forms.Screen.PrimaryScreen?.Bounds
                      ?? new System.Drawing.Rectangle(0, 0, 1920, 1080);
-        return new ResilientScreenCapture(new GdiScreenCapture(bounds.Width, bounds.Height));
+        return new ResilientScreenCapture(new GdiScreenCapture(bounds.Width, bounds.Height), health);
     }
 }

@@ -32,6 +32,7 @@ public sealed class HostServer : IDisposable
     private readonly JpegTileEncoder _encoder = new(ProtocolConstants.DefaultJpegQuality);
 
     public RateMeter OutgoingMeter { get; } = new();
+    public CaptureHealthLog Health { get; } = new(); // interruption counters + log; persists across start/stop
     public CaptureMethod Method => _capture?.Method ?? CaptureMethod.Dxgi; // live, so a mid-session GDI fallback shows
     public string? DxgiFallbackReason { get; private set; }
     public bool IsCapturing { get; private set; }
@@ -54,7 +55,7 @@ public sealed class HostServer : IDisposable
     {
         if (_acceptLoop != null) return;
 
-        _capture = ScreenCaptureFactory.Create(out var reason);
+        _capture = ScreenCaptureFactory.Create(out var reason, health: Health);
         DxgiFallbackReason = reason;
         _injector = new InputInjector(_capture.Width, _capture.Height);
         _injector.ReleaseAll(); // clear any modifier a previous crashed run left stuck down on this machine
