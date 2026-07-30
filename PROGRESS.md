@@ -218,9 +218,10 @@ after every stage (now in CLAUDE.md). Do not grow into a general suite.
   without a human deciding; the log records what consent decided, so they ship together.
 - **Adaptive quality AND frame rate** at Stage 3 (two justifications: home-upload bandwidth; GDI idle
   CPU burn).
-- **Relay: location first.** Conor + clients are in **Kyiv** → datacentre near Kyiv before price.
-  **Provider = DigitalOcean**, **domain = a bought `.com`**. Open before paying: nearest specific DC +
-  a way to measure latency to it first; whether 1 vCPU/1 GB holds ~3 concurrent sessions.
+- **Relay: location first.** Conor + clients are in **Kyiv** → datacentre nearest Kyiv, chosen before
+  price. **Decided:** use a bought `.com` (not DuckDNS). **NOT decided:** the provider (an earlier
+  DigitalOcean lean was **retracted**, deferred until the region is recommended — location decides it),
+  the specific DC, the actual `.com` purchase, and whether 1 vCPU/1 GB holds ~3 concurrent sessions.
 - **Client download hosted** at `https://<domain>/download` (one static file on the relay host).
 - **Package size ~65 MB is the floor** (trimming blocked: `NETSDK1175`); deliver by link, not attachment.
 
@@ -230,4 +231,9 @@ Stage 2 complete and audited; capture resilience + health in place; tests green.
 pass** (rounded corners + icon + hover/pressed + rhythm + window sizes + code-area hero), then show
 both windows, then answer the relay-location question (nearest DC + latency measurement), then
 **Stage 3** (relay, 6-digit code, outbound, consent dialog + session log, adaptive quality/frame rate).
-HEAD after this work: capture-health commit (`7288208`).
+
+**Open — not yet decided (full list in CLAUDE.md "Open — not yet decided"):** relay provider, the
+datacentre, the `.com` purchase, whether 1 vCPU is enough, and Conor's own ACCESS_LOST verification
+(not yet run). **Resolved:** `.223` has **2** logical processors — confirmed by OS query, not a guess
+(Xeon Gold 6262 @ 1.9 GHz, two single-core sockets), so "encoding is the ceiling" stands; and that CPU
+signature means `.223` is itself likely virtualised (the "physical PC" label is probably loose).
