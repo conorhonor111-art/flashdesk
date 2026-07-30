@@ -103,11 +103,18 @@ public static class Theme
     public static readonly Size HostSimpleSize = new(500, 340);     // client area, simple view
     public static readonly Size HostTechnicalSize = new(500, 650);  // client area, technical open
     public static readonly Size HostWindowMinimum = new(460, 330);  // outer bounds
+    public static readonly Size ViewerWindowSize = new(1000, 660);  // client area — room for a scaled 1080p picture
+    public static readonly Size ViewerWindowMinimum = new(640, 480);
+
+    /// <summary>The letterbox behind the remote picture. Pure black on purpose — it makes the
+    /// remote screen's edges unmistakable and never competes with its content.</summary>
+    public static readonly Color CanvasBackdrop = Color.Black;
 
     /// <summary>Height of the full-width status band at the top of the host window — the band
     /// blends with the window when idle and turns solid amber while a session is live.</summary>
     public const int StatusBandHeight = 56;
     public const int SmallFieldWidth = 72;                          // e.g. the quality dropdown
+    public const int MediumFieldWidth = 150;                        // e.g. the viewer's address box
 
     /// <summary>
     /// Base window styling: neutral surface, system font, DPI-aware font scaling, and — on

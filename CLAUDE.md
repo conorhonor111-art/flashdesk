@@ -461,6 +461,11 @@ Two figures per machine matter and they differ:
 
 ## Design system (decided 2026-07-29 — palette, type, spacing, states, and the reasoning)
 
+**DESIGN IS CLOSED (Conor, 2026-07-30).** No more icon rounds, no more window rounds. What exists
+is approved and good enough, and an icon or a window can be changed in five minutes at any point
+in this project's life. Do not reopen any visual decision without Conor explicitly asking — the
+product's actual problem is that it has only ever worked on one LAN, and Stage 3 is the work.
+
 UI framework re-examined once the design started to matter: **WinForms stays**, with a central
 design system in a shared library `RemoteDesktop.UI` (`Theme.cs`). Reasons, not inertia: the design
 is deliberately **flat** (no gradients, shadows, glow, or animation — though **rounded corners** were

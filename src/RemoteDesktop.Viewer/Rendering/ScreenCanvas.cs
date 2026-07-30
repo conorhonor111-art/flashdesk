@@ -1,4 +1,5 @@
 using System.Drawing.Drawing2D;
+using RemoteDesktop.UI;
 
 namespace RemoteDesktop.Viewer.Rendering;
 
@@ -41,7 +42,7 @@ public sealed class ScreenCanvas : Control
         SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint
                  | ControlStyles.UserPaint | ControlStyles.Selectable, true);
         TabStop = true;
-        BackColor = Color.Black;
+        BackColor = Theme.CanvasBackdrop;
         Dock = DockStyle.Fill;
     }
 

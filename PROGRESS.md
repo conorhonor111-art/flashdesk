@@ -416,6 +416,30 @@ findability in all three rows** (light/dark/greyscale — the glowing stroke on 
 the highest-contrast object in the row); no resemblance to RDC or TeamViewer. Sheets sent.
 **Waiting on TWO verdicts now: this icon pick AND the window glance-test.** Still no commit.
 
+## Green system change, COMMIT, and the Viewer pass (2026-07-30)
+
+Conor approved both open verdicts (P3 green mark; the live state reads at a glance). The whole
+colour system changed in one move: green left the semantic set (idle = neutral grey dot ● + word;
+Stopped stays ■ — glyphs keep them apart without colour), brand green `#2BD16B` on tile `#17191E`
+lives only in the mark, both icons regenerated as the P3 chevron (idle green / live amber + badge
+top-right), all six load-bearing green spots in CLAUDE.md rewritten, `Theme.Green` removed and
+`BrandGreen`/`BrandTile` added. Verified end-to-end with a loopback handshake: idle window (grey
+status, green mark in title), live window (amber band, amber-badged icon), live taskbar button
+captured. **Committed as `419e7ec`** — the full design pass, 15 files (rename, design system,
+two-view window, icon instrument, ID-system spec in CLAUDE.md).
+
+**Viewer pass (approved by Conor and committed 2026-07-30; design declared CLOSED — recorded in
+CLAUDE.md at the top of the design system):** FlashDesk mark embedded in
+`FlashDeskViewer.exe` and its title bar (static — the safety swap belongs to the client side, not
+the operator's); the 5 remaining literals moved into Theme (`ViewerWindowSize` /
+`ViewerWindowMinimum`, `MediumFieldWidth` for the address box, `CanvasBackdrop` for the black
+letterbox in both MainForm and ScreenCanvas); layout deliberately untouched — the graphite
+operator header stays. Build 0 warnings, tests 16/16 (a transient build failure was just the
+running FlashDesk locking its DLLs — closed and rebuilt clean). **Literal audit final: ZERO
+colour/size literals outside Theme.cs across Host + UI + Viewer**; only the 4 deliberate
+diagnostics benchmark constants remain. Next: Conor's viewer verdict → commit → Stage 3 (relay,
+FlashDesk ID system, consent + allow-list, adaptive quality/frame rate, deployment writeup).
+
 ## Session handover (2026-07-30) — read this and CLAUDE.md before doing anything
 
 Everything below is durable because the conversation it came from is gone. Reasoning is included on

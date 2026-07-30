@@ -9,10 +9,17 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
     <UseWindowsForms>true</UseWindowsForms>
     <!-- Visible product name (see the note in the Host csproj): the exe is FlashDeskViewer.exe. -->
     <AssemblyName>FlashDeskViewer</AssemblyName>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationIcon>..\..\assets\FlashDesk.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The idle brand mark for the title bar; the operator side has no live/idle swap — the
+         safety surface is the CLIENT's taskbar, not this one. -->
+    <EmbeddedResource Include="..\..\assets\FlashDesk.ico" LogicalName="FlashDesk.AppIcon" />
+  </ItemGroup>
 
 </Project>

@@ -15,11 +15,11 @@ namespace RemoteDesktop.Viewer;
 /// </summary>
 public sealed class MainForm : Form
 {
-    private readonly TextBox _ipBox = new() { Text = "192.168.1.222", Width = 150, Font = Theme.Body, Margin = new Padding(Theme.S2, Theme.S1, Theme.S2, 0) };
+    private readonly TextBox _ipBox = new() { Text = "192.168.1.222", Width = Theme.MediumFieldWidth, Font = Theme.Body, Margin = new Padding(Theme.S2, Theme.S1, Theme.S2, 0) };
     private readonly Button _connect = Theme.MakeButton("Connect", ButtonKind.Primary);
     private readonly CheckBox _actualSize = new() { Text = "Actual size (1:1)", AutoSize = true, Checked = true, Font = Theme.Body, ForeColor = Theme.TextPrimary, Margin = new Padding(Theme.S3, Theme.S2, 0, 0) };
     private readonly CheckBox _control = new() { Text = "Control remote (mouse + keyboard)", AutoSize = true, Font = Theme.Body, ForeColor = Theme.TextPrimary, Margin = new Padding(Theme.S3, Theme.S2, 0, 0) };
-    private readonly Panel _canvasHost = new() { Dock = DockStyle.Fill, AutoScroll = true, BackColor = Color.Black };
+    private readonly Panel _canvasHost = new() { Dock = DockStyle.Fill, AutoScroll = true, BackColor = Theme.CanvasBackdrop };
     private readonly ScreenCanvas _canvas = new();
     private readonly RemoteScreen _screen = new();
     private readonly InputCapture _input;
@@ -34,9 +34,16 @@ public sealed class MainForm : Form
     {
         Text = "FlashDesk Viewer — operator";
         StartPosition = FormStartPosition.CenterScreen;
-        ClientSize = new Size(1000, 660);
-        MinimumSize = new Size(640, 480);
+        ClientSize = Theme.ViewerWindowSize;
+        MinimumSize = Theme.ViewerWindowMinimum;
         Theme.ApplyWindow(this);
+
+        try
+        {
+            using var iconStream = typeof(MainForm).Assembly.GetManifestResourceStream("FlashDesk.AppIcon");
+            if (iconStream is not null) Icon = new Icon(iconStream);
+        }
+        catch { /* a missing icon must never stop the program */ }
 
         // Graphite operator header — this is what makes my side visibly not the client side.
         var header = new FlowLayoutPanel
