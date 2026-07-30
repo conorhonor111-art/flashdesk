@@ -160,3 +160,74 @@ confirm by running diagnostics on .222 and comparing the END-TO-END rows.
   q95 LAN default stands.
 - **GDI idle-CPU burn → Stage 3 gets adaptive frame rate** (drop to ~1–2 fps when static), with the
   justification recorded, not just the feature name.
+
+## Design system (decided 2026-07-29 — full detail + reasoning in CLAUDE.md "Design system")
+
+WinForms **re-examined and kept** once the UI started to matter (analysis in CLAUDE.md): flat design
+is WinForms' comfort zone, the video control already works and porting it to WPF is the highest-risk
+change for zero visual gain, and it keeps one language for Conor. Central `RemoteDesktop.UI` project
+with `Theme.cs` (palette with meanings, 4 type sizes / 2 weights, spacing scale). Semantic palette —
+**one colour one meaning; the client's live indicator is AMBER not green** (green = "ignore me", which
+defeats the always-visible-session rule). Host window restyled (green/amber state, address = Stage-3
+placeholder, red Stop); viewer wears a graphite operator header so the two sides never look alike.
+
+**Reversed 2026-07-29:** Conor withdrew the square-corner rule — **rounded corners are now wanted**
+(GraphicsPath + AntiAlias, DPI-scaled radius as a Theme value, DWM corner preference on Win11). This
+plus the icon, hover/pressed states, vertical rhythm, window sizes, and code-area-as-hero is the
+**pending design pass** (the next session's job).
+
+## Audit before Stage 3 (2026-07-29) — fixed the clear defects, reported the rest
+
+**Fixed:**
+- **DXGI ACCESS_LOST no longer crashes the session** (highest-impact): it fired on UAC, lock,
+  resolution/monitor change, user switch — exactly when the tool is used. `DxgiScreenCapture` recreates
+  the duplication (adopting a new resolution); `ResilientScreenCapture` falls back to GDI if DXGI can't
+  recover in ~5 s; `HostServer` resends `ScreenInfo` + updates the injector on a size change; the window
+  reads capture method live. Diagnostics after the refactor matched before → no regression.
+- **Wire hardening** — `FramePacket.FromBytes` bounds-checks every read and never allocates on an
+  attacker-supplied count/length (fails closed). Matters once Stage 3 is on the internet.
+- **Stuck modifier** — `InputCapture` tracks held keys/buttons and releases them on focus-loss /
+  control-off / disconnect; and the **host releases all modifiers on startup**, so a run that died with
+  a key held is cleared by simply starting again.
+- **Close-race** — viewer marshalling goes through `SafeBeginInvoke`; **timers disposed** on both windows.
+- **EncoderParameters checked, NOT a race, deliberately left:** `Encode` snapshots the `volatile`
+  reference and the old object is never disposed, so an in-flight encode always holds a valid object.
+  Disposing it to "fix" the tiny leak is exactly what WOULD create the race — so do not.
+
+**Deferred (reported, judgement calls):** host hard-kill still can't self-clean (mitigated by the
+startup release); DXGI-vs-GDI duplication of a header constant (left); handshake timeout + 16 MB cap
+folded into the Stage 3 line items.
+
+## Capture-health self-reporting (2026-07-29)
+
+`CaptureHealthLog`: two counters in the host window — **Interruptions survived** (lost and came back)
+and **Capture failures** (fell back to GDI; turns red if non-zero) — plus a timestamped log file on the
+Desktop and an "Open capture log" button. Counters persist across start/stop. This is so Conor (or a
+client on the phone at Stage 4) verifies resilience by reading two numbers, not by watching indicators
+through a lock and a UAC prompt.
+
+## Protocol tests (2026-07-29)
+
+`RemoteDesktop.Tests` (xUnit) — **protocol only**: round-trip encode/decode, truncated message,
+oversized length prefix, malformed handshake, `FromBytes` bounds. 16/16 pass. Run with `dotnet test`
+after every stage (now in CLAUDE.md). Do not grow into a general suite.
+
+## Decisions for Stage 3 (recorded in CLAUDE.md)
+
+- **Consent dialog + session log move to Stage 3** (from Stage 4), so nothing is internet-reachable
+  without a human deciding; the log records what consent decided, so they ship together.
+- **Adaptive quality AND frame rate** at Stage 3 (two justifications: home-upload bandwidth; GDI idle
+  CPU burn).
+- **Relay: location first.** Conor + clients are in **Kyiv** → datacentre near Kyiv before price.
+  **Provider = DigitalOcean**, **domain = a bought `.com`**. Open before paying: nearest specific DC +
+  a way to measure latency to it first; whether 1 vCPU/1 GB holds ~3 concurrent sessions.
+- **Client download hosted** at `https://<domain>/download` (one static file on the relay host).
+- **Package size ~65 MB is the floor** (trimming blocked: `NETSDK1175`); deliver by link, not attachment.
+
+## Where we are / next session
+
+Stage 2 complete and audited; capture resilience + health in place; tests green. **Next: the design
+pass** (rounded corners + icon + hover/pressed + rhythm + window sizes + code-area hero), then show
+both windows, then answer the relay-location question (nearest DC + latency measurement), then
+**Stage 3** (relay, 6-digit code, outbound, consent dialog + session log, adaptive quality/frame rate).
+HEAD after this work: capture-health commit (`7288208`).

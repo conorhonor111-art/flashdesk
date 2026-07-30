@@ -36,6 +36,12 @@ This governs how you communicate, never how deeply you think:
   messages and console output in English.
 - Never reduce depth, drop a caveat, or skip a warning to make an explanation shorter.
   Simplify the tooling, never the thinking.
+- **Never make me the measuring instrument.** When you need a number (fps, KB/s, latency) or a health
+  signal (did capture recover?), build it into the program so I read a figure or a counter — do not
+  ask me to watch a moving window, arrange screens, or check indicators through a lock and a UAC
+  prompt. When you genuinely need my eyes, ask ONE yes/no about ONE specific thing, not a table to
+  fill in. (This principle produced the diagnostics tool, the END-TO-END measurement, and the
+  capture-health counters.)
 
 ## 2. What we are building
 
@@ -378,7 +384,8 @@ Two figures per machine matter and they differ:
 
 UI framework re-examined once the design started to matter: **WinForms stays**, with a central
 design system in a shared library `RemoteDesktop.UI` (`Theme.cs`). Reasons, not inertia: the design
-is deliberately **flat** (no gradients/shadows/glow/rounded/animation — see "what not to do"), which
+is deliberately **flat** (no gradients, shadows, glow, or animation — though **rounded corners** were
+added 2026-07-29, see "Rounded corners and the polish pass" below), which
 is WinForms' comfort zone; the only genuinely custom control (the video canvas) already works and
 porting it to WPF is the project's highest-risk change for zero visual gain; custom drawing is barely
 needed here; and staying on WinForms keeps one language for Conor (§1). Full analysis was given at the
@@ -440,9 +447,31 @@ not; it is a safety control, not decoration.
 The **operator (viewer) side is deliberately different** (graphite header) so the two sides can never
 be confused in a screenshot.
 
+### Rounded corners and the polish pass (decided 2026-07-29 — this REVERSES the earlier square-corner rule)
+
+Conor withdrew the square-corner instruction: he wants rounded corners and a genuinely refined look.
+This does **not** reopen WinForms — rounded corners are more work in WinForms, not impossible, and
+that work sits in the **chrome** (a custom-painted rounded panel/button) where a mistake is harmless;
+converting to WPF would mean rewriting the video control, the hardest-won code in the project (its
+coordinate mapping was verified at all four corners). Rewriting working internals for prettier buttons
+is the worst trade available.
+
+How, specifically, so a later session gets it right:
+- **`GraphicsPath` + `SmoothingMode.AntiAlias`, never `Control.Region`** — Region gives jagged aliased
+  edges.
+- **The radius is a `Theme` value and scales with DPI.**
+- **Outer window frame:** try `DwmSetWindowAttribute` with `DWMWA_WINDOW_CORNER_PREFERENCE` (Windows 11
+  rounds it at the OS level for free); **degrade cleanly on Windows 10.**
+
+The rest of the pending "design pass": a simple embedded **app icon in both executables** (the default
+.NET icon reads as "unfinished" to a client, on the taskbar and on the emailed file); **hover and
+pressed states on every button** (currently dead surfaces); **real vertical rhythm** (everything on the
+spacing scale, nothing eyeballed); **deliberate default window sizes**; and the **address/code area
+treated as the hero** of the client window. Every value still goes through `Theme` (radius included).
+
 ### What not to do
 
-- No gradients, drop shadows, or glow. Flat surfaces, real (square) borders.
+- No gradients, drop shadows, or glow. Flat surfaces with **rounded corners** (see above), real borders.
 - No animation anywhere a person needs to read or decide.
 - Nothing that makes Disconnect or Reject harder to find than Accept.
 - No icon without a word beside it in any state the client sees.
@@ -523,6 +552,16 @@ and read logs. Honest bandwidth cost at 10 and 50 clients.
   (`https://<domain>/download`) — a normal link with my own name on it, same URL across updates, one
   static file, no extra cost.
 
+**Relay location + provider + domain (decided 2026-07-29 — location FIRST, price second):** every byte
+of every session crosses the relay, so its physical location sets the whole product's latency (LAN was
+1 ms; a badly-placed relay makes it ~200 ms and the mouse drags through mud, ruining the tool however
+good the rest is). **Conor and his clients are in Kyiv** — pick a datacentre near Kyiv before price.
+**Provider: DigitalOcean** (chosen for the simplest console). **Domain: buy a `.com`** (not a free
+DuckDNS subdomain — a tool with real clients should not depend on a free volunteer DNS service for a
+dollar a month). **Still open before any money is spent:** (1) recommend the specific nearest DC and
+give Conor a way to measure real latency to a candidate BEFORE paying; (2) confirm whether 1 vCPU /
+1 GB is genuinely enough at ~3 simultaneous sessions or just cheap.
+
 ## Stage 4 — Safe to hand to a client  (= charter §4)
 
 **Re-read charter §4 in full when this stage begins.** Everything the person on the other
@@ -540,8 +579,12 @@ end needs:
   consent). Stage 4 keeps only the convenience button that opens that log in Notepad.
 - Package the client side as a **single self-contained `.exe`**: no installer, no admin, no
   .NET runtime on the client machine; double-click to a visible code within a couple of
-  seconds; closing the window ends everything; target under **40 MB** (report the real size
-  and what drives it). Document how to send it to a non-technical person, the exact
+  seconds; closing the window ends everything. **Size reality (measured): ~65 MB is the floor** for a
+  no-install self-contained WinForms exe and it **cannot be trimmed** — the SDK blocks it
+  (`NETSDK1175`: Windows Forms + trimming unsupported; ReadyToRun only makes it bigger; compression is
+  already on). So delivery is the **hosted download link** (served from the relay host, see Stage 3),
+  not an email attachment — 65 MB exceeds Gmail's 25 MB limit anyway. Document how to send that link to
+  a non-technical person, the exact
   SmartScreen warning an unsigned program shows, and what to tell them when they phone.
 
 ## Stage 5 — Encrypt it properly
