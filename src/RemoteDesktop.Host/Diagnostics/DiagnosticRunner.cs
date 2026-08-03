@@ -55,8 +55,8 @@ public static class DiagnosticRunner
         report.AppendLine("PATTERN    = program-drawn full-motion frames, encoded as fast as possible (no capture).");
         report.AppendLine("END-TO-END = real capture + real encode against a real moving screen, flat out. THE usability number.");
         report.AppendLine();
-        report.AppendLine("Quality  Condition    fps      KB/s       encode ms/frame  capture ms/frame  tiles/frame");
-        report.AppendLine("-------  ----------  ------  ----------  ---------------  ----------------  -----------");
+        report.AppendLine("Quality  Condition    fps      KB/s      diff ms/frame  encode ms/frame  capture ms/frame  tiles/frame");
+        report.AppendLine("-------  ----------  ------  ----------  -------------  ---------------  ----------------  -----------");
 
         // END-TO-END for all qualities is measured in one continuous motion session (one flash).
         var endToEnd = MeasureEndToEndAll(capture, 5);
@@ -75,6 +75,8 @@ public static class DiagnosticRunner
         report.AppendLine("How to read this:");
         report.AppendLine("- IDLE KB/s is what a still session costs; it should be small at every quality.");
         report.AppendLine("- PATTERN measures the encoder alone on identical content — compare it between two machines.");
+        report.AppendLine("- diff ms/frame is the cost of comparing this frame against the last one to find what changed.");
+        report.AppendLine("  It is paid on EVERY frame, including frames where nothing moved and nothing is sent.");
         report.AppendLine("- END-TO-END fps is real capture+encode together. On the GDI fallback this is the true ceiling;");
         report.AppendLine("  if it is well under 30, that machine will feel slow no matter what else is right.");
 
@@ -93,12 +95,12 @@ public static class DiagnosticRunner
         return outputPath;
     }
 
-    private readonly record struct Result(double Fps, double KbPerSec, double EncodeMs, double CaptureMs, double TilesPerFrame, bool HasCapture);
+    private readonly record struct Result(double Fps, double KbPerSec, double EncodeMs, double DiffMs, double CaptureMs, double TilesPerFrame, bool HasCapture);
 
     private static string Row(int quality, string condition, Result r)
     {
         string capture = r.HasCapture ? $"{r.CaptureMs,16:0.00}" : $"{"-",16}";
-        return $"{quality,-7}  {condition,-10}  {r.Fps,6:0.0}  {r.KbPerSec,10:0.0}  {r.EncodeMs,15:0.00}  {capture}  {r.TilesPerFrame,11:0.0}";
+        return $"{quality,-7}  {condition,-10}  {r.Fps,6:0.0}  {r.KbPerSec,10:0.0}  {r.DiffMs,13:0.00}  {r.EncodeMs,15:0.00}  {capture}  {r.TilesPerFrame,11:0.0}";
     }
 
     private static Result MeasureIdle(IScreenCapture capture, int quality, int seconds)
@@ -110,7 +112,7 @@ public static class DiagnosticRunner
         if (capture.TryCapture(50, out var warm)) differ.Diff(warm.Pixels, warm.Width, warm.Height, quality);
 
         long frames = 0, totalBytes = 0, tiles = 0;
-        double captureMs = 0, encodeMs = 0;
+        double captureMs = 0, encodeMs = 0, diffMs = 0;
         int intervalMs = 1000 / 30;
         var sw = Stopwatch.StartNew();
         var timer = new Stopwatch();
@@ -127,7 +129,14 @@ public static class DiagnosticRunner
 
             if (got)
             {
-                foreach (var t in differ.Diff(frame.Pixels, frame.Width, frame.Height, quality))
+                // Timed separately from encoding: the diff hashes every tile whether or not anything
+                // changed, so on a still screen it is the entire per-frame cost and would otherwise
+                // hide inside the capture-to-encode gap where no counter looks.
+                timer.Restart();
+                var changed = differ.Diff(frame.Pixels, frame.Width, frame.Height, quality);
+                diffMs += timer.Elapsed.TotalMilliseconds;
+
+                foreach (var t in changed)
                 {
                     timer.Restart();
                     var jpeg = encoder.Encode(frame.Pixels, frame.Width, t.X, t.Y, t.Width, t.Height);
@@ -148,7 +157,8 @@ public static class DiagnosticRunner
 
         double s = sw.Elapsed.TotalSeconds;
         return new Result(frames / s, totalBytes / 1024.0 / s,
-            frames > 0 ? encodeMs / frames : 0, frames > 0 ? captureMs / frames : 0,
+            frames > 0 ? encodeMs / frames : 0, frames > 0 ? diffMs / frames : 0,
+            frames > 0 ? captureMs / frames : 0,
             frames > 0 ? (double)tiles / frames : 0, HasCapture: true);
     }
 
@@ -163,7 +173,7 @@ public static class DiagnosticRunner
         differ.Diff(buffer, PatternWidth, PatternHeight, quality);
 
         long totalBytes = 0, tiles = 0;
-        double encodeMs = 0;
+        double encodeMs = 0, diffMs = 0;
         var timer = new Stopwatch();
         var sw = Stopwatch.StartNew();
 
@@ -172,7 +182,12 @@ public static class DiagnosticRunner
             FillPattern(buffer, f);
             int frameBytes = 8 + 4 + 4 + 1 + 4;
             int frameTiles = 0;
-            foreach (var t in differ.Diff(buffer, PatternWidth, PatternHeight, quality))
+
+            timer.Restart();
+            var changed = differ.Diff(buffer, PatternWidth, PatternHeight, quality);
+            diffMs += timer.Elapsed.TotalMilliseconds;
+
+            foreach (var t in changed)
             {
                 timer.Restart();
                 var jpeg = encoder.Encode(buffer, PatternWidth, t.X, t.Y, t.Width, t.Height);
@@ -187,7 +202,8 @@ public static class DiagnosticRunner
 
         double s = sw.Elapsed.TotalSeconds;
         return new Result(frameCount / s, totalBytes / 1024.0 / s,
-            encodeMs / frameCount, 0, (double)tiles / frameCount, HasCapture: false);
+            encodeMs / frameCount, diffMs / frameCount, 0,
+            (double)tiles / frameCount, HasCapture: false);
     }
 
     // Real capture + real encode against a real moving screen, flat out, for each quality — measured
@@ -218,7 +234,7 @@ public static class DiagnosticRunner
         if (capture.TryCapture(200, out var warm)) differ.Diff(warm.Pixels, warm.Width, warm.Height, quality);
 
         long frames = 0, totalBytes = 0, tiles = 0;
-        double captureMs = 0, encodeMs = 0;
+        double captureMs = 0, encodeMs = 0, diffMs = 0;
         var sw = Stopwatch.StartNew();
         var timer = new Stopwatch();
 
@@ -233,7 +249,11 @@ public static class DiagnosticRunner
 
             if (got)
             {
-                foreach (var t in differ.Diff(frame.Pixels, frame.Width, frame.Height, quality))
+                timer.Restart();
+                var changed = differ.Diff(frame.Pixels, frame.Width, frame.Height, quality);
+                diffMs += timer.Elapsed.TotalMilliseconds;
+
+                foreach (var t in changed)
                 {
                     timer.Restart();
                     var jpeg = encoder.Encode(frame.Pixels, frame.Width, t.X, t.Y, t.Width, t.Height);
@@ -251,7 +271,8 @@ public static class DiagnosticRunner
 
         double s = sw.Elapsed.TotalSeconds;
         return new Result(frames / s, totalBytes / 1024.0 / s,
-            frames > 0 ? encodeMs / frames : 0, frames > 0 ? captureMs / frames : 0,
+            frames > 0 ? encodeMs / frames : 0, frames > 0 ? diffMs / frames : 0,
+            frames > 0 ? captureMs / frames : 0,
             frames > 0 ? (double)tiles / frames : 0, HasCapture: true);
     }
 

@@ -57,6 +57,7 @@ public sealed class MainForm : Form
     private readonly Label _fps = NewDetail();
     private readonly Label _kb = NewDetail();
     private readonly Label _adaptive = NewDetail();
+    private readonly Label _frameStages = NewDetail();
     private readonly Label _monitoring = NewDetail();
     private readonly Label _survived = NewDetail();
     private readonly Label _failures = NewDetail();
@@ -389,7 +390,7 @@ public sealed class MainForm : Form
         }
 
         return MakeCard(new Padding(Theme.S3),
-            _method, _fps, _kb, _adaptive, _monitoring, _survived, _failures,
+            _method, _fps, _kb, _adaptive, _frameStages, _monitoring, _survived, _failures,
             _relayState, _identityDetail, _identityFile, _relayUrl, _allAddresses, qualityRow, buttonRow);
     }
 
@@ -604,6 +605,7 @@ public sealed class MainForm : Form
             _fps.Text = "";
             _kb.Text = "";
             _adaptive.Text = "";
+            _frameStages.Text = "";
             return;
         }
 
@@ -641,6 +643,14 @@ public sealed class MainForm : Form
         // (CLAUDE.md): the client must never be told the connection is struggling — they cannot act
         // on it, and a bandwidth message during a support call reads as "this is broken".
         _adaptive.Text = _server.Governor.StateLine();
+
+        // Where the frame time actually goes. Technical view only — the simple view stays
+        // number-free, and a stage breakdown is the most developer-facing readout in the window.
+        var stages = _server.Timings.Read();
+        _frameStages.Text = stages.Frames == 0
+            ? "Frame stages: waiting for a session"
+            : $"Frame stages: capture {stages.CaptureMs:0.0} · diff {stages.DiffMs:0.0} · "
+            + $"encode {stages.EncodeMs:0.0} · send {stages.SendMs:0.0} ms";
     }
 
     private static Icon? LoadAppIcon(string logicalName)

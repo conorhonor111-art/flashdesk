@@ -75,6 +75,9 @@ public sealed class HostServer : IDisposable
     public BandwidthGovernor Governor { get; } = new();
 
     public RateMeter OutgoingMeter { get; } = new();
+
+    /// <summary>Where the frame time goes, stage by stage, over the last second. See FrameTimings.</summary>
+    public FrameTimings Timings { get; } = new();
     public CaptureHealthLog Health { get; } = new(); // interruption counters + log; persists across start/stop
     public CaptureMethod Method => _capture?.Method ?? CaptureMethod.Dxgi; // live, so a mid-session GDI fallback shows
     public string? DxgiFallbackReason { get; private set; }
@@ -359,13 +362,21 @@ public sealed class HostServer : IDisposable
             int quality = Governor.Quality;
             _encoder.SetQuality(quality);
 
+            // Stage timings for this one frame, in Stopwatch ticks. Reset every iteration so a frame
+            // where capture returned nothing records an honest zero for diff and encode rather than
+            // repeating the previous frame's cost. Raw timestamps, not Stopwatch objects: this loop
+            // runs up to 30 times a second and already carries two.
+            long captureTicks = 0, diffTicks = 0, encodeTicks = 0;
+
             var updates = new List<TileUpdate>();
             CapturedFrame frame = default;
             bool captured;
+            long stageStart = System.Diagnostics.Stopwatch.GetTimestamp();
             lock (_captureLock)
             {
                 captured = capture.TryCapture(Governor.CaptureTimeoutMs, out frame);
             }
+            captureTicks = System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
 
             // The captured resolution can change mid-session (DXGI recovering at a new resolution after a
             // mode change, or a fall-back to GDI). Reconfigure and tell the viewer the new size.
@@ -386,13 +397,17 @@ public sealed class HostServer : IDisposable
             {
                 lastGood = frame;
                 haveLastGood = true;
+                stageStart = System.Diagnostics.Stopwatch.GetTimestamp();
                 var changed = _differ.Diff(frame.Pixels, frame.Width, frame.Height, quality);
+                diffTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
                 changedCount = changed.Count;
+                stageStart = System.Diagnostics.Stopwatch.GetTimestamp();
                 foreach (var tile in changed)
                 {
                     var jpeg = _encoder.Encode(frame.Pixels, frame.Width, tile.X, tile.Y, tile.Width, tile.Height);
                     updates.Add(new TileUpdate(tile.Column, tile.Row, jpeg));
                 }
+                encodeTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
             }
 
             // Re-sharpen, quietly. Tiles sent at a lower quality during a burst of motion would
@@ -402,12 +417,16 @@ public sealed class HostServer : IDisposable
             if (haveLastGood && changedCount < RefreshWhenChangedBelow)
             {
                 var refresh = new List<TileDiffer.ChangedTile>();
+                stageStart = System.Diagnostics.Stopwatch.GetTimestamp();
                 _differ.CollectStale(quality, MaxRefreshTilesPerFrame, lastGood.Width, lastGood.Height, refresh);
+                diffTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
+                stageStart = System.Diagnostics.Stopwatch.GetTimestamp();
                 foreach (var tile in refresh)
                 {
                     var jpeg = _encoder.Encode(lastGood.Pixels, lastGood.Width, tile.X, tile.Y, tile.Width, tile.Height);
                     updates.Add(new TileUpdate(tile.Column, tile.Row, jpeg));
                 }
+                encodeTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
             }
 
             var (cursorX, cursorY, onScreen) = _injector!.GetCursor();
@@ -416,7 +435,11 @@ public sealed class HostServer : IDisposable
             lastCursorY = cursorY;
 
             var packet = new FramePacket(frameNumber++, updates, cursorX, cursorY, onScreen);
+            // Counted as encode: assembling the packet is the same job as encoding a tile — turning
+            // pixels into the bytes that go on the wire.
+            stageStart = System.Diagnostics.Stopwatch.GetTimestamp();
             var bytes = packet.ToBytes();
+            encodeTicks += System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
 
             // Time the send itself: once the socket's own buffer is full, a send cannot complete
             // faster than the link drains, so this is a direct and honest measure of congestion.
@@ -428,6 +451,12 @@ public sealed class HostServer : IDisposable
             // Only real screen changes count as activity. Refresh tiles must not, or a still screen
             // would keep talking itself out of idling.
             Governor.OnFrameSent(bytes.Length, sendTimer.Elapsed.TotalMilliseconds, changedCount > 0, cursorMoved);
+
+            // Recorded before the wait, so the cost of recording sits inside the frame budget where
+            // it can be seen, rather than hidden in the gap between frames. The send figure reuses
+            // sendTimer, which is READ here and never re-timed: what it measures belongs to the
+            // governor's congestion signal and must not change.
+            Timings.Record(captureTicks, diffTicks, encodeTicks, sendTimer.ElapsedTicks);
 
             // Recomputed AFTER the governor has seen this frame, so a screen that just started moving
             // is already back at the fast interval instead of sleeping out the idle one.
