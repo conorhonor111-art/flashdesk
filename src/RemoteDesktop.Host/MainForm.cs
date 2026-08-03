@@ -229,7 +229,9 @@ public sealed class MainForm : Form
         };
         _peerBox.Margin = new Padding(0, 0, Theme.S2, 0);
         _peerBox.TabIndex = 3;
+        _peerBox.MaxLength = 11; // 9 digits plus the two spaces we insert
         _peerBox.KeyDown += (_, e) => { if (e.KeyCode == Keys.Enter) { e.SuppressKeyPress = true; _ = ConnectToPeerAsync(); } };
+        _peerBox.TextChanged += (_, _) => ReformatPeerBox();
         _connect.TabIndex = 4;
         _connect.Click += (_, _) => _ = ConnectToPeerAsync();
         row.Controls.Add(_peerBox);
@@ -239,6 +241,34 @@ public sealed class MainForm : Form
         _connectNote.Margin = new Padding(0);
 
         return MakeCard(new Padding(Theme.S3), caption, row, _connectNote);
+    }
+
+    /// <summary>
+    /// Keeps the typed number looking exactly like the number shown on the other person's screen.
+    /// Anything that is not a digit is dropped as it is typed or pasted, so a space, a dash, or a
+    /// stray character copied off a message can never produce "invalid number" — one of them will
+    /// be reading it off a piece of paper, and formatting must never be their problem.
+    /// </summary>
+    private bool _reformatting;
+    private void ReformatPeerBox()
+    {
+        if (_reformatting) return;
+
+        string digits = FlashDeskId.Normalise(_peerBox.Text);
+        if (digits.Length > FlashDeskId.Digits) digits = digits[..FlashDeskId.Digits];
+
+        string formatted = digits.Length switch
+        {
+            <= 3 => digits,
+            <= 6 => $"{digits[..3]} {digits[3..]}",
+            _ => $"{digits[..3]} {digits[3..6]} {digits[6..]}",
+        };
+        if (formatted == _peerBox.Text) return;
+
+        _reformatting = true;
+        _peerBox.Text = formatted;
+        _peerBox.SelectionStart = _peerBox.Text.Length; // typing continues at the end
+        _reformatting = false;
     }
 
     /// <summary>

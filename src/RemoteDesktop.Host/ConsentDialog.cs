@@ -137,9 +137,15 @@ public sealed class ConsentDialog : Form
 
         Controls.Add(root);
 
-        // Closing the window, pressing Escape, or running out of time all mean Reject.
+        // Closing the window with X, pressing Escape, or running out of time ALL mean Reject.
+        // Accepted starts false and is only ever set true by the Accept button, so every other
+        // way out of this window is a refusal — there is no path that counts as "ignored".
         CancelButton = _reject;
-        FormClosing += (_, e) => { if (DialogResult != DialogResult.OK) Accepted = false; };
+        FormClosing += (_, _) =>
+        {
+            _timer.Stop();
+            if (DialogResult != DialogResult.OK) Accepted = false;
+        };
 
         _timer.Tick += (_, _) => Tick();
         _timer.Start();
