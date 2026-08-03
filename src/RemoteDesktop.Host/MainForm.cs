@@ -47,7 +47,7 @@ public sealed class MainForm : Form
     private readonly SessionLog _sessionLog;
     private IdentityResult? _identity;
 
-    private readonly TextBox _peerBox = new() { Font = Theme.Body, Width = Theme.MediumFieldWidth, PlaceholderText = "their number" };
+    private readonly RoundedTextBox _peerBox = new() { Font = Theme.Body, Width = Theme.MediumFieldWidth, PlaceholderText = "their number" };
     private readonly Button _connect = Theme.MakeButton("Connect", ButtonKind.Primary);
     private readonly Label _connectNote = Theme.Caption("");
     private readonly Button _toggle = Theme.MakeButton("Stop sharing", ButtonKind.Neutral);
@@ -66,7 +66,7 @@ public sealed class MainForm : Form
     private readonly Label _identityDetail = NewDetail();
     private readonly Label _identityFile = NewDetail();
     private readonly Label _relayUrl = NewDetail();
-    private readonly ComboBox _quality = new() { DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = FlatStyle.Flat, Font = Theme.Body, Width = Theme.SmallFieldWidth, Margin = new Padding(Theme.S2, 0, 0, 0) };
+    private readonly ThemedComboBox _quality = new() { Font = Theme.Body, Width = Theme.SmallFieldWidth, Margin = new Padding(Theme.S2, 0, 0, 0) };
     private readonly Button _diagnostics = Theme.MakeButton("Run diagnostics", ButtonKind.Neutral);
     private readonly Button _diagnosticsGdi = Theme.MakeButton("Run diagnostics (force GDI)", ButtonKind.Neutral);
     private readonly Button _openLog = Theme.MakeButton("Open capture log", ButtonKind.Neutral);

@@ -175,6 +175,37 @@ public static class Theme
         return button;
     }
 
+    /// <summary>
+    /// A themed text field. Stock WinForms text boxes were the last stock chrome left in the
+    /// windows: a sunken square Win32 border sitting beside a rounded button, which is exactly
+    /// where the mismatch showed most (the peer-number field next to Connect).
+    /// </summary>
+    public static RoundedTextBox MakeTextBox(int width) => new()
+    {
+        Width = width,
+        Font = Body,
+        Margin = new Padding(0, S1, S2, S1),
+    };
+
+    /// <summary>A themed dropdown. See ThemedComboBox for what part of it Windows still owns.</summary>
+    public static ThemedComboBox MakeComboBox(int width) => new()
+    {
+        Width = width,
+        Font = Body,
+        Margin = new Padding(S2, 0, 0, 0),
+    };
+
+    /// <summary>
+    /// A themed checkbox. Its state is carried by the checkmark glyph, never by colour alone —
+    /// see ThemedCheckBox.
+    /// </summary>
+    public static ThemedCheckBox MakeCheckBox(string text) => new()
+    {
+        Text = text,
+        Font = Body,
+        Margin = new Padding(S3, S2, 0, S2),
+    };
+
     public static void Style(Button button, ButtonKind kind)
     {
         if (button is RoundedButton rounded)

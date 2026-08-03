@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
 <title>FlashDesk — remote support for your computer</title>
 <!--
   PALETTE LOCK with src/RemoteDesktop.UI/Theme.cs (must never drift — see the comment there):
@@ -12,14 +13,43 @@
   Rules from CLAUDE.md "The download site": one page, phone-first, no JS, no fonts, no tracking.
   Placeholders {{LIKE THIS}} are deliberate — Conor fills them; nothing on this page is invented.
 -->
+
+<!-- Link preview: this URL gets pasted into WhatsApp/Telegram to a nervous stranger.
+     A preview with no title or description reads as a scam link. No og:image — we host none. -->
+<meta name="description" content="Remote support for your computer. One file, nothing installs. You see everything your helper does, and you can end the session at any moment.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="en_GB">
+<meta property="og:url" content="https://flashdesk.org/">
+<meta property="og:title" content="FlashDesk — remote support for your computer">
+<meta property="og:description" content="Remote support for your computer. One file, nothing installs. You see everything your helper does, and you can end the session at any moment.">
+<meta name="twitter:card" content="summary">
+
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Crect%20x='1'%20y='1'%20width='14'%20height='14'%20rx='3.5'%20fill='%2317191E'/%3E%3Cpolyline%20points='4.8,2.8%2010.2,13%2012.4,8.6'%20fill='none'%20stroke='%232BD16B'%20stroke-width='2.6'/%3E%3C/svg%3E">
 <style>
   :root {
+    color-scheme: dark;
+
+    /* Locked to Theme.cs — see the palette-lock comment above. Do not change these three. */
     --tile: #17191E;      /* Theme.BrandTile */
     --green: #2BD16B;     /* Theme.BrandGreen */
     --text: #ECEFF3;      /* Theme.OperatorHeaderText */
+
     --muted: #A9B1BC;
     --line: #2E3440;
+    /* Neutral raised surface, NOT a palette colour and carries no meaning — it exists only so a
+       filled panel can sit a step above the page background. Never use it to signal anything. */
+    --surface: #22262E;
+
+    /* Spacing scale — base 0.5rem, steps x1 x2 x3 x4 x6. Mirrors Theme.S1..S5 on the C# side.
+       Every margin and padding on this page comes from here; nothing is eyeballed. */
+    --s1: 0.5rem;
+    --s2: 1rem;
+    --s3: 1.5rem;
+    --s4: 2rem;
+    --s5: 3rem;
+
+    /* ONE corner radius, used everywhere. Two radii on one page look like a mistake. */
+    --radius: 14px;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -28,14 +58,16 @@
     font-family: system-ui, "Segoe UI", Arial, sans-serif;
     font-size: 1.2rem;
     line-height: 1.55;
-    padding: 1.5rem 1.25rem 3rem;
+    padding: var(--s3) var(--s3) var(--s5);
   }
   main { max-width: 40rem; margin: 0 auto; }
-  header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 2rem; }
+  header { display: flex; align-items: center; gap: var(--s1); margin-bottom: var(--s4); }
   header svg { width: 2rem; height: 2rem; flex: none; }
   header span { font-weight: 600; font-size: 1.1rem; letter-spacing: 0.01em; }
-  h1 { font-size: 1.7rem; line-height: 1.25; margin-bottom: 0.75rem; font-weight: 650; }
-  .phone-note { color: var(--muted); margin-bottom: 1.75rem; }
+  h1 { font-size: 1.7rem; line-height: 1.25; margin-bottom: var(--s1); font-weight: 650; }
+  .phone-note { color: var(--muted); margin-bottom: var(--s4); }
+
+  /* Green appears in exactly one filled block on this page: the button. */
   .download {
     display: block;
     background: var(--green);
@@ -44,20 +76,24 @@
     text-decoration: none;
     font-size: 1.35rem;
     font-weight: 650;
-    padding: 1.1rem 1.5rem;
-    border-radius: 14px;
-    margin-bottom: 0.6rem;
+    padding: var(--s2) var(--s3);
+    border-radius: var(--radius);
+    margin-bottom: var(--s1);
   }
-  .download:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; }
-  .download-meta { text-align: center; color: var(--muted); font-size: 1rem; margin-bottom: 2.5rem; }
-  section { margin-bottom: 2.5rem; }
-  h2 { font-size: 1.25rem; margin-bottom: 0.75rem; font-weight: 650; }
+  .download-meta { text-align: center; color: var(--muted); font-size: 1rem; margin-bottom: var(--s4); }
+  .quiet-link { color: var(--muted); }
+
+  section { margin-bottom: var(--s4); }
+  h2 { font-size: 1.25rem; margin-bottom: var(--s1); font-weight: 650; }
+
   ol.steps { list-style: none; counter-reset: step; }
   ol.steps li {
     counter-increment: step;
-    display: flex; gap: 0.9rem; align-items: baseline;
-    padding: 0.55rem 0;
+    display: flex; gap: var(--s2); align-items: baseline;
+    padding: var(--s1) 0;
   }
+  /* Step numbers keep green: they are small ordinals inside a list, never beside the button,
+     and they are what carries the eye down the three steps. */
   ol.steps li::before {
     content: counter(step);
     color: var(--green);
@@ -66,28 +102,42 @@
     min-width: 1.4rem;
     text-align: center;
   }
-  .plain li { margin: 0.45rem 0 0.45rem 1.2rem; }
+  .note { color: var(--muted); margin-top: var(--s1); }
+
+  .plain li { margin: var(--s1) 0 var(--s1) var(--s3); }
+
   .warnbox {
     border: 1px solid var(--line);
-    border-left: 4px solid var(--green);
-    border-radius: 10px;
-    padding: 1rem 1.15rem;
+    border-left: 4px solid var(--muted);
+    border-radius: var(--radius);
+    padding: var(--s2);
   }
+  .warnbox p + p { margin-top: var(--s1); }
+
+  /* The safety warning is a FILLED panel, not an outlined one: a solid block reads louder,
+     and it lets green stay exclusive to the download button. */
   .scam {
     font-size: 1.3rem;
     line-height: 1.5;
-    border: 2px solid var(--green);
-    border-radius: 14px;
-    padding: 1.3rem 1.4rem;
-    margin-bottom: 2.5rem;
+    background: var(--surface);
+    border-left: 4px solid var(--text);
+    border-radius: var(--radius);
+    padding: var(--s3);
+    margin-bottom: var(--s4);
   }
-  .who p { margin-bottom: 0.6rem; }
+
+  .who p { margin-bottom: var(--s1); }
   a { color: var(--text); }
-  footer { color: var(--muted); font-size: 0.95rem; margin-top: 3rem; }
+  /* Keyboard focus must be visible on every link, not just the button. */
+  a:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; border-radius: 4px; }
+  .download:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; }
+
+  footer { color: var(--muted); font-size: 0.95rem; margin-top: var(--s5); }
+
   @media (min-width: 640px) {
-    body { padding-top: 3rem; font-size: 1.25rem; }
+    body { padding-top: var(--s5); font-size: 1.25rem; }
     h1 { font-size: 2.1rem; }
-    .download { font-size: 1.5rem; padding: 1.25rem 2rem; }
+    .download { font-size: 1.5rem; padding: var(--s3) var(--s4); }
   }
 </style>
 </head>
@@ -107,7 +157,7 @@
 
   <a class="download" href="https://flashdesk.org/dl/FlashDesk.exe">Download FlashDesk for Windows</a>
   <p class="download-meta">Free &middot; about 65&nbsp;MB &middot; Windows 10 and 11<br>
-  Your computer will warn you twice &mdash; <a href="#warnings" style="color:var(--muted)">here is what to do</a>.</p>
+  Your computer will warn you twice &mdash; <a class="quiet-link" href="#warnings">here is what to do</a>.</p>
 
   <p class="scam">If someone phoned you out of the blue and told you to come here,
   <strong>hang up</strong>. Only download this if you contacted us yourself.</p>
@@ -119,7 +169,7 @@
       <li>It shows you a 9-digit number.</li>
       <li>Read that number to the person helping you &mdash; or type theirs in and press Connect.</li>
     </ol>
-    <p style="color:var(--muted);margin-top:.6rem">Both of you run the same file. Whoever types a
+    <p class="note">Both of you run the same file. Whoever types a
     number is the one who sees the other person&rsquo;s screen.</p>
   </section>
 

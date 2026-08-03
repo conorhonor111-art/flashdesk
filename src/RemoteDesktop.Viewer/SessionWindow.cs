@@ -20,8 +20,8 @@ namespace RemoteDesktop.Viewer;
 /// </summary>
 public sealed class SessionWindow : Form
 {
-    private readonly CheckBox _actualSize = new() { Text = "Actual size (1:1)", AutoSize = true, Checked = true, Font = Theme.Body, ForeColor = Theme.TextPrimary, Margin = new Padding(0, Theme.S2, 0, 0) };
-    private readonly CheckBox _control = new() { Text = "Control their mouse and keyboard", AutoSize = true, Font = Theme.Body, ForeColor = Theme.TextPrimary, Margin = new Padding(Theme.S3, Theme.S2, 0, 0) };
+    private readonly ThemedCheckBox _actualSize = new() { Text = "Actual size (1:1)", Checked = true, Margin = new Padding(0, Theme.S2, 0, 0) };
+    private readonly ThemedCheckBox _control = new() { Text = "Control their mouse and keyboard", Margin = new Padding(Theme.S3, Theme.S2, 0, 0) };
     private readonly Button _disconnect = Theme.MakeButton("Disconnect", ButtonKind.Destructive);
     private readonly Panel _canvasHost = new() { Dock = DockStyle.Fill, AutoScroll = true, BackColor = Theme.CanvasBackdrop };
     private readonly ScreenCanvas _canvas = new();
