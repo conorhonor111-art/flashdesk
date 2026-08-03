@@ -214,6 +214,31 @@ ssh ... 'kill -9 $(systemctl show -p MainPID --value flashdesk-relay)'
 sleep 8 && curl -sS https://relay.flashdesk.org/health   # must answer again, NRestarts incremented
 ```
 
+## 7a. Reboot resilience — tested 2026-08-03, repeat after any change to boot-time services
+
+**Measured downtime: 16 seconds** (last reply → first reply again; server back with everything
+running). That is what a reboot costs a client mid-session: a ~16 s interruption, which is why
+Stage 3's client reconnect logic uses a neutral "Connection lost — reconnecting…" state rather
+than an error, and why the heartbeat expiry is 60 s (see CLAUDE.md).
+
+**Check SSH will survive BEFORE rebooting.** Ubuntu 24.04 uses socket activation:
+`systemctl is-enabled ssh.service` reports **disabled**, which looks alarming and is fine —
+`ssh.socket` is the enabled unit. Verify with:
+
+```bash
+systemctl is-enabled ssh.socket    # must be: enabled
+```
+
+All four of these must be re-verified after a reboot; the last two are the ones a silent reset
+would hurt most and nobody thinks to check:
+
+| What | How to prove it (from `.223`, not by reading status on the server) |
+|---|---|
+| Relay | `curl -sS https://relay.flashdesk.org/health` → `status : OK` |
+| TLS | `curl -o /dev/null -w '%{ssl_verify_result}'` → `0` |
+| Firewall | open a TCP connection to 22 and 443 (must work) and 3306 (must fail) |
+| Password login off | `ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no root@…` → `Permission denied (publickey)` |
+
 ## 8. Still to come (update this file as each lands)
 
 - WebSocket endpoint + FlashDesk ID registry, rate limiting, heartbeat expiry

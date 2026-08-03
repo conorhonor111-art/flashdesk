@@ -639,6 +639,17 @@ does not mean losing the server.
 - Repo now carries `server/RUNBOOK.md` (rebuild in deployment order, with both traps recorded),
   plus the live `server/Caddyfile` and `server/flashdesk-relay.service` copies. Tests 16/16.
 
+**Reboot test done (2026-08-03, Conor's call to do it while nothing depends on the server).
+Measured downtime: 16 seconds.** That is the real cost of a reboot to a client mid-session — it
+justifies the neutral "reconnecting…" state and the 60 s heartbeat expiry already specified.
+Caught BEFORE rebooting: `systemctl is-enabled ssh.service` reports *disabled* on Ubuntu 24.04
+because SSH is socket-activated — `ssh.socket` is the enabled unit; had that been assumed rather
+than checked, the server could have come back without SSH. All four subsystems verified after the
+reboot, each from outside rather than by reading status on the box: /health OK · TLS valid (cert
+verify 0) · firewall active with identical rules (22/443 reachable, 3306 blocked) · password
+login still refused (`Permission denied (publickey)`). Conor also confirmed /health from `.223`
+AND from his phone on mobile data — so it works from a network that is not his own.
+
 Next: step 4 was folded into step 3 (TLS landed with Caddy). Remaining Stage 3: the WebSocket
 pairing endpoint + FlashDesk ID system, then relay-path test .223↔.222, then the cross-network
 test, then consent/allow-list/session log, then adaptive quality.
