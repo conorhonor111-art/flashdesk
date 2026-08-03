@@ -690,6 +690,94 @@ shadows `System.Text.Encoding` — aliased rather than renamed.
 WebSocket pairing so the number actually carries a session. Until then the LAN path (typed IP,
 now shown only in the technical view) is what works.
 
+# ══════ SESSION HANDOVER 2026-08-03 — START HERE ══════
+
+## Where the product actually is
+
+**Two strangers can now connect to each other by number, through the Kyiv relay, with consent.**
+The scope changed this session from Phase 1 (Conor's private tool) to Phase 2 (two strangers,
+neither technical, Conor absent) — recorded at the top of CLAUDE.md with the assumptions it
+invalidated.
+
+Built and verified this session (each proven by running it, not by reading code):
+- **One executable.** `RemoteDesktop.Viewer` became a library; `FlashDesk.exe` is the only exe.
+  Whoever types a number sees the other screen. The 423 lines of hardest-won code (ScreenCanvas,
+  RemoteScreen, InputCapture) moved without being rewritten.
+- **Sessions through the relay** (`wss://relay.flashdesk.org/ws`). Proven: two instances with
+  separate identities paired through Kyiv; caller's window read "connected to 373 883 745",
+  the viewed side read "Someone is connected and can see this screen".
+- **Nothing listens.** Port 7789 is gone; verified with `Get-NetTCPConnection` that FlashDesk has
+  zero listening sockets and only outbound connections to `139.28.36.247:443`. **That is why the
+  Windows Firewall prompt no longer appears** — outbound needs no permission.
+- **Consent dialog** — one dialog, first-contact flag in amber, 3-second delay on first contact
+  only, 30-second timeout, X/Escape/timeout all mean Reject (proven: after WM_CLOSE the host
+  returned to Ready, the caller was told they were not accepted, the log recorded REFUSED).
+- **KnownCallers + SessionLog** on the client's machine, never transmitted.
+- **Auto-reconnect**: viewer redials for 75 s; host re-accepts the same caller for 90 s without a
+  new dialog. Relay now verifies the CALLER's identity too, which is what makes keying that grace
+  on the caller's number safe.
+- **Rate limiting + `/usage`** on the relay: counts only, no numbers, no addresses.
+- **Number entry forgives formatting** — `373883745`, `373 883 745` and ` 373-883-745 ` all
+  reached the same machine; the box reformats as you type.
+
+## ⚠️ THREE THINGS THAT ARE NOT WHAT THEY LOOK LIKE — verified live 2026-08-03
+
+1. **flashdesk.org HTTPS IS BROKEN — self-signed certificate.** `openssl s_client` returns
+   `Verify return code: 18 (self-signed certificate)`; subject and issuer are both
+   `CN=flashdesk.org`. Every visitor to `https://flashdesk.org` gets a full-page browser security
+   warning. It went unnoticed because the page serves fine over `http://` (HTTP 200, and http is
+   NOT redirected to https), so testing without typing the scheme looks perfect.
+   **Fix, clicks only: cPanel → SSL/TLS Status → tick flashdesk.org → Run AutoSSL.** Then verify:
+   `echo | openssl s_client -servername flashdesk.org -connect flashdesk.org:443 2>&1 | grep "Verify return code"`
+   must say `0 (ok)`. **DO NOT send the link to a stranger until it does.**
+2. **There is no `/download` URL.** It returns 404. Conor asked for the button to point straight
+   at the file, so the live stable URL is `https://flashdesk.org/dl/FlashDesk.exe` and there is no
+   redirect. It is stable the same way — replace the file, never the URL.
+3. **Windows warns TWICE.** Conor's own live test found the download-time browser warning, which
+   the page did not explain — and which a stranger would have stopped at, never reaching the
+   run-time SmartScreen warning the page did explain. Both are now on the page, in order.
+
+Confirmed working live: page content (HTTP 200, both warnings present, correct download link),
+the file itself (`/dl/FlashDesk.exe`, 68,035,064 bytes, `application/x-msdownload`), and the
+relay (`/health` OK, version 0.3.0-relay).
+
+## The six things still unproven — adaptive quality is the biggest
+
+The pairing test ran two copies on ONE machine with a config-dir override. That proves the relay
+path, the protocol, consent, logging and reconnect. It does NOT prove:
+
+1. **⚠️ ADAPTIVE QUALITY IS NOT BUILT — largest risk, and the next piece of work.** JPEG quality
+   is still the fixed LAN-era 95. Measured need at full motion is ~1.7–2.2 MB/s; a typical home
+   upload is 0.6–2.5 MB/s. **Reading a still screen will work; anything moving will stall.** This
+   will show up in the very first real test. It was item 6 of the original Stage 3 plan and did
+   not make it into the last five-step list.
+2. **Two different routers/NATs.** Outbound 443 looks like ordinary HTTPS and should pass
+   anywhere, but it has never crossed two real home networks.
+3. **Real throughput between two homes.** The test was localhost → Kyiv → localhost; it never
+   went through a narrow uplink.
+4. **The download journey on a stranger's machine** — browser warning, SmartScreen, antivirus.
+5. **Different screen sizes and DPI.** Coordinate mapping was verified at Stage 2 on matching
+   screens; 4K↔1080p or 150% scaling across the relay is untested.
+6. **Windows 11.** `.223` is Windows 10, `.222` is Server 2022. Never run on a real Win11 desktop.
+
+## The test to run, and what to collect
+
+**Do the AutoSSL fix first.** Then: two people, each on their own computer and their own internet
+connection, each opens `https://flashdesk.org`, downloads, runs it. One reads their 9-digit
+number aloud; the other types it and presses Connect; the first presses Accept.
+
+What to bring back — these are the inputs to the next decisions, so collect them deliberately:
+- **Did either person stop at a warning, and which one?** (This is the number that decides whether
+  €209/year for a certificate is worth it. Right now it is a guess.)
+- **Did the picture stall when something moved?** (→ confirms the adaptive-quality priority.)
+- **Did the mouse land where they clicked?** (→ DPI/coordinate mapping across different screens.)
+- **Did a Windows Firewall box appear?** (It must not. If it does, something still listens.)
+- **Did the connection drop, and did it come back by itself?** (→ auto-reconnect in the wild.)
+- Their Windows version, screen resolution and scaling — especially if anything looked wrong.
+
+Also worth reading after: `https://relay.flashdesk.org/usage` (sessions, traffic, rejections) and
+`%APPDATA%\FlashDesk\sessions.txt` on each tester's machine.
+
 ## Session handover (2026-07-30) — read this and CLAUDE.md before doing anything
 
 Everything below is durable because the conversation it came from is gone. Reasoning is included on

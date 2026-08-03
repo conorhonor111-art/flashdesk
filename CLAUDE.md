@@ -880,8 +880,37 @@ machine is the one that needs help) — phone-first layout, and one line for exa
   the ONE clickable green = `Theme.BrandGreen #2BD16B`; text = `Theme.OperatorHeaderText #ECEFF3`.
   System fonts only, no downloaded fonts, no animation, no JavaScript. Recorded as a comment in
   `Theme.cs` and in `site/index.html` — a change in one place must be repeated in the other.
-- **The download URL is STABLE forever:** `https://flashdesk.org/download` serves the current
-  file; new versions replace the file, never the link.
+- **The download URL is STABLE forever.** ⚠️ **What is actually deployed is NOT `/download`** —
+  verified live 2026-08-03, do not trust the older sentence that said otherwise. Conor asked for
+  the button to point straight at the file, so there is **no redirect and `/download` returns
+  404**. The live, stable URL is **`https://flashdesk.org/dl/FlashDesk.exe`**. It stays stable the
+  same way: a new version REPLACES that file, the URL never changes. This matters beyond
+  tidiness — SmartScreen reputation accrues to a file+URL, so changing either resets the little
+  reputation that has been earned.
+
+### ⚠️ BLOCKER found 2026-08-03: flashdesk.org has a SELF-SIGNED certificate
+
+Measured, not assumed: `openssl s_client` shows `subject=CN=flashdesk.org` and
+`issuer=CN=flashdesk.org`, i.e. the site signed its own certificate — `Verify return code: 18
+(self-signed certificate)`. This is cPanel's placeholder, installed automatically before a real
+certificate is issued. (For contrast, `relay.flashdesk.org` returns `Verify return code: 0 (ok)`
+because Caddy obtained a real Let's Encrypt certificate.)
+
+**Consequence, and why it is a blocker rather than a cosmetic issue:** every visitor who types
+`https://flashdesk.org` gets a full-page browser security warning before they see anything. On a
+page whose whole job is persuading a wary stranger to download remote-access software, that
+warning ends the conversation — and it *should*, because a self-signed certificate is exactly
+what a fake site looks like. It also undoes the page's own trust work: the scam warning, the real
+name, the honest explanations are all behind a screen saying the site cannot be trusted.
+
+It went unnoticed because the page serves perfectly over **http://** (HTTP 200, correct content,
+and `http://` is NOT redirected to `https://`), so anyone testing without typing the scheme sees
+a working site.
+
+**The fix is clicks, not commands: cPanel → SSL/TLS Status → tick flashdesk.org → Run AutoSSL.**
+cPanel then issues a real certificate (usually minutes). Verify from `.223` with:
+`echo | openssl s_client -servername flashdesk.org -connect flashdesk.org:443 2>&1 | grep "Verify return code"`
+— it must say `0 (ok)`. Only after that should the link go to a stranger.
 - **Architecture (revised 2026-07-30 — Conor already OWNS hosting and wants it used):**
   `flashdesk.org` → his existing web hosting → the site + the `/download` file;
   `relay.flashdesk.org` → the small Warsaw VPS → the relay ONLY (unless his hosting proves able
@@ -977,9 +1006,23 @@ H.264 with hardware encoding (only once JPEG tiles are **measured** too slow).
 
 ## Code signing and SmartScreen — researched 2026-08-03, real numbers
 
-Every stranger downloading an unsigned exe hits **"Windows protected your PC"**, and the "Run
-anyway" button is deliberately hidden behind "More info". This is the single biggest drop-off in
-the whole funnel and only a code signing certificate genuinely fixes it.
+**WINDOWS WARNS TWICE, NOT ONCE — found by Conor's own live test 2026-08-03, and this is the
+correction that matters most in this section.** The page originally explained only the second
+warning, and that was nearly a fatal gap:
+
+1. **At DOWNLOAD time** — the browser (Chrome/Edge) says the file "isn't commonly downloaded" and
+   offers to discard it; the person must open the downloads bubble and choose **Keep**.
+2. **At RUN time** — Windows shows the blue "Windows protected your PC" box; the person must
+   click **More info** then **Run anyway**.
+
+**The download warning is the earlier and by far the more dangerous of the two, because a
+stranger who stops there never reaches the second one** — and an unexplained warning at step one
+of a process they were already nervous about is where they quit. Both are now explained on the
+page, in that order, with a line under the download button pointing at them. Never remove one to
+"simplify" the page; the pair is the point.
+
+Every stranger downloading an unsigned exe hits both. Only a code signing certificate genuinely
+fixes either, and even that does not fix them immediately (see below).
 
 - **Since June 2023 the private key MUST live on a FIPS 140-2 hardware token or a cloud HSM.**
   The old "a .pfx file on your PC" route no longer exists at any CA.
@@ -999,12 +1042,20 @@ the whole funnel and only a code signing certificate genuinely fixes it.
 - Expect **weeks to months of real downloads** before the warning stops, whichever certificate
   is bought.
 
-**DECISION 2026-08-03 (Conor): LAUNCH UNSIGNED.** Buying now would be wasted money — reputation
-needs real downloads, there are none yet, and the 459-day clock runs regardless. **The trigger to
-revisit is a sustained download rate, not revenue: roughly 100+ downloads a month from people
-Conor does not personally know, held for two or three months.** Below that, the certificate
-expires before reputation can form. Microsoft publishes no threshold, so this is a judgement
-call, not a published number — said plainly so nobody later mistakes it for a fact.
+**DECISION 2026-08-03 (Conor): LAUNCH UNSIGNED.** The reasoning, so a later session does not
+"fix" this by spending money: signing does **not** remove either warning on the day you buy it —
+it only lets reputation begin accumulating, and Microsoft has moved away from granting even EV
+certificates instant reputation. Reputation needs weeks-to-months of *real* downloads; FlashDesk
+has none yet. Meanwhile the 459-day validity clock (from 2026-02-27) runs whether anyone
+downloads or not. So a certificate bought today would expire having earned almost nothing.
+**Conor met this warning himself in a live test and it did not change the decision — precisely
+because buying would not have prevented what he saw.**
+
+**Trigger to revisit — a rate, not a feeling: roughly 100+ downloads a month from people Conor
+does not personally know, sustained over two or three months.** Below that, the certificate
+expires before reputation can form. ⚠️ **That number is MY ESTIMATE, not a published Microsoft
+threshold** — Microsoft publishes none. Treat it as a decision rule to argue with, not a fact.
+The real input is the drop-off count from the first real testers (see PROGRESS.md).
 **If it is ever bought, buy the CLOUD (SimplySign) version even though the card kit is ~€40
 cheaper:** the card is a physical smartcard that has to be posted, which adds a delivery
 dependency and a device to lose, and the cloud version has neither.
