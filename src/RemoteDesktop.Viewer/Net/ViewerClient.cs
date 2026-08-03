@@ -1,7 +1,10 @@
 using System.Diagnostics;
-using System.Net.Sockets;
+using System.Net.WebSockets;
+using System.Text;
+using System.Text.Json;
 using System.Threading.Channels;
 using RemoteDesktop.Shared.Diagnostics;
+using RemoteDesktop.Shared.Net;
 using RemoteDesktop.Shared.Protocol;
 
 namespace RemoteDesktop.Viewer.Net;
@@ -19,7 +22,8 @@ namespace RemoteDesktop.Viewer.Net;
 /// </summary>
 public sealed class ViewerClient : IDisposable
 {
-    private TcpClient? _client;
+    private ClientWebSocket? _socket;
+    private WebSocketStream? _stream;
     private MessageChannel? _channel;
     private CancellationTokenSource? _cts;
     private Task? _receiveLoop;
@@ -37,19 +41,56 @@ public sealed class ViewerClient : IDisposable
     public event Action<FramePacket>? FrameReceived;
     public event Action<string>? Disconnected;
 
-    public async Task ConnectAsync(string host, int port = ProtocolConstants.TcpPort)
+    /// <summary>
+    /// Calls a FlashDesk number through the relay. Both sides dial OUT, so neither machine has to
+    /// accept an incoming connection and no firewall permission is involved.
+    /// </summary>
+    /// <param name="targetId">The 9-digit number of the machine to connect to.</param>
+    /// <param name="ownId">This machine's own number, so the other end can say who is calling.</param>
+    public async Task ConnectAsync(string targetId, string ownId, CancellationToken ct = default)
     {
-        _client = new TcpClient { NoDelay = true };
-        await _client.ConnectAsync(host, port).ConfigureAwait(false);
-        _channel = new MessageChannel(_client.GetStream());
+        _socket = new ClientWebSocket();
+        _socket.Options.KeepAliveInterval = TimeSpan.FromSeconds(30);
+        await _socket.ConnectAsync(new Uri(ProtocolConstants.RelayWebSocketUrl), ct).ConfigureAwait(false);
+
+        // Tell the relay who we are calling, and read its answer before any session bytes flow.
+        var helloBytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new RelayHello
+        {
+            Role = RelayHello.RoleViewer,
+            Id = ownId,
+            TargetId = targetId,
+        }));
+        await _socket.SendAsync(helloBytes, WebSocketMessageType.Text, endOfMessage: true, ct).ConfigureAwait(false);
+
+        var buffer = new byte[4 * 1024];
+        var answer = await _socket.ReceiveAsync(buffer, ct).ConfigureAwait(false);
+        var result = answer.MessageType == WebSocketMessageType.Text && answer.Count > 0
+            ? JsonSerializer.Deserialize<RelayHelloResult>(Encoding.UTF8.GetString(buffer, 0, answer.Count))
+            : null;
+
+        if (result is null || !result.Ok)
+            throw new InvalidOperationException(result?.Reason ?? "FlashDesk did not answer.");
+
+        _stream = new WebSocketStream(_socket, ownsSocket: false);
+        _channel = new MessageChannel(_stream);
 
         // Handshake: send ours, check the host's answer.
         await _channel.SendAsync(MessageType.Handshake, Handshake.Create(PeerRole.Viewer).ToBytes()).ConfigureAwait(false);
         var reply = await _channel.ReceiveAsync().ConfigureAwait(false);
         if (reply is null || reply.Value.Type != MessageType.Handshake || !Handshake.FromBytes(reply.Value.Payload).IsValid)
-            throw new InvalidOperationException("The program at that address did not answer as a RemoteDesktop host.");
+            throw new InvalidOperationException("The other computer answered, but not as FlashDesk. It may be running a different version.");
 
         IsConnected = true;
+    }
+
+    /// <summary>
+    /// Begins receiving. Deliberately separate from <see cref="ConnectAsync"/>: the caller must be
+    /// able to subscribe to the events FIRST, or the very first ScreenInfo — which carries the
+    /// remote screen size — can arrive before anyone is listening and the picture never appears.
+    /// </summary>
+    public void Start()
+    {
+        if (_cts is not null) return;
         _cts = new CancellationTokenSource();
         _receiveLoop = Task.Run(() => ReceiveLoopAsync(_cts.Token));
         _pingLoop = Task.Run(() => PingLoopAsync(_cts.Token));
@@ -128,7 +169,7 @@ public sealed class ViewerClient : IDisposable
     {
         _cts?.Cancel();
         _inputQueue.Writer.TryComplete();
-        try { _client?.Close(); } catch { /* ignore */ }
+        try { _socket?.Abort(); } catch { /* ignore */ }
         IsConnected = false;
     }
 
@@ -139,7 +180,8 @@ public sealed class ViewerClient : IDisposable
         try { _pingLoop?.Wait(1000); } catch { /* ignore */ }
         try { _inputLoop?.Wait(1000); } catch { /* ignore */ }
         _channel?.Dispose();
-        _client?.Dispose();
+        _stream?.Dispose();
+        _socket?.Dispose();
         _cts?.Dispose();
     }
 }

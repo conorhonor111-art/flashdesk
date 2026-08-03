@@ -106,6 +106,9 @@ public sealed class SessionWindow : Form
 
         _timer.Tick += (_, _) => _statusItem.Text = StatusText();
         _timer.Start();
+
+        // Only now, with the handlers attached and the window built, let frames start arriving.
+        Shown += (_, _) => _client.Start();
     }
 
     private void OnScreenInfo(ScreenInfo info)

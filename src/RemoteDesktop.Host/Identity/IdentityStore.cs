@@ -29,8 +29,14 @@ public sealed class IdentityStore
 
     public IdentityStore()
     {
-        _folder = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "FlashDesk");
+        // FLASHDESK_CONFIG_DIR exists so two copies can run side by side with separate numbers
+        // on one machine — that is how the relay pairing is tested without a second computer.
+        // Note it cannot be replaced by setting APPDATA: Windows resolves the Application Data
+        // folder through the shell, not that environment variable (found out the hard way).
+        string? overrideDir = Environment.GetEnvironmentVariable("FLASHDESK_CONFIG_DIR");
+        _folder = string.IsNullOrWhiteSpace(overrideDir)
+            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "FlashDesk")
+            : overrideDir;
         _file = Path.Combine(_folder, "identity.json");
     }
 

@@ -55,6 +55,7 @@ public sealed class MainForm : Form
     private readonly Label _survived = NewDetail();
     private readonly Label _failures = NewDetail();
     private readonly Label _allAddresses = NewDetail();
+    private readonly Label _relayState = NewDetail();
     private readonly Label _identityDetail = NewDetail();
     private readonly Label _identityFile = NewDetail();
     private readonly Label _relayUrl = NewDetail();
@@ -214,20 +215,20 @@ public sealed class MainForm : Form
             return;
         }
 
-        // Transition state (step 3a→3b): the relay path is not built yet, so a plain IP address
-        // still works on a local network. When the relay carries sessions, this accepts the
-        // 9-digit number and the IP route moves to the technical view.
-        string target = typed;
-        string label = typed;
         string digits = FlashDeskId.Normalise(typed);
-        if (FlashDeskId.IsValid(digits))
+        if (!FlashDeskId.IsValid(digits))
         {
-            label = FlashDeskId.Format(digits);
-            _connectNote.Text = $"Connecting by number is not switched on yet — that arrives with the relay. "
-                              + "For now, type the other computer's local address.";
+            _connectNote.Text = "That does not look like a FlashDesk number. It is 9 digits, like 418 205 793.";
             return;
         }
 
+        if (_identity?.HasUsableId != true)
+        {
+            _connectNote.Text = "Wait until your own number appears above, then try again.";
+            return;
+        }
+
+        string label = FlashDeskId.Format(digits);
         _connect.Enabled = false;
         _peerBox.Enabled = false;
         _connectNote.Text = $"Connecting to {label}…";
@@ -236,7 +237,7 @@ public sealed class MainForm : Form
         try
         {
             client = new ViewerClient();
-            await client.ConnectAsync(target);
+            await client.ConnectAsync(digits, _identity.Id!);
         }
         catch (Exception ex)
         {
@@ -251,9 +252,20 @@ public sealed class MainForm : Form
         _connect.Enabled = true;
         _peerBox.Enabled = true;
 
-        var session = new SessionWindow(client, label);
-        session.FormClosed += (_, _) => { if (!IsDisposed) _connectNote.Text = "Session ended."; };
-        session.Show(this);
+        // Opening the session window is its own try/catch on purpose: this method is started with
+        // a discarded task, so an exception thrown here would otherwise vanish silently and leave
+        // a live connection with no window — which is exactly what happened the first time.
+        try
+        {
+            var session = new SessionWindow(client, label);
+            session.FormClosed += (_, _) => { if (!IsDisposed) _connectNote.Text = "Session ended."; };
+            session.Show(this);
+        }
+        catch (Exception ex)
+        {
+            client.Dispose();
+            _connectNote.Text = $"Connected, but the session window could not open: {ex.Message}";
+        }
     }
 
     private Control BuildTechnicalPanel()
@@ -292,7 +304,7 @@ public sealed class MainForm : Form
 
         return MakeCard(new Padding(Theme.S3),
             _method, _fps, _kb, _monitoring, _survived, _failures,
-            _identityDetail, _identityFile, _relayUrl, _allAddresses, qualityRow, buttonRow);
+            _relayState, _identityDetail, _identityFile, _relayUrl, _allAddresses, qualityRow, buttonRow);
     }
 
     private void SetTechnicalOpen(bool open)
@@ -330,10 +342,14 @@ public sealed class MainForm : Form
     private void StartSharing()
     {
         _server.Start();
+        var stored = _identityStore.Load();
+        if (_identity?.HasUsableId == true && stored is not null)
+            _server.SetIdentity(stored.Value.Id, stored.Value.Secret);
+
         var addresses = LocalAddresses.IPv4().ToList();
-        // The IP is a technical detail now; the client-facing hero is the FlashDesk number.
-        // Until the relay path is built, connecting still happens over the LAN by IP.
-        _allAddresses.Text = "Local addresses (LAN path): " + (addresses.Count > 0 ? string.Join("   ", addresses) : "none found");
+        // Kept for diagnostics only. Nothing listens on this machine any more — both sides dial
+        // out to the relay, which is why no firewall permission is needed.
+        _allAddresses.Text = "Local addresses (information only): " + (addresses.Count > 0 ? string.Join("   ", addresses) : "none found");
         _toggle.Text = "Stop sharing";
     }
 
@@ -356,6 +372,14 @@ public sealed class MainForm : Form
 
         if (IsDisposed) return;
         _identity = result;
+
+        // Only now can this machine be called: the relay connection needs a number it has accepted.
+        if (result.HasUsableId)
+        {
+            var stored = _identityStore.Load();
+            if (stored is not null) _server.SetIdentity(stored.Value.Id, stored.Value.Secret);
+        }
+
         ShowIdentityState();
     }
 
@@ -407,6 +431,7 @@ public sealed class MainForm : Form
             : $"{_identity.State}{(_identity.Detail is null ? "" : " — " + _identity.Detail)}");
         _identityFile.Text = "Stored in: " + _identityStore.FilePath;
         _relayUrl.Text = "Relay: " + ProtocolConstants.RelayBaseUrl;
+        _relayState.Text = "Relay link: " + _server.RelayStatus;
     }
 
     private void OnToggle(object? sender, EventArgs e)
@@ -480,6 +505,7 @@ public sealed class MainForm : Form
         _survived.Text = $"Interruptions survived: {_server.Health.Survived}";
         _failures.Text = $"Capture failures: {_server.Health.Failures}";
         _failures.ForeColor = _server.Health.Failures > 0 ? Theme.Red : Theme.TextSecondary;
+        _relayState.Text = "Relay link: " + _server.RelayStatus;
 
         if (!_server.IsCapturing)
         {

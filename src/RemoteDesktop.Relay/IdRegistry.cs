@@ -68,6 +68,19 @@ public sealed class IdRegistry
         lock (_gate) return _entries.ContainsKey(id);
     }
 
+    /// <summary>
+    /// Does this secret prove ownership of this ID? Used when a host opens its relay connection,
+    /// so a number can only be answered by the installation that owns it.
+    /// </summary>
+    public bool Verify(string id, string secret)
+    {
+        if (!FlashDeskId.IsValid(id) || string.IsNullOrEmpty(secret)) return false;
+        lock (_gate)
+        {
+            return _entries.TryGetValue(id, out var entry) && SecretMatches(secret, entry);
+        }
+    }
+
     private static bool SecretMatches(string secret, Entry entry)
     {
         // Fixed-time comparison: a normal string compare leaks how much of the hash matched.

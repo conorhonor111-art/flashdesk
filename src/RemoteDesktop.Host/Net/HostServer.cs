@@ -1,31 +1,43 @@
-using System.Net;
-using System.Net.Sockets;
+using System.Net.WebSockets;
+using System.Text;
+using System.Text.Json;
 using RemoteDesktop.Host.Capture;
 using RemoteDesktop.Host.Encoding;
 using RemoteDesktop.Host.Input;
 using RemoteDesktop.Shared.Diagnostics;
+using RemoteDesktop.Shared.Identity;
+using RemoteDesktop.Shared.Net;
 using RemoteDesktop.Shared.Protocol;
 
 namespace RemoteDesktop.Host.Net;
 
 /// <summary>
-/// Listens for one viewer and streams the screen to it: capture -> diff -> encode changed tiles ->
-/// send, at a target frame rate; each frame also carries the host cursor position. Reads the
-/// viewer's latency pings and input events and injects the latter with <see cref="InputInjector"/>.
-/// All networking and capture happen here, off the UI thread, so the window stays a display-only
-/// shell (architecture rule 1 in CLAUDE.md).
+/// Streams this screen to one viewer: capture -> diff -> encode changed tiles -> send, at a target
+/// frame rate; each frame also carries the host cursor position. Reads the viewer's latency pings
+/// and input events and injects the latter with <see cref="InputInjector"/>. All networking and
+/// capture happen here, off the UI thread, so the window stays a display-only shell (architecture
+/// rule 1 in CLAUDE.md).
 ///
-/// This is the single place all socket setup lives (architecture rule 2): Stage 3 replaces the
-/// "listen for an incoming connection" part with "dial out to the relay" and nothing else changes.
+/// This is the single place all socket setup lives (architecture rule 2), and Stage 3 proved the
+/// rule worth having: swapping "listen for an incoming connection" for "dial out to the relay"
+/// changed this one file and nothing else. **Nothing listens any more** — the machine opens an
+/// outbound WebSocket to the relay and waits there to be called. That is why no Windows Firewall
+/// prompt appears: outbound connections need no permission.
 /// </summary>
 public sealed class HostServer : IDisposable
 {
-    private readonly int _port;
     private readonly int _targetFps;
 
     private CancellationTokenSource? _cts;
-    private Task? _acceptLoop;
+    private Task? _relayLoop;
     private Task? _healthLoop;
+
+    private string? _id;
+    private string? _secret;
+
+    /// <summary>Plain words for the window: whether this machine is reachable through the relay.</summary>
+    public volatile string RelayStatus = "Not connected to FlashDesk yet";
+    public volatile bool RelayReady;
     private readonly object _captureLock = new();
     private IScreenCapture? _capture;
     private InputInjector? _injector;
@@ -47,15 +59,16 @@ public sealed class HostServer : IDisposable
         set => _encoder.SetQuality(value);
     }
 
-    public HostServer(int port = ProtocolConstants.TcpPort, int targetFps = 30)
-    {
-        _port = port;
-        _targetFps = targetFps;
-    }
+    public HostServer(int targetFps = 30) => _targetFps = targetFps;
 
+    /// <summary>
+    /// Starts capture. The relay connection only begins once <see cref="SetIdentity"/> supplies a
+    /// number the relay has accepted — capture health is tracked from the start regardless, so
+    /// the counters work even with no internet.
+    /// </summary>
     public void Start()
     {
-        if (_acceptLoop != null) return;
+        if (_healthLoop != null) return;
 
         _capture = ScreenCaptureFactory.Create(out var reason, health: Health);
         DxgiFallbackReason = reason;
@@ -65,17 +78,28 @@ public sealed class HostServer : IDisposable
         IsCapturing = true;
 
         _cts = new CancellationTokenSource();
-        _acceptLoop = Task.Run(() => AcceptLoopAsync(_cts.Token));
         _healthLoop = Task.Run(() => HealthPollLoopAsync(_cts.Token));
+        if (_id is not null) _relayLoop = Task.Run(() => RelayLoopAsync(_cts.Token));
+    }
+
+    /// <summary>Called once the relay has accepted this installation's number.</summary>
+    public void SetIdentity(string id, string secret)
+    {
+        _id = id;
+        _secret = secret;
+        if (_cts is not null && _relayLoop is null)
+            _relayLoop = Task.Run(() => RelayLoopAsync(_cts.Token));
     }
 
     public void Stop()
     {
         _cts?.Cancel();
-        try { _acceptLoop?.Wait(2000); } catch { /* ignore shutdown races */ }
+        try { _relayLoop?.Wait(2000); } catch { /* ignore shutdown races */ }
         try { _healthLoop?.Wait(2000); } catch { /* ignore */ }
-        _acceptLoop = null;
+        _relayLoop = null;
         _healthLoop = null;
+        RelayReady = false;
+        RelayStatus = "Not sharing";
         _cts?.Dispose();
         _cts = null;
 
@@ -90,52 +114,84 @@ public sealed class HostServer : IDisposable
         ViewerConnected = false;
     }
 
-    private async Task AcceptLoopAsync(CancellationToken ct)
+    /// <summary>
+    /// Keeps an outbound connection to the relay open, waiting to be called. On any failure it
+    /// backs off and dials again by itself, so a blink of internet, a relay restart or a laptop
+    /// waking from sleep all recover without the person having to do anything.
+    /// </summary>
+    private async Task RelayLoopAsync(CancellationToken ct)
     {
-        var listener = new TcpListener(IPAddress.Any, _port);
-        listener.Start();
-        try
+        int backoffSeconds = 5;
+
+        while (!ct.IsCancellationRequested)
         {
-            while (!ct.IsCancellationRequested)
+            try
             {
-                TcpClient client;
+                using var socket = new ClientWebSocket();
+                socket.Options.KeepAliveInterval = TimeSpan.FromSeconds(30);
+                RelayStatus = "Connecting…";
+                await socket.ConnectAsync(new Uri(ProtocolConstants.RelayWebSocketUrl), ct).ConfigureAwait(false);
+
+                await SendJsonAsync(socket, new RelayHello
+                {
+                    Role = RelayHello.RoleHost,
+                    Id = _id!,
+                    Secret = _secret,
+                }, ct).ConfigureAwait(false);
+
+                var greeting = await ReadJsonAsync<RelayHelloResult>(socket, ct).ConfigureAwait(false);
+                if (greeting is null || !greeting.Ok)
+                {
+                    RelayReady = false;
+                    RelayStatus = greeting?.Reason ?? "FlashDesk did not answer.";
+                    // A refusal is not a blip — a longer wait, so a clone does not hammer the relay.
+                    await Task.Delay(TimeSpan.FromSeconds(30), ct).ConfigureAwait(false);
+                    continue;
+                }
+
+                RelayReady = true;
+                RelayStatus = "Ready — waiting for someone to connect";
+                backoffSeconds = 5;
+
+                // Parked. The next thing the relay sends is the pairing notice.
+                var paired = await ReadJsonAsync<RelayPaired>(socket, ct).ConfigureAwait(false);
+                if (paired is null) continue; // link dropped while waiting; dial again
+
+                RelayStatus = $"Someone is connecting ({FlashDeskId.Format(paired.PeerId)})";
                 try
                 {
-                    client = await listener.AcceptTcpClientAsync(ct).ConfigureAwait(false);
+                    using var stream = new WebSocketStream(socket, ownsSocket: false);
+                    await ServeViewerAsync(stream, ct).ConfigureAwait(false);
                 }
-                catch (OperationCanceledException)
+                catch
                 {
-                    break;
+                    // Viewer dropped or errored — fall through and wait to be called again.
                 }
-
-                using (client)
+                finally
                 {
-                    client.NoDelay = true;
-                    try
-                    {
-                        await ServeClientAsync(client, ct).ConfigureAwait(false);
-                    }
-                    catch
-                    {
-                        // Viewer dropped or errored — fall through and wait for the next one.
-                    }
-                    finally
-                    {
-                        ViewerConnected = false;
-                        _injector?.ReleaseAll(); // never leave a key or button stuck down
-                    }
+                    ViewerConnected = false;
+                    _injector?.ReleaseAll(); // never leave a key or button stuck down
                 }
             }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                RelayReady = false;
+                RelayStatus = $"Connection lost — reconnecting… ({ex.GetType().Name})";
+                try { await Task.Delay(TimeSpan.FromSeconds(backoffSeconds), ct).ConfigureAwait(false); }
+                catch (OperationCanceledException) { break; }
+                backoffSeconds = Math.Min(backoffSeconds * 2, 30); // 5 -> 10 -> 20 -> 30s, as specified
+            }
         }
-        finally
-        {
-            listener.Stop();
-        }
+
+        RelayReady = false;
     }
 
-    private async Task ServeClientAsync(TcpClient client, CancellationToken ct)
+    private async Task ServeViewerAsync(Stream stream, CancellationToken ct)
     {
-        using var stream = client.GetStream();
         using var channel = new MessageChannel(stream);
 
         // Handshake: read the viewer's greeting, verify it, send ours.
@@ -278,6 +334,22 @@ public sealed class HostServer : IDisposable
             try { await Task.Delay(delayMs, ct).ConfigureAwait(false); }
             catch (OperationCanceledException) { break; }
         }
+    }
+
+    // ---- small JSON helpers for the relay's control messages (everything after them is binary) ----
+
+    private static async Task SendJsonAsync<T>(ClientWebSocket socket, T value, CancellationToken ct)
+    {
+        var bytes = System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(value));
+        await socket.SendAsync(bytes, WebSocketMessageType.Text, endOfMessage: true, ct).ConfigureAwait(false);
+    }
+
+    private static async Task<T?> ReadJsonAsync<T>(ClientWebSocket socket, CancellationToken ct) where T : class
+    {
+        var buffer = new byte[4 * 1024];
+        var result = await socket.ReceiveAsync(buffer, ct).ConfigureAwait(false);
+        if (result.MessageType != WebSocketMessageType.Text || result.Count == 0) return null;
+        return JsonSerializer.Deserialize<T>(System.Text.Encoding.UTF8.GetString(buffer, 0, result.Count));
     }
 
     public void Dispose() => Stop();

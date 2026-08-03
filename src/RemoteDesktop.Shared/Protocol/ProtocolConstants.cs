@@ -35,4 +35,7 @@ public static class ProtocolConstants
     /// site must not be able to touch the relay.
     /// </summary>
     public const string RelayBaseUrl = "https://relay.flashdesk.org";
+
+    /// <summary>Where sessions are paired. Same host, WebSocket scheme, port 443 like any web page.</summary>
+    public const string RelayWebSocketUrl = "wss://relay.flashdesk.org/ws";
 }
