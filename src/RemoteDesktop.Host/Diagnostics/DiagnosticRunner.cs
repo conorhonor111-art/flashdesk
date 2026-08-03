@@ -107,7 +107,7 @@ public static class DiagnosticRunner
         differ.Configure(capture.Width, capture.Height);
         var encoder = new JpegTileEncoder(quality);
 
-        if (capture.TryCapture(50, out var warm)) differ.Diff(warm.Pixels, warm.Width, warm.Height);
+        if (capture.TryCapture(50, out var warm)) differ.Diff(warm.Pixels, warm.Width, warm.Height, quality);
 
         long frames = 0, totalBytes = 0, tiles = 0;
         double captureMs = 0, encodeMs = 0;
@@ -127,7 +127,7 @@ public static class DiagnosticRunner
 
             if (got)
             {
-                foreach (var t in differ.Diff(frame.Pixels, frame.Width, frame.Height))
+                foreach (var t in differ.Diff(frame.Pixels, frame.Width, frame.Height, quality))
                 {
                     timer.Restart();
                     var jpeg = encoder.Encode(frame.Pixels, frame.Width, t.X, t.Y, t.Width, t.Height);
@@ -160,7 +160,7 @@ public static class DiagnosticRunner
         var buffer = new byte[PatternWidth * PatternHeight * 4];
 
         FillPattern(buffer, 0);
-        differ.Diff(buffer, PatternWidth, PatternHeight);
+        differ.Diff(buffer, PatternWidth, PatternHeight, quality);
 
         long totalBytes = 0, tiles = 0;
         double encodeMs = 0;
@@ -172,7 +172,7 @@ public static class DiagnosticRunner
             FillPattern(buffer, f);
             int frameBytes = 8 + 4 + 4 + 1 + 4;
             int frameTiles = 0;
-            foreach (var t in differ.Diff(buffer, PatternWidth, PatternHeight))
+            foreach (var t in differ.Diff(buffer, PatternWidth, PatternHeight, quality))
             {
                 timer.Restart();
                 var jpeg = encoder.Encode(buffer, PatternWidth, t.X, t.Y, t.Width, t.Height);
@@ -215,7 +215,7 @@ public static class DiagnosticRunner
         differ.Configure(capture.Width, capture.Height);
         var encoder = new JpegTileEncoder(quality);
 
-        if (capture.TryCapture(200, out var warm)) differ.Diff(warm.Pixels, warm.Width, warm.Height);
+        if (capture.TryCapture(200, out var warm)) differ.Diff(warm.Pixels, warm.Width, warm.Height, quality);
 
         long frames = 0, totalBytes = 0, tiles = 0;
         double captureMs = 0, encodeMs = 0;
@@ -233,7 +233,7 @@ public static class DiagnosticRunner
 
             if (got)
             {
-                foreach (var t in differ.Diff(frame.Pixels, frame.Width, frame.Height))
+                foreach (var t in differ.Diff(frame.Pixels, frame.Width, frame.Height, quality))
                 {
                     timer.Restart();
                     var jpeg = encoder.Encode(frame.Pixels, frame.Width, t.X, t.Y, t.Width, t.Height);

@@ -23,7 +23,14 @@ public interface IScreenCapture : IDisposable
     /// Try to get the current screen into the capture's own reusable buffer. Returns true with a
     /// frame when pixels are available; returns false when nothing new was ready within the timeout
     /// (only the DXGI path reports this — it means the screen did not change). The returned frame
-    /// borrows the capture's buffer and is valid only until the next TryCapture call.
+    /// borrows the capture's buffer and is valid only until the next SUCCESSFUL TryCapture call.
+    ///
+    /// Contract an implementation must honour: when this returns FALSE it must leave the buffer
+    /// exactly as it was, so the last good frame is still readable. The frame loop relies on that to
+    /// re-send tiles at a higher quality while the screen is standing still (see TileDiffer's
+    /// CollectStale) — the moment nothing is changing is precisely the moment there are no fresh
+    /// pixels to work from. Both implementations satisfy it today: DXGI returns before it copies
+    /// anything, and GDI always returns true.
     /// </summary>
     bool TryCapture(int timeoutMilliseconds, out CapturedFrame frame);
 }

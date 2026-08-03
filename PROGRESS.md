@@ -754,11 +754,11 @@ relay (`/health` OK, version 0.3.0-relay).
 The pairing test ran two copies on ONE machine with a config-dir override. That proves the relay
 path, the protocol, consent, logging and reconnect. It does NOT prove:
 
-1. **⚠️ ADAPTIVE QUALITY IS NOT BUILT — largest risk, and the next piece of work.** JPEG quality
-   is still the fixed LAN-era 95. Measured need at full motion is ~1.7–2.2 MB/s; a typical home
-   upload is 0.6–2.5 MB/s. **Reading a still screen will work; anything moving will stall.** This
-   will show up in the very first real test. It was item 6 of the original Stage 3 plan and did
-   not make it into the last five-step list.
+1. ~~**⚠️ ADAPTIVE QUALITY IS NOT BUILT — largest risk, and the next piece of work.**~~ **BUILT
+   2026-08-03 — see "Adaptive quality and frame rate" at the end of this file.** Measured on a
+   simulated 0.6 MB/s link with an ordinary home router's 1 MB of buffering, a typical support
+   screen: the picture used to settle **1.85 s behind** and now settles **0.32 s behind**. Still
+   unproven on a REAL pair of home connections, which is what items 2 and 3 below are for.
 2. **Two different routers/NATs.** Outbound 443 looks like ordinary HTTPS and should pass
    anywhere, but it has never crossed two real home networks.
 3. **Real throughput between two homes.** The test was localhost → Kyiv → localhost; it never
@@ -837,3 +837,79 @@ design pass** (rounded corners via GraphicsPath+AntiAlias with a DPI-scaled Them
 preference; app icon in both exes; button hover/pressed; vertical rhythm; deliberate window sizes;
 address/code area as the hero), then show both windows, then the relay-location answer (nearest DC to
 Kyiv + a way to measure latency before paying), then Stage 3.
+
+# ══════ Adaptive quality and frame rate (built 2026-08-03) ══════
+
+Built while the site's certificate was blocked at the hosting provider, because it was the largest
+unproven risk before the first real test: quality was still the fixed LAN-era 95, full motion costs
+~1.7–2.2 MB/s, and a typical home upload is 0.6–2.5 MB/s.
+
+## What was built
+
+- **`Host/Net/BandwidthGovernor.cs` (new)** — one ordered ladder of ten (fps, quality) operating
+  points, walked one step at a time. Level 0 is exactly the old fixed behaviour, so nothing measured
+  on the LAN regresses; level 9 is 2 fps at quality 60. Down fast (two steps when a single send has
+  already blocked for most of a second), up slow (three consecutive quiet windows). Idle step-down
+  on top: 8 fps after a second of nothing changing, 2 fps after four, back to full rate instantly on
+  any change — and on the first INPUT event, which arrives before the screen changes and is what
+  keeps the GDI path from feeling late.
+- **`Host/Encoding/TileDiffer.cs`** — now remembers the quality each tile was last sent at and hands
+  stale ones back a few at a time when there is room.
+- **`Shared/Protocol/PingPayload.cs`** — the viewer's Ping now carries its last measured round trip
+  (4 extra bytes, no extra traffic).
+- **`Host/Diagnostics/LinkTest.cs` (new)** + `FlashDesk.exe --linktest <path> <seconds>` — the
+  before/after measurement. Real encoder, real differ, real framing, real governor; only the screen
+  and the link are simulated.
+- **`Viewer/SessionWindow.cs`** — repaint requests are now coalesced instead of one BeginInvoke per
+  frame.
+- Technical view gained one adaptation line; the quality selector gained "Automatic" (the default)
+  and can still pin a number for testing. **The simple view is unchanged and still number-free.**
+
+## Measured, 40 s per run, Release, `.223`
+
+The number is HOW OLD THE PICTURE IS on the other person's screen, settled (last quarter of the run):
+
+| Link | Router buffer | Content | FIXED | ADAPTIVE |
+|---|---|---|---|---|
+| 0.6 MB/s | 1 MB (ordinary home router) | typical support screen | **1.85 s** | **0.32 s** |
+| 0.6 MB/s | 256 KB | typical support screen | 0.57 s | 0.27 s |
+| 0.6 MB/s | 1 MB | full motion | 2.47 s | 2.10 s |
+| 0.6 MB/s | 256 KB | full motion | 1.19 s | 0.75 s |
+| 2.4 MB/s | 256 KB | typical support screen | 0.06 s | 0.06 s |
+| 2.4 MB/s | 256 KB | full motion | 0.27 s | 0.27 s |
+
+The fast-link rows are the ones that had to come out UNCHANGED, and did: adaptation costs nothing
+when there is nothing to fix.
+
+## Three things that were tried and were wrong — kept so they are not retried
+
+1. **Duty cycle as the congestion signal** (fraction of wall-clock time spent sending). Measured
+   wrong: a healthy link near capacity legitimately spends most of its time sending, so it throttled
+   a link with nothing wrong with it — 22 fps where 29 were available. Replaced by send time ÷
+   intended frame interval.
+2. **Measuring staleness at the instant a frame arrives.** Misses the gap BETWEEN frames, which is
+   most of what a person feels. Replaced by the time-weighted age of whatever is on screen.
+3. **Send timing alone, with no round-trip feedback.** Blind to an ordinary home router: while a
+   deep buffer fills, every send returns instantly. This is the difference between 1.85 s and 0.32 s
+   in the table above.
+
+## Frames are still DROPPED, never QUEUED — re-verified, whole chain
+
+Asked for explicitly, so it was checked end to end rather than assumed:
+
+- **Host frame loop** — one frame at a time, capture → encode → send, no collection holding frames.
+  Adaptation only makes it send LESS (fewer trips, fewer bytes); it adds no buffer.
+- **`MessageChannel.SendAsync`** — writes straight to the stream under a semaphore. No buffer.
+- **Relay `CopyAsync`** — strictly sequential receive-then-send on one 64 KB buffer. No queue.
+- **Viewer receive loop** — decodes synchronously, so it is self-throttling.
+- **Viewer repaint — this one was FIXED, not just verified.** It posted one `BeginInvoke` per frame,
+  and `BeginInvoke` is a queue: a busy UI thread would have accumulated repaints of pixels that were
+  already out of date. Now one repaint is outstanding at a time and frames arriving meanwhile merge
+  into it, with a hard cap that falls back to repainting everything.
+
+## Still unproven
+
+Everything is measured against a SIMULATED link. Two real home connections, two different routers
+and two different screen sizes remain untested — items 2, 3 and 5 of the handover's unproven list.
+The certificate gate is unchanged: nothing goes to any tester until `https://flashdesk.org` verifies
+`0 (ok)` from outside.

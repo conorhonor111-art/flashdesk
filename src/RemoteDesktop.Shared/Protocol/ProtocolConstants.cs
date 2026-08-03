@@ -12,14 +12,14 @@ public static class ProtocolConstants
     /// <summary>Edge length in pixels of one square tile the screen is divided into.</summary>
     public const int TileSize = 128;
 
-    /// <summary>Default JPEG quality (1-100) for changed tiles. Higher = sharper text, more bytes.
-    /// Text legibility is the primary quality metric for this tool. 95 is a deliberate LAN-only
-    /// default (on a local network the extra bytes are free); Stage 3 MUST revisit this with
-    /// adaptive quality driven by measured bandwidth, because there the bytes are the server's bill
-    /// and the client's home connection. The host can change it live from its window.</summary>
+    /// <summary>Quality a session STARTS at, before it has measured anything. Higher = sharper text,
+    /// more bytes; text legibility is the primary quality metric for this tool, so a session begins
+    /// assuming the link is good and gives quality up only when the link says otherwise.
+    /// From Stage 3 this is no longer the quality a session RUNS at: BandwidthGovernor moves it from
+    /// the measured link, which is what makes the tool usable on a home connection.</summary>
     public const int DefaultJpegQuality = 95;
 
-    /// <summary>Lowest and highest quality offered by the host's live quality control.</summary>
+    /// <summary>Lowest and highest quality, for both the governor's ladder and the manual override.</summary>
     public const int MinJpegQuality = 60;
     public const int MaxJpegQuality = 95;
 

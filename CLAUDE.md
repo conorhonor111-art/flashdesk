@@ -419,16 +419,73 @@ naming the stage. Never commit `bin`/`obj` (already handled by `.gitignore`).
 
 ## Protocol facts
 
-- TCP port **7789** · tile size **128×128** · default JPEG quality **95** (operator-adjustable
-  60–95, live) — all defined once in `Shared/Protocol/ProtocolConstants.cs`, never hard-coded
-  elsewhere. **Quality 95 is a deliberate LAN-only default** (on a local network the extra bytes are
-  free); **Stage 3 must replace it with adaptive quality driven by measured bandwidth**, because
-  there the bytes are the server's bill and the client's home connection.
+- TCP port **7789** · tile size **128×128** · JPEG quality **starts at 95** and is then moved by the
+  bandwidth governor (60–95) — all defined once in `Shared/Protocol/ProtocolConstants.cs`, never
+  hard-coded elsewhere. **Adaptive quality and frame rate BUILT 2026-08-03** — quality 95 was a
+  LAN-only default and is now only a starting point; see "Adaptive quality — the three findings that
+  shaped it" below before changing any of it.
 - Every message is length-prefixed with a type byte, so two frames can never run into each
   other on the wire.
 - **Latency is measured by round-trip ping, never by comparing timestamps.** The two
   machines' clocks are not synchronised; subtracting them yields meaningless (sometimes
   negative) numbers.
+
+## Adaptive quality — the three findings that shaped it (BUILT 2026-08-03)
+
+`Host/Net/BandwidthGovernor.cs` decides frame rate and quality from the measured link. Everything
+below was **measured while building it**, and each item is here because a plausible-sounding
+alternative was tried first and was wrong. `FlashDesk.exe --linktest <path> <secondsPerRun>`
+reproduces all of it (simulated link, real encoder, real governor, no network — safe to run over
+RDP, unlike throttling the machine's real network).
+
+1. **It is ONE ladder of (fps, quality) pairs, not two independent controls, and frame rate is spent
+   before quality.** Two controllers need an ordering rule that has no stable answer and is where
+   oscillation comes from. The order inside the ladder is forced by an existing measurement in this
+   file: quality 95 costs only ~7 % more bytes than quality 70 on REAL content, so quality 95→60
+   saves about a tenth of the bytes while 30→8 fps saves nearly three quarters. Frame rate is the
+   lever; quality is a trim. This also keeps quality at 95 through the first five steps, protecting
+   text legibility, which is the primary quality metric. **Level 0 of the ladder is exactly the old
+   fixed behaviour, so nothing measured on the LAN regresses.**
+
+2. **The congestion signal is send time ÷ intended frame interval — NOT the fraction of time spent
+   sending.** The duty-cycle version was built first and measured wrong: a healthy link running near
+   capacity legitimately spends most of its time sending, so it kept backing off a link with nothing
+   wrong with it (22 fps where 29 were available). Being busy is not the same as being late. The
+   threshold is deliberately **below 1** (0.85): filling a link completely means every frame waits
+   behind the last one's bytes, so the picture is permanently a frame behind. This is a remote
+   CONTROL tool — latency beats throughput, and roughly a third of the link is left unused to buy
+   the delay back.
+
+3. **⚠️ THE ROUND-TRIP FEEDBACK IS LOAD-BEARING — do not remove it as "extra protocol".** The viewer
+   reports its last measured round trip inside its next Ping (4 bytes, no extra traffic —
+   `PingPayload`). Without it the sending side is **blind to an ordinary home router**: while a deep
+   buffer fills, every send still returns instantly, so all local signals read healthy while the
+   picture slides seconds behind. Measured, 0.6 MB/s link with 1 MB of router buffering, typical
+   support screen: with send timing alone the picture settled **1.85 s behind and never recovered**;
+   with the round-trip signal it settles at **0.32 s**. The comparison is against the session's OWN
+   best round trip, never an absolute — a machine 2000 km away starts at 60 ms with nothing wrong.
+
+**Two supporting pieces that are easy to mistake for optional:**
+
+- **`TileDiffer` remembers the quality each tile was last sent at, and re-sends stale ones a few at a
+  time when there is room.** Without this, adaptive quality PERMANENTLY damages the picture: a tile
+  is only re-sent when its pixels change, so text that was softened during a burst of motion and
+  then stopped moving stays soft for the rest of the session. The refresh is capped (6 tiles/frame,
+  only while under 8 tiles changed) so the screen settles rather than flashes.
+- **`IScreenCapture.TryCapture` must leave the buffer untouched when it returns false.** The refresh
+  pass depends on it — a still screen is exactly when there are no fresh pixels to work from. Both
+  implementations satisfy it today; the contract is now written in the interface.
+
+**Honest limits, so nobody oversells this:** full-screen motion on a 0.6 MB/s uplink is still not
+possible — adaptation takes the settled delay from ~2.5 s to ~2.1 s there and no further, because the
+link genuinely cannot carry it. What adaptation fixes is the SUPPORT session (a mostly-still screen
+with something moving in it), which is the actual product. And all of it is still measured against a
+simulated link; two real home connections remain unproven.
+
+**Client-invisible by rule (Conor, 2026-08-03).** Adaptation never appears in the simple view: no
+flicker, no bandwidth message, no number. The client cannot act on it, and a "your connection is
+slow" line during a support call reads as "this is broken". Every readout lives in the technical
+view, on one line.
 
 ## Measurement procedure (use the same method every stage so numbers stay comparable)
 

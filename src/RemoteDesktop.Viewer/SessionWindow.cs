@@ -41,6 +41,16 @@ public sealed class SessionWindow : Form
     private bool _closingForGood;   // the person pressed Disconnect: do not try to come back
     private bool _reconnecting;
 
+    // One repaint outstanding at a time; frames arriving meanwhile merge into it. See OnFrame.
+    private const int MaxPendingTiles = 2048;
+    private readonly object _paintGate = new();
+    private readonly List<(int X, int Y)> _dirtyTiles = new();
+    private bool _repaintPosted;
+    private bool _repaintEverything;
+    private int _pendingCursorX = -1;
+    private int _pendingCursorY = -1;
+    private bool _pendingCursorVisible;
+
     /// <summary>How long to keep trying before giving up. The host's grace window is 90 s.</summary>
     private static readonly TimeSpan ReconnectFor = TimeSpan.FromSeconds(75);
 
@@ -133,20 +143,78 @@ public sealed class SessionWindow : Form
         });
     }
 
+    /// <summary>
+    /// Applies a frame. The JPEG decode happens HERE, on the receive thread, so the picture is
+    /// already assembled before the UI thread is asked for anything.
+    ///
+    /// The repaint request is COALESCED rather than posted per frame, and that is the point of this
+    /// method: BeginInvoke is a queue, and a queue is the one thing this pipeline must not contain.
+    /// If the UI thread is busy — the window is being dragged, a menu is open — posting one action
+    /// per arriving frame would pile up work that is already out of date by the time it runs, and
+    /// the picture would keep replaying the past instead of showing the present. Instead a single
+    /// repaint is outstanding at any moment; frames arriving while it waits merge their changed
+    /// tiles into the same pending repaint. Newer pixels always win, older ones are simply skipped.
+    /// </summary>
     private void OnFrame(FramePacket packet)
     {
         foreach (var tile in packet.Tiles)
             _screen.ApplyTile(tile.Column * _tileSize, tile.Row * _tileSize, tile.Jpeg);
 
-        var tiles = packet.Tiles;
-        int cursorX = packet.CursorX, cursorY = packet.CursorY;
-        bool cursorVisible = packet.CursorVisible;
-        SafeBeginInvoke(() =>
+        bool needsPost;
+        lock (_paintGate)
         {
-            foreach (var tile in tiles)
-                _canvas.InvalidateTile(tile.Column * _tileSize, tile.Row * _tileSize, _tileSize, _tileSize);
-            _canvas.SetRemoteCursor(cursorX, cursorY, cursorVisible);
-        });
+            if (!_repaintEverything)
+            {
+                foreach (var tile in packet.Tiles)
+                    _dirtyTiles.Add((tile.Column * _tileSize, tile.Row * _tileSize));
+
+                // A UI thread wedged for a long time must not be able to grow this without limit.
+                // Past this point repainting the whole canvas is both cheaper and simpler.
+                if (_dirtyTiles.Count > MaxPendingTiles)
+                {
+                    _dirtyTiles.Clear();
+                    _repaintEverything = true;
+                }
+            }
+
+            _pendingCursorX = packet.CursorX;
+            _pendingCursorY = packet.CursorY;
+            _pendingCursorVisible = packet.CursorVisible;
+
+            needsPost = !_repaintPosted;
+            if (needsPost) _repaintPosted = true;
+        }
+
+        if (needsPost && !SafeBeginInvoke(DrainRepaint))
+            lock (_paintGate) { _repaintPosted = false; } // the window went away mid-post; do not wedge
+    }
+
+    // Runs on the UI thread: takes whatever accumulated and invalidates it in one pass.
+    private void DrainRepaint()
+    {
+        (int X, int Y)[] tiles;
+        bool everything;
+        int cursorX, cursorY;
+        bool cursorVisible;
+
+        lock (_paintGate)
+        {
+            tiles = _dirtyTiles.ToArray();
+            _dirtyTiles.Clear();
+            everything = _repaintEverything;
+            _repaintEverything = false;
+            cursorX = _pendingCursorX;
+            cursorY = _pendingCursorY;
+            cursorVisible = _pendingCursorVisible;
+            _repaintPosted = false;
+        }
+
+        if (everything) _canvas.Invalidate();
+        else
+            foreach (var (x, y) in tiles)
+                _canvas.InvalidateTile(x, y, _tileSize, _tileSize);
+
+        _canvas.SetRemoteCursor(cursorX, cursorY, cursorVisible);
     }
 
     private void OnDisconnected(string reason)
@@ -217,13 +285,15 @@ public sealed class SessionWindow : Form
     // Callbacks arrive on ViewerClient's background threads. Marshalling to the UI thread can
     // race with the window's handle being destroyed as it closes; swallow exactly that race
     // rather than let it crash the app on shutdown.
-    private void SafeBeginInvoke(Action action)
+    private bool SafeBeginInvoke(Action action)
     {
         try
         {
-            if (IsHandleCreated) BeginInvoke(action);
+            if (!IsHandleCreated) return false;
+            BeginInvoke(action);
+            return true;
         }
-        catch (InvalidOperationException) { } // includes ObjectDisposedException — the handle went away
+        catch (InvalidOperationException) { return false; } // includes ObjectDisposedException — the handle went away
     }
 
     private string StatusText()

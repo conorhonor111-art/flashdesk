@@ -25,6 +25,9 @@ namespace RemoteDesktop.Host;
 /// </summary>
 public sealed class MainForm : Form
 {
+    /// <summary>The technical view's quality selector: follow the link, or pin a number for testing.</summary>
+    private const string AutomaticQuality = "Automatic";
+
     private readonly HostServer _server = new();
 
     private readonly Icon? _iconIdle = LoadAppIcon("FlashDesk.AppIcon");
@@ -53,6 +56,7 @@ public sealed class MainForm : Form
     private readonly Label _method = NewDetail();
     private readonly Label _fps = NewDetail();
     private readonly Label _kb = NewDetail();
+    private readonly Label _adaptive = NewDetail();
     private readonly Label _monitoring = NewDetail();
     private readonly Label _survived = NewDetail();
     private readonly Label _failures = NewDetail();
@@ -356,10 +360,14 @@ public sealed class MainForm : Form
             AutoSizeMode = AutoSizeMode.GrowAndShrink,
             Margin = new Padding(0, Theme.S2, 0, Theme.S2),
         };
-        qualityRow.Controls.Add(new Label { Text = "Image quality (higher is sharper text)", AutoSize = true, Font = Theme.Body, ForeColor = Theme.TextPrimary, Margin = new Padding(0, Theme.S1, 0, 0) });
+        qualityRow.Controls.Add(new Label { Text = "Image quality (Automatic follows the measured link)", AutoSize = true, Font = Theme.Body, ForeColor = Theme.TextPrimary, Margin = new Padding(0, Theme.S1, 0, 0) });
+        _quality.Items.Add(AutomaticQuality);
         for (int q = ProtocolConstants.MinJpegQuality; q <= ProtocolConstants.MaxJpegQuality; q += 5) _quality.Items.Add(q);
-        _quality.SelectedItem = _server.JpegQuality;
-        _quality.SelectedIndexChanged += (_, _) => { if (_quality.SelectedItem is int q) _server.JpegQuality = q; };
+        _quality.SelectedItem = AutomaticQuality;
+        // Pinning a quality is for testing from this panel only. The frame rate keeps adapting either
+        // way — a pinned quality must never be able to stall a session.
+        _quality.SelectedIndexChanged += (_, _) =>
+            _server.Governor.ManualQuality = _quality.SelectedItem is int q ? q : (int?)null;
         qualityRow.Controls.Add(_quality);
 
         var buttonRow = new FlowLayoutPanel
@@ -381,7 +389,7 @@ public sealed class MainForm : Form
         }
 
         return MakeCard(new Padding(Theme.S3),
-            _method, _fps, _kb, _monitoring, _survived, _failures,
+            _method, _fps, _kb, _adaptive, _monitoring, _survived, _failures,
             _relayState, _identityDetail, _identityFile, _relayUrl, _allAddresses, qualityRow, buttonRow);
     }
 
@@ -595,6 +603,7 @@ public sealed class MainForm : Form
             _method.Text = _diagnostics.Enabled ? "Sharing is stopped." : "Running diagnostics…";
             _fps.Text = "";
             _kb.Text = "";
+            _adaptive.Text = "";
             return;
         }
 
@@ -627,6 +636,11 @@ public sealed class MainForm : Form
         var (fps, bytesPerSecond) = _server.OutgoingMeter.Read();
         _fps.Text = $"Frames per second: {fps:0}";
         _kb.Text = $"Outgoing: {(bytesPerSecond / 1024.0):0.0} KB/s";
+
+        // The adaptation readout lives HERE and only here. The simple view stays number-free
+        // (CLAUDE.md): the client must never be told the connection is struggling — they cannot act
+        // on it, and a bandwidth message during a support call reads as "this is broken".
+        _adaptive.Text = _server.Governor.StateLine();
     }
 
     private static Icon? LoadAppIcon(string logicalName)

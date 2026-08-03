@@ -26,7 +26,11 @@ namespace RemoteDesktop.Host.Net;
 /// </summary>
 public sealed class HostServer : IDisposable
 {
-    private readonly int _targetFps;
+    /// <summary>Never spend more of a frame on re-sharpening than a still screen can absorb quietly.</summary>
+    private const int MaxRefreshTilesPerFrame = 6;
+
+    /// <summary>Only re-sharpen while the screen is nearly still; a busy frame has better uses for the link.</summary>
+    private const int RefreshWhenChangedBelow = 8;
 
     private CancellationTokenSource? _cts;
     private Task? _relayLoop;
@@ -67,6 +71,9 @@ public sealed class HostServer : IDisposable
     private readonly TileDiffer _differ = new(ProtocolConstants.TileSize);
     private readonly JpegTileEncoder _encoder = new(ProtocolConstants.DefaultJpegQuality);
 
+    /// <summary>Decides frame rate and quality from the measured link. See BandwidthGovernor.</summary>
+    public BandwidthGovernor Governor { get; } = new();
+
     public RateMeter OutgoingMeter { get; } = new();
     public CaptureHealthLog Health { get; } = new(); // interruption counters + log; persists across start/stop
     public CaptureMethod Method => _capture?.Method ?? CaptureMethod.Dxgi; // live, so a mid-session GDI fallback shows
@@ -74,14 +81,11 @@ public sealed class HostServer : IDisposable
     public bool IsCapturing { get; private set; }
     public volatile bool ViewerConnected;
 
-    /// <summary>JPEG quality of encoded tiles. Can be changed live from the host window.</summary>
-    public int JpegQuality
-    {
-        get => _encoder.Quality;
-        set => _encoder.SetQuality(value);
-    }
-
-    public HostServer(int targetFps = 30) => _targetFps = targetFps;
+    /// <summary>
+    /// JPEG quality actually in use. Normally chosen by the governor from the measured link; the
+    /// technical view can pin it for testing by setting <see cref="BandwidthGovernor.ManualQuality"/>.
+    /// </summary>
+    public int JpegQuality => _encoder.Quality;
 
     /// <summary>
     /// Starts capture. The relay connection only begins once <see cref="SetIdentity"/> supplies a
@@ -294,30 +298,56 @@ public sealed class HostServer : IDisposable
             switch (msg.Value.Type)
             {
                 case MessageType.Ping:
+                    // The viewer carries its last measured round trip in the Ping. That is the only
+                    // way this machine can see a queue building between here and there — see
+                    // BandwidthGovernor.OnRoundTripReported.
+                    Governor.OnRoundTripReported(PingPayload.ToLastRoundTripMs(msg.Value.Payload));
                     await channel.SendAsync(MessageType.Pong, msg.Value.Payload, ct).ConfigureAwait(false);
                     break;
                 case MessageType.Input:
+                    // Tell the governor before injecting: the hand always moves before the screen
+                    // does, so this is the earliest possible signal that the idle step-down should
+                    // end. On the GDI path — which polls and cannot be woken by a change — this is
+                    // what stops the first click after a quiet moment feeling late.
+                    Governor.OnInputReceived();
                     _injector?.Apply(InputEvent.FromBytes(msg.Value.Payload));
                     break;
             }
         }
     }
 
-    // Frames are DROPPED, never QUEUED, when the machine cannot keep up. This loop handles exactly
-    // one frame at a time — capture -> encode -> send — with no frame buffer, so at most one frame is
-    // ever in flight. When a frame takes longer than the target interval, `remaining` is <= 0 and the
-    // loop immediately captures again; capture always returns the LATEST screen (DXGI coalesces the
-    // changed regions, GDI grabs the current screen), so intermediate frames are simply skipped. And
-    // `await SendAsync` applies TCP back-pressure: a slow viewer slows this loop, which throttles
-    // capture rate rather than building a backlog. So raising the target rate can only ADD smoothness
-    // when there is spare time; it can never turn into seconds of queued input lag.
+    // Frames are DROPPED, never QUEUED, when the machine or the link cannot keep up. This loop handles
+    // exactly one frame at a time — capture -> encode -> send — with no frame buffer, so at most one
+    // frame is ever in flight. When a frame takes longer than the target interval, `remaining` is <= 0
+    // and the loop immediately captures again; capture always returns the LATEST screen (DXGI coalesces
+    // the changed regions, GDI grabs the current screen), so intermediate frames are simply skipped.
+    // And `await SendAsync` applies TCP back-pressure: a slow viewer slows this loop, which throttles
+    // the capture rate rather than building a backlog.
+    //
+    // ADAPTATION DOES NOT CHANGE THAT — and this is the property to protect above all others, because
+    // a queue turns into seconds of input lag, which is far worse than a soft picture. Both new levers
+    // make this loop send LESS, never buffer more: the governor lowers the frame rate (fewer trips
+    // round this loop) and the quality (fewer bytes per trip). There is still exactly one frame in
+    // flight and still no collection anywhere holding frames. The one thing back-pressure alone could
+    // not fix is why the governor exists at all: without it, a slow link is absorbed by the operating
+    // system's own send buffer, so a single 2 MB frame is still handed over in full and the picture on
+    // the other side is simply seconds old. Sending less is the only real answer.
     private async Task FrameLoopAsync(MessageChannel channel, CancellationToken ct)
     {
         long frameNumber = 0;
-        int frameIntervalMs = Math.Max(1, 1000 / _targetFps);
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var sendTimer = new System.Diagnostics.Stopwatch();
 
         int lastWidth = _capture!.Width, lastHeight = _capture.Height;
+        int lastCursorX = int.MinValue, lastCursorY = int.MinValue;
+
+        // The most recent frame we actually got pixels for. Valid to reuse only while capture keeps
+        // returning false, which is exactly the still-screen case the refresh pass is for; the
+        // IScreenCapture contract requires a false return to leave the buffer untouched.
+        CapturedFrame lastGood = default;
+        bool haveLastGood = false;
+
+        Governor.Reset(); // every session starts at the top of the ladder and re-measures its own link
 
         while (!ct.IsCancellationRequested)
         {
@@ -326,12 +356,15 @@ public sealed class HostServer : IDisposable
             var capture = _capture;
             if (capture is null) break;
 
+            int quality = Governor.Quality;
+            _encoder.SetQuality(quality);
+
             var updates = new List<TileUpdate>();
             CapturedFrame frame = default;
             bool captured;
             lock (_captureLock)
             {
-                captured = capture.TryCapture(frameIntervalMs, out frame);
+                captured = capture.TryCapture(Governor.CaptureTimeoutMs, out frame);
             }
 
             // The captured resolution can change mid-session (DXGI recovering at a new resolution after a
@@ -344,25 +377,61 @@ public sealed class HostServer : IDisposable
                 _injector?.SetScreenSize(lastWidth, lastHeight);
                 await channel.SendAsync(MessageType.ScreenInfo,
                     new ScreenInfo(lastWidth, lastHeight, ProtocolConstants.TileSize).ToBytes(), ct).ConfigureAwait(false);
-                captured = false; // send a clean full frame at the new size next tick
+                captured = false;      // send a clean full frame at the new size next tick
+                haveLastGood = false;  // the retained pixels are the wrong size now
             }
 
+            int changedCount = 0;
             if (captured)
             {
-                foreach (var tile in _differ.Diff(frame.Pixels, frame.Width, frame.Height))
+                lastGood = frame;
+                haveLastGood = true;
+                var changed = _differ.Diff(frame.Pixels, frame.Width, frame.Height, quality);
+                changedCount = changed.Count;
+                foreach (var tile in changed)
                 {
                     var jpeg = _encoder.Encode(frame.Pixels, frame.Width, tile.X, tile.Y, tile.Width, tile.Height);
                     updates.Add(new TileUpdate(tile.Column, tile.Row, jpeg));
                 }
             }
 
+            // Re-sharpen, quietly. Tiles sent at a lower quality during a burst of motion would
+            // otherwise stay soft for the rest of the session — a tile is only re-sent when its pixels
+            // change, and text that has finished moving never changes again. A handful at a time, only
+            // while the screen is nearly still, so the client sees the picture settle rather than flash.
+            if (haveLastGood && changedCount < RefreshWhenChangedBelow)
+            {
+                var refresh = new List<TileDiffer.ChangedTile>();
+                _differ.CollectStale(quality, MaxRefreshTilesPerFrame, lastGood.Width, lastGood.Height, refresh);
+                foreach (var tile in refresh)
+                {
+                    var jpeg = _encoder.Encode(lastGood.Pixels, lastGood.Width, tile.X, tile.Y, tile.Width, tile.Height);
+                    updates.Add(new TileUpdate(tile.Column, tile.Row, jpeg));
+                }
+            }
+
             var (cursorX, cursorY, onScreen) = _injector!.GetCursor();
+            bool cursorMoved = cursorX != lastCursorX || cursorY != lastCursorY;
+            lastCursorX = cursorX;
+            lastCursorY = cursorY;
+
             var packet = new FramePacket(frameNumber++, updates, cursorX, cursorY, onScreen);
             var bytes = packet.ToBytes();
-            await channel.SendAsync(MessageType.Frame, bytes, ct).ConfigureAwait(false);
-            OutgoingMeter.Record(1, bytes.Length);
 
-            int remaining = frameIntervalMs - (int)(stopwatch.ElapsedMilliseconds - loopStart);
+            // Time the send itself: once the socket's own buffer is full, a send cannot complete
+            // faster than the link drains, so this is a direct and honest measure of congestion.
+            sendTimer.Restart();
+            await channel.SendAsync(MessageType.Frame, bytes, ct).ConfigureAwait(false);
+            sendTimer.Stop();
+
+            OutgoingMeter.Record(1, bytes.Length);
+            // Only real screen changes count as activity. Refresh tiles must not, or a still screen
+            // would keep talking itself out of idling.
+            Governor.OnFrameSent(bytes.Length, sendTimer.Elapsed.TotalMilliseconds, changedCount > 0, cursorMoved);
+
+            // Recomputed AFTER the governor has seen this frame, so a screen that just started moving
+            // is already back at the fast interval instead of sleeping out the idle one.
+            int remaining = Governor.FrameIntervalMs - (int)(stopwatch.ElapsedMilliseconds - loopStart);
             if (remaining > 0)
                 await Task.Delay(remaining, ct).ConfigureAwait(false);
         }

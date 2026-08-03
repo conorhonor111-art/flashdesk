@@ -35,6 +35,7 @@ public sealed class ViewerClient : IDisposable
 
     public RateMeter IncomingMeter { get; } = new();
     public double LastLatencyMs { get; private set; }
+    private volatile bool _latencyMeasured; // until the first Pong, there is no number to report
     public bool IsConnected { get; private set; }
 
     public event Action<ScreenInfo>? ScreenInfoReceived;
@@ -133,6 +134,7 @@ public sealed class ViewerClient : IDisposable
                     case MessageType.Pong:
                         long sentAt = PingPayload.ToTimestamp(msg.Value.Payload);
                         LastLatencyMs = (Stopwatch.GetTimestamp() - sentAt) * 1000.0 / Stopwatch.Frequency;
+                        _latencyMeasured = true;
                         break;
                 }
             }
@@ -153,7 +155,12 @@ public sealed class ViewerClient : IDisposable
         {
             while (!ct.IsCancellationRequested)
             {
-                await _channel!.SendAsync(MessageType.Ping, PingPayload.FromTimestamp(Stopwatch.GetTimestamp()), ct).ConfigureAwait(false);
+                // Carry the last round trip back to the host. It cannot measure one itself, and
+                // without it a queue building in a home router is invisible to the sending side —
+                // see PingPayload.
+                int reported = _latencyMeasured ? (int)Math.Round(LastLatencyMs) : -1;
+                await _channel!.SendAsync(MessageType.Ping,
+                    PingPayload.FromTimestamp(Stopwatch.GetTimestamp(), reported), ct).ConfigureAwait(false);
                 await Task.Delay(1000, ct).ConfigureAwait(false);
             }
         }
