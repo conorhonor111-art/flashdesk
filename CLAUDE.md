@@ -907,10 +907,36 @@ It went unnoticed because the page serves perfectly over **http://** (HTTP 200, 
 and `http://` is NOT redirected to `https://`), so anyone testing without typing the scheme sees
 a working site.
 
-**The fix is clicks, not commands: cPanel → SSL/TLS Status → tick flashdesk.org → Run AutoSSL.**
-cPanel then issues a real certificate (usually minutes). Verify from `.223` with:
+**The fix is NOT in our hands (2026-08-03).** Conor's cPanel has no "Run AutoSSL" button — only
+filters — so the certificate cannot be issued from the panel. He has opened a support ticket
+asking the host to issue a proper certificate and enable AutoSSL. **There is nothing to build or
+configure on our side; we are waiting on the provider.**
+
+**HARD GATE: nothing is sent to any tester until `https://flashdesk.org` shows a padlock with no
+warning.** Verify from `.223`:
 `echo | openssl s_client -servername flashdesk.org -connect flashdesk.org:443 2>&1 | grep "Verify return code"`
-— it must say `0 (ok)`. Only after that should the link go to a stranger.
+— it must say `0 (ok)`.
+
+### THE RULE THIS TAUGHT US — check the certificate from outside after ANY hosting change
+
+**`http://` working proves NOTHING about `https://`.** That is exactly the trap we fell into: the
+page served perfectly over http, http is not redirected to https, and so every check looked
+green while every real visitor would have been stopped by a security warning. A browser on the
+machine that made the change is not a check either — it may have cached, or the person may have
+clicked through the warning weeks ago.
+
+So the site gets the same treatment the relay already has. `relay.flashdesk.org/health` is the
+one-glance check that the relay is alive; the site's equivalent is the certificate check above,
+run **from `.223`, after every hosting change**, and it must return `0 (ok)`. Two commands, both
+cheap, both to be run rather than assumed:
+
+```
+curl -sS -o /dev/null -w "%{http_code}\n" https://flashdesk.org
+echo | openssl s_client -servername flashdesk.org -connect flashdesk.org:443 2>&1 | grep "Verify return code"
+```
+
+A non-zero verify code means the site is broken for every stranger, no matter how good it looks
+from here.
 - **Architecture (revised 2026-07-30 — Conor already OWNS hosting and wants it used):**
   `flashdesk.org` → his existing web hosting → the site + the `/download` file;
   `relay.flashdesk.org` → the small Warsaw VPS → the relay ONLY (unless his hosting proves able

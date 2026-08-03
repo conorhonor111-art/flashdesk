@@ -722,14 +722,22 @@ Built and verified this session (each proven by running it, not by reading code)
 
 ## ⚠️ THREE THINGS THAT ARE NOT WHAT THEY LOOK LIKE — verified live 2026-08-03
 
-1. **flashdesk.org HTTPS IS BROKEN — self-signed certificate.** `openssl s_client` returns
-   `Verify return code: 18 (self-signed certificate)`; subject and issuer are both
-   `CN=flashdesk.org`. Every visitor to `https://flashdesk.org` gets a full-page browser security
-   warning. It went unnoticed because the page serves fine over `http://` (HTTP 200, and http is
-   NOT redirected to https), so testing without typing the scheme looks perfect.
-   **Fix, clicks only: cPanel → SSL/TLS Status → tick flashdesk.org → Run AutoSSL.** Then verify:
+1. **🚫 THE SITE IS BLOCKED — flashdesk.org HTTPS is a self-signed certificate, and the fix is
+   NOT in our hands.** `openssl s_client` returns `Verify return code: 18 (self-signed
+   certificate)`; subject and issuer are both `CN=flashdesk.org`. Every visitor to
+   `https://flashdesk.org` gets a full-page browser security warning before seeing anything.
+   It went unnoticed because the page serves fine over `http://` (HTTP 200, and http is NOT
+   redirected to https), so testing without typing the scheme looks perfect.
+   **Status 2026-08-03: Conor checked cPanel and there is NO "Run AutoSSL" button on his account —
+   only filters. He has opened a support ticket asking the host to issue a proper certificate and
+   enable AutoSSL. We are waiting on the provider; there is nothing to build or configure from
+   our side.**
+   **HARD GATE: nothing goes to any tester until `https://flashdesk.org` shows a padlock with no
+   warning.** Verify from `.223`, not by looking at a browser:
    `echo | openssl s_client -servername flashdesk.org -connect flashdesk.org:443 2>&1 | grep "Verify return code"`
-   must say `0 (ok)`. **DO NOT send the link to a stranger until it does.**
+   — it must say `0 (ok)`. Until then the whole two-tester plan below is on hold, because the
+   first thing a stranger would meet is a browser telling them the site cannot be trusted, which
+   is worse than any warning we have been trying to explain away.
 2. **There is no `/download` URL.** It returns 404. Conor asked for the button to point straight
    at the file, so the live stable URL is `https://flashdesk.org/dl/FlashDesk.exe` and there is no
    redirect. It is stable the same way — replace the file, never the URL.
@@ -762,7 +770,8 @@ path, the protocol, consent, logging and reconnect. It does NOT prove:
 
 ## The test to run, and what to collect
 
-**Do the AutoSSL fix first.** Then: two people, each on their own computer and their own internet
+**BLOCKED until the certificate is fixed by the hosting provider — see finding 1.** Then: two
+people, each on their own computer and their own internet
 connection, each opens `https://flashdesk.org`, downloads, runs it. One reads their 9-digit
 number aloud; the other types it and presses Connect; the first presses Accept.
 
