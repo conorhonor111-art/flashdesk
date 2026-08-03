@@ -324,6 +324,14 @@ earlier "physical dev PC" wording was wrong.)
   and fall back automatically — that remains expected, not a bug.)
 - Conor sometimes pastes example values literally and sometimes runs a command on the wrong
   machine. Give commands fully filled in with real values, and always name the machine.
+- **The relay VPS is KEY-ONLY, and that is not optional at this provider.** DeltaHost's
+  generated root passwords proved unreliable (2026-08-03: the emailed password was rejected by
+  both the KVM console and SSH; support had to reset it manually). Key access via
+  `C:\Users\PC\.ssh\flashdesk_relay` is the only sane route — password login is switched off on
+  the server. Also note for anyone editing SSH config there: files in `/etc/ssh/sshd_config.d/`
+  are read in NAME order and the FIRST value wins, so Ubuntu's `60-cloudimg-settings.conf`
+  silently overrode a `99-` file; our policy lives in `10-flashdesk.conf` and the cloud-image
+  line is commented out. Always run `sshd -t` before restarting, or a typo locks everyone out.
 - **A brand-new host machine silently blocks the port — no firewall dialog appears** (hit on the
   Server 2022 VM at Stage 2: the first inbound connection to TCP 7789 was just dropped, with no
   prompt at all). Fix it once, from an **Administrator PowerShell on the host machine**, with this

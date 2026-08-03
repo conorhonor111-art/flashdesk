@@ -494,6 +494,124 @@ never leaves `.223`); public key + literal Vultr click-path handed to Conor (War
 LTS, $5–6 shared-CPU plan, paste the public key at deploy, hostname flashdesk-relay); waiting on
 the server IP, then the whole server setup runs over SSH from `.223`.
 
+## Conor's hosting assessed from the cPanel screenshot (2026-07-30)
+
+**It is shared cPanel hosting** (Jupiter theme; user `flas01151844`; home `/home/flas01151844`;
+shared IP `64.187.97.203`; **Primary Domain = flashdesk.org, already attached** — so the site can
+go live immediately; fresh account, 149/200,000 inodes). Verdict on the four questions:
+static site YES (File Manager → public_html); 65 MB download file YES (per-file no problem; the
+plan's disk/bandwidth quota not visible in the panel crop — ~100 client downloads ≈ 6.5 GB/month,
+fine for typical plans, check the provider's plan page if downloads grow); **long-lived custom
+process NO** (shared hosting runs short-lived website scripts only, no root, no service manager —
+the relay CANNOT live here); root NO, jailed SSH unknown (below the crop) and not needed — File
+Manager covers the site. **Split architecture confirmed: flashdesk.org = cPanel (site +
+/download), relay.flashdesk.org = Warsaw VPS (relay only).** DNS for the `relay` subdomain is
+expected in cPanel → Domains → Zone Editor (A record `relay` → VPS IP; propagation minutes to
+~1 h, TTL up to 4 h worst). Upload package prepared for Conor at
+`C:\Users\PC\Desktop\flashdesk-upload\index.html` (the holding page, renamed for serving at the
+root). Waiting: his upload → check https://flashdesk.org; his real who-line; then the Vultr
+deploy resumes (instructions + public key already in his hands).
+
+## Namecheap VPS measured — WRONG CONTINENT (2026-07-30, blocking decision)
+
+Conor bought the relay VPS at Namecheap (card worked there) instead of Vultr: IP
+`159.198.70.186`, Ubuntu 24.04, datacentre unknown to him. **Measured before any setup work:
+avg 167.4 ms (min 167 / max 169, 20/20 replies) vs Vultr Warsaw 14.0 ms and Frankfurt 27.0 ms
+the same hour.** Traceroute proves WHY, so this is not guesswork: hop 9 is 45 ms (still Europe),
+hop 10 jumps to 115 ms — a transatlantic leg — so the machine is in North America. That is
+Conor's own "over 100 ms — tell me now, not later" bucket: every mouse move would cross the
+Atlantic twice (~334 ms round trip added to each interaction). **Recommendation given: do NOT
+build on it; rebuild/relocate it to a European (ideally Warsaw/Amsterdam/Frankfurt) location, or
+keep it and buy the small Warsaw VPS instead — his money, his call.** No server setup was
+performed.
+
+**Website check — NOT broken:** `flashdesk.org` → `64.187.97.203` (the cPanel shared IP, correct);
+`www` → CNAME → same; `relay.flashdesk.org` does not exist yet (expected). Important DNS fact
+found: the nameservers are `ns1/ns2.hostsilo.com`, i.e. **DNS is managed at the hosting side, so
+the future `relay` A record goes in cPanel → Domains → Zone Editor, NOT in Namecheap's panel.**
+
+**Root password: NOT used, and will not be.** Claude does not authenticate with passwords —
+the key install and password-login shutdown must be run by Conor (or the key pasted at rebuild
+time, which is the cleaner path). The password he pasted in chat must be treated as exposed and
+rotated regardless of which server survives.
+
+## Relay provider search — PAYMENT-FIRST (2026-08-03, awaiting Conor's pick)
+
+Two failed attempts reframed the constraint: **payment is the blocker, not price or latency**
+(Vultr rejected his card; Namecheap took it but has NO European datacentre — support first said
+Amsterdam, then corrected itself; refund requested). Searched payment-first, verifying methods on
+providers' OWN pages, and measured latency from `.223` the same way as before.
+
+**Measured (6 pings each, plus traceroutes to prove the short ones are real and not a CDN edge):**
+Хостинг Україна `185.39.224.104` **<1 ms** (6 hops, via UA-IX Kyiv `195.69.84.33` — genuine Kyiv
+DC) · Lanet `194.60.69.123` **<1 ms** (6 hops, Kyiv) · Hetzner Falkenstein 27 ms · netcup 32 ms ·
+Tucha 29 ms · nic.ua 36 ms (their site is on DigitalOcean, not their DC). DeltaHost/HyperHost/
+GMhost/Contabo/Time4VPS all sit behind Cloudflare, so their 0 ms readings measure a Kyiv
+Cloudflare edge, NOT their servers — recorded so nobody mistakes those for datacentre latency.
+
+**A Kyiv relay is better than the original Warsaw plan**: ~1 ms instead of 14 ms, and BOTH legs of
+every session stay in the city where Conor and his clients are. Honest counterweight given to
+him: a Kyiv DC carries wartime power/infrastructure risk (generators are standard but blackouts
+happen); mitigating facts — a citywide outage takes his clients' PCs down too, and relocating the
+relay later is one A record plus a rebuild.
+
+**Ranked recommendation given:** (1) **Хостинг Україна** ukraine.com.ua — Kyiv DC, ₴315/mo
+(~$7.5) 2 GB VPS, pays via Privat24/LiqPay/Visa/MC/Google Pay/terminals (NO PayPal), SSH + VNC +
+**browser WebSSH console** (which lets Conor install the SSH key without a terminal); (2)
+**DeltaHost** — Kyiv DC available and the widest payment fallbacks anywhere (PayPal, Privat24,
+LiqPay, WayForPay, UAPAY, Stripe, BitPay crypto, bank transfer) but Linux VPS starts at $15/mo;
+(3) **Hetzner** — 27 ms Falkenstein, cheapest (~€4.5), most established, PayPal accepted but
+MANUAL-only, and new accounts can hit identity-verification friction. Note for later: Hetzner
+docs state alternative card-linked methods (Apple Pay etc.) are not accepted.
+
+## RELAY SERVER CHOSEN AND MEASURED — DeltaHost Kyiv (2026-08-03)
+
+Conor bought the relay at **DeltaHost, Kyiv**: `139.28.36.247`, Ubuntu 24.04 Cloudinit, 4 GB RAM,
+50 GB NVMe, 10 TB traffic, $15/month, root over SSH port 22. **Measured BEFORE any setup work
+(the Namecheap lesson): avg 0.1 ms (min 0 / max 1, 20/20 replies).** Traceroute: 5 hops, all
+domestic (via a Kyiv IXP at `185.1.62.193`), no international transit — the VPS really is in
+Kyiv, unlike the Namecheap machine whose website-based assumption was wrong. (Hop 4 reports
+19 ms; that is an intermediate router de-prioritising ICMP, not a path problem — the destination
+itself answers in <1 ms.)
+
+**Final latency table:** DeltaHost Kyiv **0.1 ms** · Vultr Warsaw 14 ms · Vultr Frankfurt 27 ms ·
+Hetzner Falkenstein 27 ms · Namecheap (US) 167 ms. The Kyiv relay beats the original Warsaw plan
+by ~14 ms on every leg; both ends of a typical session now stay in the same city.
+
+Open question "Relay provider/location/sizing" is now CLOSED: DeltaHost, Kyiv, 4 GB (well above
+the 1 vCPU/1 GB minimum that was in doubt — sizing is no longer a risk at ~3 concurrent sessions).
+
+**Access rule reaffirmed:** Claude never authenticates with a password. Conor installs the
+ed25519 public key himself via the provider's VNC/KVM console with a single pasted line; after
+that the session works over the key from `.223` (private key at `C:\Users\PC\.ssh\flashdesk_relay`,
+never leaves the machine). The provider-emailed root password is to be rotated by Conor himself
+with `passwd` in the console, so no password ever appears in the chat.
+
+## Stage 3 step 1 DONE — server secured, updated, firewalled (2026-08-03)
+
+Conor installed the public key via the KVM console and rotated the root password himself (no
+password ever entered the chat). Getting in was painful: **the provider's generated password was
+rejected by both the console and SSH until support reset it** — recorded in CLAUDE.md as a trap,
+since key access is the only reliable route at DeltaHost.
+
+Done over SSH from `.223` (key `C:\Users\PC\.ssh\flashdesk_relay`):
+- **Key-only SSH.** Wrote `/etc/ssh/sshd_config.d/10-flashdesk.conf` (PasswordAuthentication no,
+  KbdInteractive no, PermitRootLogin prohibit-password, PubkeyAuthentication yes). **Gotcha
+  caught and fixed:** a `99-` file did nothing because sshd reads `sshd_config.d/` in NAME order
+  and the FIRST value wins — Ubuntu's `60-cloudimg-settings.conf` was overriding it; that line is
+  now commented out and our policy renamed to `10-`. `sshd -t` validated before every restart.
+  **Proved by live test, not by reading config:** password attempt → "Permission denied
+  (publickey)"; key attempt → logs in as root.
+- **Updates:** 0 packages were pending (fresh image); `unattended-upgrades` installed and active
+  so security patches land automatically. No reboot required.
+- **Firewall (ufw):** default deny incoming / allow outgoing; 22, 80, 443 open (22 allowed BEFORE
+  enabling, to avoid the classic self-lockout). **Verified from `.223`:** 22 reachable, 3306
+  refused, 80/443 accepted by the firewall but nothing listening yet (as expected).
+- Server facts: Ubuntu 24.04.4 LTS, 2 cores, 3.9 GB RAM, 42 GB free.
+
+Next: step 2 Caddy, step 3 relay skeleton, step 4 TLS on relay.flashdesk.org (needs the cPanel
+Zone Editor A record from Conor first), step 5 /health in a browser.
+
 ## Session handover (2026-07-30) — read this and CLAUDE.md before doing anything
 
 Everything below is durable because the conversation it came from is gone. Reasoning is included on
