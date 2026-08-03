@@ -83,6 +83,31 @@ are written elsewhere in this file:
 - Everything about *how we work* (one stage at a time, verify what you report, plain language)
   is unchanged.
 
+### 🚦 THE STRANGER RULE (Conor, 2026-08-03) — in force until the first real two-person test
+
+**Until two real people who have never seen FlashDesk connect to each other across two real home
+connections, the only work that counts is work that changes what a STRANGER experiences.** If a
+change is invisible to someone who downloads the file and connects once, it waits — no matter how
+correct, how cheap, or how satisfying it is to fix.
+
+What that includes, and what it does not:
+- **Counts:** the download page and everything on it; the SmartScreen and download warnings; the
+  simple view of the host window — the number, Copy, the peer-number field, Connect, Stop sharing;
+  the consent dialog; the live indicator; anything that decides whether a session connects at all,
+  stays connected, or is watchable over a real home upload.
+- **Does NOT count:** the technical view; the operator's own session window; internals with no
+  visible effect; documentation tidy-ups; anything on a screen a first-time stranger never opens.
+
+**Why this rule exists, in Conor's words:** the first thing two strangers experience must not be the
+thing we have not fixed, while the thing we just polished sits on a screen neither of them will
+open. This rule was written after exactly that happened — a dropdown chevron in the technical view
+and checkboxes on the operator's own window were refined while stranger-facing risks were still
+open.
+
+**Design is closed, and this is what that means now:** the only visual work still permitted is on a
+surface a first-time stranger sees on their own screen. Everything else is finished until the first
+two-person test says otherwise.
+
 ### Phase 1 — the original scope, kept for the reasoning behind existing decisions
 
 A working private tool for me and my own clients. Perhaps 5–30 client machines. It has to be
@@ -945,7 +970,30 @@ machine is the one that needs help) — phone-first layout, and one line for exa
   tidiness — SmartScreen reputation accrues to a file+URL, so changing either resets the little
   reputation that has been earned.
 
-### ⚠️ BLOCKER found 2026-08-03: flashdesk.org has a SELF-SIGNED certificate
+### ✅ RESOLVED 2026-08-03 (was a hard blocker): flashdesk.org now has a REAL certificate
+
+**Verified from `.223`, not assumed:** `issuer=C=GB, O=Sectigo Limited, CN=Sectigo Public Server
+Authentication CA DV R36` and **`Verify return code: 0 (ok)`**. `https://flashdesk.org` returns 200,
+the real download page is live (not the holding page), and `https://flashdesk.org/dl/FlashDesk.exe`
+returns 200 with `Content-Length: 68,035,064` (~65 MB). The provider issued the certificate; the
+support ticket did its job. **The hard gate below is CLEARED — the first two-person test is
+unblocked.**
+
+⚠️ **Two things about the site are still NOT right, and both are stranger-facing:**
+1. **`http://` still does not redirect to `https://`** — plain HTTP returns 200 and serves the page
+   unencrypted. A stranger who types `flashdesk.org` (nobody types the scheme) lands on HTTP and
+   modern browsers mark it **"Not secure"** in the address bar. On a page persuading a wary person
+   to download remote-access software, that is the same trust wound the certificate just healed,
+   arriving by the default path. **This is the same trap as before in a new costume: the certificate
+   is fine and the route people actually take does not use it.**
+2. **The polished page in `site/index.html` is NOT deployed** — the server still serves the older
+   version (no `og:` link-preview metadata, scam warning still a green outline rather than the
+   filled panel). Confirmed by fetching the live page and grepping for `og:description`.
+
+The original blocker write-up is kept below unchanged, because the RULE it taught is still the most
+valuable thing in this section and item 1 above proves it is still live.
+
+---
 
 Measured, not assumed: `openssl s_client` shows `subject=CN=flashdesk.org` and
 `issuer=CN=flashdesk.org`, i.e. the site signed its own certificate — `Verify return code: 18
