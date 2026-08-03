@@ -62,7 +62,28 @@ Reference product: AnyDesk (anydesk.com).
 confirmed by Conor same day).** FlashDesk appears everywhere a person can see; internals
 deliberately keep the RemoteDesktop name — see "Naming — FlashDesk" under Project facts.
 
-### Phase 1 — what we are doing now
+### ⚠ SCOPE CHANGED 2026-08-03 — Conor moved the goal from Phase 1 to Phase 2
+
+**The product is no longer "a private tool for me and my clients". It is now: two strangers,
+neither technical, neither having seen it before, both download from flashdesk.org and connect
+to each other. Conor is not present and cannot talk anyone through anything.** He made this
+decision knowingly; it is recorded here because it invalidates several Phase-1 assumptions that
+are written elsewhere in this file:
+
+- **The allow-list stops being the primary defence** (it assumed exactly one operator). The
+  consent dialog becomes the only thing between a user and a social engineer — see "The consent
+  dialog is now the only defence" below.
+- **Auto-reconnect moves from Stage 7 to essential.** Two strangers on a phone call cannot
+  repeat the code exchange because a link blinked (the measured reboot gap alone is 16 s).
+- **Code signing moves from "Phase 2, not now" to a real, priced decision** — see the SmartScreen
+  section below.
+- **Relay bandwidth and abuse exposure are now other people's sessions, not Conor's own.** At
+  some volume this brings cost, abuse reports and takedown requests. Not yet actioned; recorded
+  so it is not a surprise.
+- Everything about *how we work* (one stage at a time, verify what you report, plain language)
+  is unchanged.
+
+### Phase 1 — the original scope, kept for the reasoning behind existing decisions
 
 A working private tool for me and my own clients. Perhaps 5–30 client machines. It has to be
 reliable and it has to be usable by a non-technical person on the other end, but it does not
@@ -953,6 +974,59 @@ never a short numeric PIN) · in-session chat · quality selector ·
 H.264 with hardware encoding (only once JPEG tiles are **measured** too slow).
 
 ---
+
+## Code signing and SmartScreen — researched 2026-08-03, real numbers
+
+Every stranger downloading an unsigned exe hits **"Windows protected your PC"**, and the "Run
+anyway" button is deliberately hidden behind "More info". This is the single biggest drop-off in
+the whole funnel and only a code signing certificate genuinely fixes it.
+
+- **Since June 2023 the private key MUST live on a FIPS 140-2 hardware token or a cloud HSM.**
+  The old "a .pfx file on your PC" route no longer exists at any CA.
+- **Real prices (Certum, a European CA, cloud/SimplySign so no physical token to post):
+  Standard (individual or organisation validated) €209/year · EV €379/year.** Physical-card sets
+  are cheaper (Standard €169, EV €359) but involve shipping a smartcard.
+  ⚠ Certum's €49 "Open Source Code Signing" is restricted to open-source projects and does
+  **not** apply to FlashDesk — do not quote it as an option.
+- **From 2026-02-27 a single code signing certificate may be valid for at most 459 days**, so
+  this is a recurring cost, not one-off.
+- **Signing does NOT remove the warning immediately, and EV no longer guarantees it either.**
+  SSL.com states Microsoft has moved away from granting EV automatic instant reputation.
+  Microsoft's own SmartScreen doc: *"If a URL, a file, an app, or a certificate has an
+  established reputation, users don't see any warnings. If there's no reputation, the item is
+  marked as a higher risk and presents a warning."* The useful part is that reputation attaches
+  to the **certificate**, so it accrues across releases instead of resetting with every build.
+- Expect **weeks to months of real downloads** before the warning stops, whichever certificate
+  is bought.
+
+**What to do until (or instead of) signing:** the SmartScreen paragraph is already on the
+download page BEFORE the moment it happens; add a screenshot of the actual warning so it is
+recognised; keep the filename and download URL stable so reputation accumulates; fill in proper
+version metadata (company/product/description) on the exe; and submit the binary to Microsoft's
+file-submission service so a false-positive block can be lifted.
+
+## The consent dialog is now the only defence (2026-08-03)
+
+With strangers connecting to strangers, the allow-list cannot be the primary protection. Honest
+assessment given to Conor: **a consent dialog alone is NOT enough** — the entire tech-support
+scam industry works by talking someone through exactly such a dialog, and AnyDesk and TeamViewer
+both have one. A dialog defends against an accidental connection, not against social engineering.
+
+Required additions, in order of how much they actually help:
+
+1. **Say when it is a first contact.** If the connecting ID has never been accepted on this
+   machine before, the dialog says so in plain words. Cheap to build, highest value.
+2. **Put the scam warning inside the dialog**, not only on the website: "If someone phoned you
+   unexpectedly and asked you to do this, press Reject."
+3. **Delay the Accept button by ~3 seconds on first contact**, so "just click yes" cannot be
+   reflexive. Reject stays available immediately, and Reject is never the harder button.
+4. Session log, visible amber indicator and the always-present Disconnect strip (already
+   specified) limit the damage of a session that should not have started.
+5. Relay-side rate limiting per source, so IDs cannot be swept.
+
+Honest limit that must not be papered over: none of this stops a determined social engineer, and
+the category's real answer is user education — which is why the page's scam warning matters more
+than any code we write.
 
 ## Phase 2 — not now
 

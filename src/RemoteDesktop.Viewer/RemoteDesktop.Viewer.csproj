@@ -1,25 +1,25 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\RemoteDesktop.Shared\RemoteDesktop.Shared.csproj" />
     <ProjectReference Include="..\RemoteDesktop.UI\RemoteDesktop.UI.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The session window sets its own title-bar icon from its own assembly. -->
+    <EmbeddedResource Include="..\..\assets\FlashDesk.ico" LogicalName="FlashDesk.AppIcon" />
+  </ItemGroup>
+
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
+    <!-- LIBRARY, not an executable (2026-08-03). FlashDesk ships as ONE file: the same program
+         shows your own number and lets you type someone else's, exactly like AnyDesk. Two files
+         meant two downloads and one more thing to get wrong on a phone call.
+         This project keeps the operator side - the session window, the video canvas, the input
+         capture - and RemoteDesktop.Host hosts it as a MODE. -->
     <TargetFramework>net8.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWindowsForms>true</UseWindowsForms>
-    <!-- Visible product name (see the note in the Host csproj): the exe is FlashDeskViewer.exe. -->
-    <AssemblyName>FlashDeskViewer</AssemblyName>
-    <ApplicationIcon>..\..\assets\FlashDesk.ico</ApplicationIcon>
   </PropertyGroup>
-
-  <ItemGroup>
-    <!-- The idle brand mark for the title bar; the operator side has no live/idle swap — the
-         safety surface is the CLIENT's taskbar, not this one. -->
-    <EmbeddedResource Include="..\..\assets\FlashDesk.ico" LogicalName="FlashDesk.AppIcon" />
-  </ItemGroup>
 
 </Project>

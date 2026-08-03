@@ -24,6 +24,10 @@
   <ItemGroup>
     <ProjectReference Include="..\RemoteDesktop.Shared\RemoteDesktop.Shared.csproj" />
     <ProjectReference Include="..\RemoteDesktop.UI\RemoteDesktop.UI.csproj" />
+    <!-- The operator half, merged in 2026-08-03: ONE FlashDesk.exe does both jobs, like AnyDesk.
+         RemoteDesktop.Viewer is now a library holding the session window, the video canvas and
+         the input capture — the hardest-won code in the project, moved without being rewritten. -->
+    <ProjectReference Include="..\RemoteDesktop.Viewer\RemoteDesktop.Viewer.csproj" />
   </ItemGroup>
 
   <ItemGroup>

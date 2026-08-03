@@ -6,6 +6,8 @@ using RemoteDesktop.Host.Net;
 using RemoteDesktop.Shared.Identity;
 using RemoteDesktop.Shared.Protocol;
 using RemoteDesktop.UI;
+using RemoteDesktop.Viewer;
+using RemoteDesktop.Viewer.Net;
 
 namespace RemoteDesktop.Host;
 
@@ -39,6 +41,10 @@ public sealed class MainForm : Form
 
     private readonly IdentityStore _identityStore = new();
     private IdentityResult? _identity;
+
+    private readonly TextBox _peerBox = new() { Font = Theme.Body, Width = Theme.MediumFieldWidth, PlaceholderText = "their number" };
+    private readonly Button _connect = Theme.MakeButton("Connect", ButtonKind.Primary);
+    private readonly Label _connectNote = Theme.Caption("");
     private readonly Button _toggle = Theme.MakeButton("Stop sharing", ButtonKind.Neutral);
     private readonly LinkLabel _detailsLink = Theme.MakeLink("Technical details");
 
@@ -113,6 +119,7 @@ public sealed class MainForm : Form
         };
         content.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
         content.Controls.Add(BuildHeroCard());
+        content.Controls.Add(BuildConnectCard());
         _technicalPanel = BuildTechnicalPanel();
         _technicalPanel.Visible = false;
         content.Controls.Add(_technicalPanel);
@@ -159,6 +166,94 @@ public sealed class MainForm : Form
         _readAloudLine.Margin = new Padding(0);
 
         return MakeCard(new Padding(Theme.S4), caption, heroRow, _heroNote, _readAloudLine);
+    }
+
+    /// <summary>
+    /// The other half of the window: type someone else's number and connect to them. One program
+    /// does both jobs (merged 2026-08-03) — whoever types a number is the operator, whoever reads
+    /// one out is the client. Deliberately quieter than the hero above it: your own number is
+    /// what a first-time user needs to find in two seconds.
+    /// </summary>
+    private Control BuildConnectCard()
+    {
+        var caption = Theme.Caption("Connect to another computer");
+        caption.Margin = new Padding(0, 0, 0, Theme.S1);
+
+        var row = new FlowLayoutPanel
+        {
+            FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = false,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            Margin = new Padding(0, 0, 0, Theme.S1),
+        };
+        _peerBox.Margin = new Padding(0, 0, Theme.S2, 0);
+        _peerBox.TabIndex = 3;
+        _peerBox.KeyDown += (_, e) => { if (e.KeyCode == Keys.Enter) { e.SuppressKeyPress = true; _ = ConnectToPeerAsync(); } };
+        _connect.TabIndex = 4;
+        _connect.Click += (_, _) => _ = ConnectToPeerAsync();
+        row.Controls.Add(_peerBox);
+        row.Controls.Add(_connect);
+
+        _connectNote.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        _connectNote.Margin = new Padding(0);
+
+        return MakeCard(new Padding(Theme.S3), caption, row, _connectNote);
+    }
+
+    /// <summary>
+    /// Dials the other machine and, only on success, opens the session window. Failing here shows
+    /// a plain sentence in place — never an empty black window that looks like a broken session.
+    /// </summary>
+    private async Task ConnectToPeerAsync()
+    {
+        string typed = _peerBox.Text.Trim();
+        if (typed.Length == 0)
+        {
+            _connectNote.Text = "Type the other person's number first.";
+            return;
+        }
+
+        // Transition state (step 3a→3b): the relay path is not built yet, so a plain IP address
+        // still works on a local network. When the relay carries sessions, this accepts the
+        // 9-digit number and the IP route moves to the technical view.
+        string target = typed;
+        string label = typed;
+        string digits = FlashDeskId.Normalise(typed);
+        if (FlashDeskId.IsValid(digits))
+        {
+            label = FlashDeskId.Format(digits);
+            _connectNote.Text = $"Connecting by number is not switched on yet — that arrives with the relay. "
+                              + "For now, type the other computer's local address.";
+            return;
+        }
+
+        _connect.Enabled = false;
+        _peerBox.Enabled = false;
+        _connectNote.Text = $"Connecting to {label}…";
+
+        ViewerClient? client = null;
+        try
+        {
+            client = new ViewerClient();
+            await client.ConnectAsync(target);
+        }
+        catch (Exception ex)
+        {
+            client?.Dispose();
+            _connectNote.Text = $"Could not connect to {label}. {ex.Message}";
+            _connect.Enabled = true;
+            _peerBox.Enabled = true;
+            return;
+        }
+
+        _connectNote.Text = string.Empty;
+        _connect.Enabled = true;
+        _peerBox.Enabled = true;
+
+        var session = new SessionWindow(client, label);
+        session.FormClosed += (_, _) => { if (!IsDisposed) _connectNote.Text = "Session ended."; };
+        session.Show(this);
     }
 
     private Control BuildTechnicalPanel()
