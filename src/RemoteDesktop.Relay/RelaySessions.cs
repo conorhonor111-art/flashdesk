@@ -102,6 +102,15 @@ public sealed class RelaySessions
 
     private async Task HandleViewerAsync(WebSocket socket, RelayHello hello, CancellationToken ct)
     {
+        // The caller must prove it owns the number it claims. Without this a caller could put any
+        // number in the greeting, and the "you have connected with this number before" line in the
+        // consent dialog — the most valuable line in it — would be trivially forgeable.
+        if (!_registry.Verify(hello.Id, hello.Secret ?? ""))
+        {
+            await SendJsonAsync(socket, new RelayHelloResult(false, "Your own FlashDesk number could not be verified."), ct).ConfigureAwait(false);
+            return;
+        }
+
         string target = hello.TargetId ?? "";
         if (!_waiting.TryRemove(target, out var pending))
         {

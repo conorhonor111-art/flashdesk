@@ -31,16 +31,28 @@ public sealed class SessionWindow : Form
     private readonly ToolStripStatusLabel _statusItem = new("Connected");
     private readonly System.Windows.Forms.Timer _timer = new() { Interval = 500 };
 
-    private readonly ViewerClient _client;
+    private ViewerClient _client;
     private readonly string _peerLabel;
+    private readonly string _peerId;
+    private readonly string _ownId;
+    private readonly string _ownSecret;
     private int _tileSize = ProtocolConstants.TileSize;
 
-    /// <param name="client">An ALREADY connected client. This window does not dial.</param>
+    private bool _closingForGood;   // the person pressed Disconnect: do not try to come back
+    private bool _reconnecting;
+
+    /// <summary>How long to keep trying before giving up. The host's grace window is 90 s.</summary>
+    private static readonly TimeSpan ReconnectFor = TimeSpan.FromSeconds(75);
+
+    /// <param name="client">An ALREADY connected client. This window does not dial the first time.</param>
     /// <param name="peerLabel">What to call the other machine on screen — their FlashDesk number.</param>
-    public SessionWindow(ViewerClient client, string peerLabel)
+    public SessionWindow(ViewerClient client, string peerLabel, string peerId, string ownId, string ownSecret)
     {
         _client = client;
         _peerLabel = peerLabel;
+        _peerId = peerId;
+        _ownId = ownId;
+        _ownSecret = ownSecret;
 
         Text = $"FlashDesk — connected to {peerLabel}";
         StartPosition = FormStartPosition.CenterScreen;
@@ -91,7 +103,7 @@ public sealed class SessionWindow : Form
         _canvas.Bind(_screen);
         _input = new InputCapture(_canvas, e => _client.SendInput(e));
 
-        _disconnect.Click += (_, _) => Close();
+        _disconnect.Click += (_, _) => { _closingForGood = true; Close(); };
         _actualSize.CheckedChanged += (_, _) => _canvas.SetMode(_actualSize.Checked ? DisplayMode.Actual : DisplayMode.Fit);
         _control.CheckedChanged += (_, _) => { _input.Enabled = _control.Checked; if (_control.Checked) _canvas.Focus(); };
 
@@ -139,18 +151,67 @@ public sealed class SessionWindow : Form
 
     private void OnDisconnected(string reason)
     {
-        // Until auto-reconnect exists (promoted to essential 2026-08-03), a dropped link ends the
-        // session window rather than leaving a frozen picture that still looks live. The main
-        // window stays open behind it, so the number is still on screen.
+        // A dropped link must NOT make two people repeat the whole code exchange — the measured
+        // reboot gap alone is 16 s. Come back by ourselves, quietly, and only give up if the
+        // other end really is gone.
         SafeBeginInvoke(() =>
         {
+            if (_closingForGood || _reconnecting) return;
             _control.Checked = false;
-            _statusItem.Text = "Connection lost";
-            MessageBox.Show(this,
-                $"The connection to {_peerLabel} was lost.\n\n{reason}",
-                "FlashDesk", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            Close();
+            _reconnecting = true;
+            _ = ReconnectAsync();
         });
+    }
+
+    private async Task ReconnectAsync()
+    {
+        var giveUpAt = DateTimeOffset.UtcNow + ReconnectFor;
+        int attempt = 0;
+
+        while (!_closingForGood && DateTimeOffset.UtcNow < giveUpAt)
+        {
+            attempt++;
+            int seconds = (int)(giveUpAt - DateTimeOffset.UtcNow).TotalSeconds;
+            _statusItem.Text = $"Connection lost — reconnecting… (trying for another {seconds}s)";
+
+            try { await Task.Delay(TimeSpan.FromSeconds(attempt == 1 ? 2 : 4)).ConfigureAwait(true); }
+            catch { break; }
+            if (_closingForGood || IsDisposed) return;
+
+            var fresh = new ViewerClient();
+            try
+            {
+                await fresh.ConnectAsync(_peerId, _ownId, _ownSecret).ConfigureAwait(true);
+            }
+            catch
+            {
+                fresh.Dispose();
+                continue; // the other end is not back yet; keep trying until the deadline
+            }
+
+            // Back in. Swap in the new connection under the same window and picture.
+            var old = _client;
+            _client = fresh;
+            fresh.ScreenInfoReceived += OnScreenInfo;
+            fresh.FrameReceived += OnFrame;
+            fresh.Disconnected += OnDisconnected;
+            old.Dispose();
+
+            _reconnecting = false;
+            _statusItem.Text = "Reconnected";
+            fresh.Start();
+            return;
+        }
+
+        if (_closingForGood || IsDisposed) return;
+        _reconnecting = false;
+        _statusItem.Text = "Connection lost";
+        MessageBox.Show(this,
+            $"The connection to {_peerLabel} could not be restored.\n\n"
+            + "Ask them to open FlashDesk again, then connect once more.",
+            "FlashDesk", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        _closingForGood = true;
+        Close();
     }
 
     // Callbacks arrive on ViewerClient's background threads. Marshalling to the UI thread can

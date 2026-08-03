@@ -47,7 +47,9 @@ public sealed class ViewerClient : IDisposable
     /// </summary>
     /// <param name="targetId">The 9-digit number of the machine to connect to.</param>
     /// <param name="ownId">This machine's own number, so the other end can say who is calling.</param>
-    public async Task ConnectAsync(string targetId, string ownId, CancellationToken ct = default)
+    /// <param name="ownSecret">Proof that this installation owns <paramref name="ownId"/>. The relay
+    /// checks it, so the number shown in the other side's consent dialog cannot be forged.</param>
+    public async Task ConnectAsync(string targetId, string ownId, string ownSecret, CancellationToken ct = default)
     {
         _socket = new ClientWebSocket();
         _socket.Options.KeepAliveInterval = TimeSpan.FromSeconds(30);
@@ -58,6 +60,7 @@ public sealed class ViewerClient : IDisposable
         {
             Role = RelayHello.RoleViewer,
             Id = ownId,
+            Secret = ownSecret,
             TargetId = targetId,
         }));
         await _socket.SendAsync(helloBytes, WebSocketMessageType.Text, endOfMessage: true, ct).ConfigureAwait(false);
@@ -77,6 +80,9 @@ public sealed class ViewerClient : IDisposable
         // Handshake: send ours, check the host's answer.
         await _channel.SendAsync(MessageType.Handshake, Handshake.Create(PeerRole.Viewer).ToBytes()).ConfigureAwait(false);
         var reply = await _channel.ReceiveAsync().ConfigureAwait(false);
+        if (reply is not null && reply.Value.Type == MessageType.Refused)
+            throw new InvalidOperationException(
+                "They did not accept the connection. Ask them to press Accept when the FlashDesk box appears.");
         if (reply is null || reply.Value.Type != MessageType.Handshake || !Handshake.FromBytes(reply.Value.Payload).IsValid)
             throw new InvalidOperationException("The other computer answered, but not as FlashDesk. It may be running a different version.");
 

@@ -42,6 +42,9 @@ public sealed class IdentityStore
 
     public string FilePath => _file;
 
+    /// <summary>Where this installation keeps everything it remembers, on this machine only.</summary>
+    public string Folder => _folder;
+
     private sealed record Stored(string Id, string SecretProtected);
 
     /// <summary>The stored identity, or null if this is a first run (or the file is unreadable).</summary>

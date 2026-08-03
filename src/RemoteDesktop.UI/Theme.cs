@@ -110,6 +110,8 @@ public static class Theme
     public static readonly Size HostSimpleSize = new(500, 470);     // client area, simple view
     public static readonly Size HostTechnicalSize = new(500, 800);  // client area, technical open
     public static readonly Size HostWindowMinimum = new(460, 450);  // outer bounds
+    /// <summary>The consent dialog. Wide enough that its sentences do not become a wall of text.</summary>
+    public static readonly Size ConsentDialogSize = new(460, 400);
     public static readonly Size ViewerWindowSize = new(1000, 660);  // client area — room for a scaled 1080p picture
     public static readonly Size ViewerWindowMinimum = new(640, 480);
 

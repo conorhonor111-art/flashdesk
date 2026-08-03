@@ -38,6 +38,28 @@ public sealed class HostServer : IDisposable
     /// <summary>Plain words for the window: whether this machine is reachable through the relay.</summary>
     public volatile string RelayStatus = "Not connected to FlashDesk yet";
     public volatile bool RelayReady;
+
+    /// <summary>
+    /// Asked before ANY screen data leaves this machine. Returns true only if the person at this
+    /// keyboard pressed Accept. Set by the window; if it is null nothing is ever served, so a
+    /// wiring mistake fails closed rather than open.
+    /// </summary>
+    public Func<string, Task<bool>>? ConsentAsk;
+
+    /// <summary>
+    /// How long after a session ends the SAME number may come straight back without the person
+    /// having to accept again. Without this, every blink of a connection would make two strangers
+    /// on a phone call repeat the whole code-exchange — and a person asked repeatedly stops
+    /// reading the dialog, which is the thing that actually protects them.
+    /// It is safe to key this on the caller's number because the relay verifies that the caller
+    /// owns it (see RelaySessions.HandleViewerAsync); a stranger cannot claim someone else's.
+    /// </summary>
+    private static readonly TimeSpan ReconnectGrace = TimeSpan.FromSeconds(90);
+    private string? _lastAcceptedId;
+    private DateTimeOffset _lastAcceptedAt = DateTimeOffset.MinValue;
+
+    /// <summary>Called with the caller's number when a session actually begins and when it ends.</summary>
+    public Action<string, bool>? SessionLogged;
     private readonly object _captureLock = new();
     private IScreenCapture? _capture;
     private InputInjector? _injector;
@@ -157,10 +179,43 @@ public sealed class HostServer : IDisposable
                 var paired = await ReadJsonAsync<RelayPaired>(socket, ct).ConfigureAwait(false);
                 if (paired is null) continue; // link dropped while waiting; dial again
 
-                RelayStatus = $"Someone is connecting ({FlashDeskId.Format(paired.PeerId)})";
+                RelayStatus = $"Someone is asking to connect ({FlashDeskId.Format(paired.PeerId)})";
+
+                // NOTHING is served until the person at this keyboard says yes. A missing callback
+                // means refuse — a wiring mistake must fail closed, never open.
+                bool resuming = paired.PeerId == _lastAcceptedId
+                             && DateTimeOffset.UtcNow - _lastAcceptedAt < ReconnectGrace;
+
+                bool allowed;
+                if (resuming)
+                {
+                    allowed = true; // the same person coming straight back after a dropped link
+                    RelayStatus = "Reconnecting…";
+                }
+                else
+                {
+                    try { allowed = ConsentAsk is not null && await ConsentAsk(paired.PeerId).ConfigureAwait(false); }
+                    catch { allowed = false; }
+                }
+
+                using var stream = new WebSocketStream(socket, ownsSocket: false);
+                if (!allowed)
+                {
+                    RelayStatus = "Ready — waiting for someone to connect";
+                    try
+                    {
+                        // Tell the caller plainly rather than just vanishing on them.
+                        using var refuse = new MessageChannel(stream);
+                        await refuse.SendAsync(MessageType.Refused, Array.Empty<byte>(), ct).ConfigureAwait(false);
+                    }
+                    catch { /* the caller may already be gone */ }
+                    continue; // dial again and wait to be called by someone else
+                }
+
+                if (!resuming) SessionLogged?.Invoke(paired.PeerId, true);
+                RelayStatus = $"Connected to {FlashDeskId.Format(paired.PeerId)}";
                 try
                 {
-                    using var stream = new WebSocketStream(socket, ownsSocket: false);
                     await ServeViewerAsync(stream, ct).ConfigureAwait(false);
                 }
                 catch
@@ -171,6 +226,11 @@ public sealed class HostServer : IDisposable
                 {
                     ViewerConnected = false;
                     _injector?.ReleaseAll(); // never leave a key or button stuck down
+                    // Start the grace window from the END of the session: that is the moment a
+                    // dropped link would need to be resumed from.
+                    _lastAcceptedId = paired.PeerId;
+                    _lastAcceptedAt = DateTimeOffset.UtcNow;
+                    SessionLogged?.Invoke(paired.PeerId, false);
                 }
             }
             catch (OperationCanceledException)

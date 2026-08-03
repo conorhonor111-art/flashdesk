@@ -40,6 +40,8 @@ public sealed class MainForm : Form
         "Read this number to the person helping you. Only give it to someone you contacted yourself.");
 
     private readonly IdentityStore _identityStore = new();
+    private readonly KnownCallers _knownCallers;
+    private readonly SessionLog _sessionLog;
     private IdentityResult? _identity;
 
     private readonly TextBox _peerBox = new() { Font = Theme.Body, Width = Theme.MediumFieldWidth, PlaceholderText = "their number" };
@@ -70,6 +72,9 @@ public sealed class MainForm : Form
 
     public MainForm()
     {
+        _knownCallers = new KnownCallers(_identityStore.Folder);
+        _sessionLog = new SessionLog(_identityStore.Folder);
+
         Text = "FlashDesk";
         // The title-bar icon MUST stay: Windows feeds the taskbar button from the window icon,
         // and with ShowIcon=false the taskbar falls back to the exe's static icon — which kills
@@ -129,6 +134,40 @@ public sealed class MainForm : Form
         Controls.Add(actions);
         Controls.Add(_band);
         content.BringToFront(); // Fill must claim the space left after the Top band and Bottom actions
+
+        // Nothing is served until this returns true. Marshalled to the UI thread because it is
+        // asked from the relay's background loop, and it must be a real dialog on this screen.
+        _server.ConsentAsk = callerId =>
+        {
+            var done = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            try
+            {
+                BeginInvoke(() =>
+                {
+                    bool accepted = false;
+                    try
+                    {
+                        using var dialog = new ConsentDialog(callerId, _knownCallers.IsKnown(callerId));
+                        dialog.ShowDialog(this);
+                        accepted = dialog.Accepted;
+                        if (accepted) _knownCallers.Remember(callerId);
+                        else _sessionLog.Refused(callerId);
+                    }
+                    catch { accepted = false; }
+                    done.TrySetResult(accepted);
+                });
+            }
+            catch
+            {
+                done.TrySetResult(false); // window gone: refuse
+            }
+            return done.Task;
+        };
+
+        _server.SessionLogged = (callerId, starting) =>
+        {
+            if (starting) _sessionLog.Started(callerId); else _sessionLog.Ended(callerId);
+        };
 
         Load += (_, _) => { ShowIdentityState(); StartSharing(); _ = RegisterIdentityAsync(); };
         FormClosing += (_, _) => { _server.Dispose(); _timer.Dispose(); };
@@ -233,11 +272,20 @@ public sealed class MainForm : Form
         _peerBox.Enabled = false;
         _connectNote.Text = $"Connecting to {label}…";
 
+        var mine = _identityStore.Load();
+        if (mine is null)
+        {
+            _connectNote.Text = "This computer's own number could not be read. Close FlashDesk and open it again.";
+            _connect.Enabled = true;
+            _peerBox.Enabled = true;
+            return;
+        }
+
         ViewerClient? client = null;
         try
         {
             client = new ViewerClient();
-            await client.ConnectAsync(digits, _identity.Id!);
+            await client.ConnectAsync(digits, mine.Value.Id, mine.Value.Secret);
         }
         catch (Exception ex)
         {
@@ -257,7 +305,7 @@ public sealed class MainForm : Form
         // a live connection with no window — which is exactly what happened the first time.
         try
         {
-            var session = new SessionWindow(client, label);
+            var session = new SessionWindow(client, label, digits, mine.Value.Id, mine.Value.Secret);
             session.FormClosed += (_, _) => { if (!IsDisposed) _connectNote.Text = "Session ended."; };
             session.Show(this);
         }

@@ -9,4 +9,10 @@ public enum MessageType : byte
     Ping = 4,
     Pong = 5,
     Input = 6, // viewer -> host: one mouse or keyboard event
+
+    /// <summary>
+    /// host -> viewer: the person at the other end pressed Reject, or did not answer in time.
+    /// Sent so the caller gets a truthful sentence instead of an unexplained disconnection.
+    /// </summary>
+    Refused = 7,
 }
