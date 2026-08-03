@@ -612,6 +612,37 @@ Done over SSH from `.223` (key `C:\Users\PC\.ssh\flashdesk_relay`):
 Next: step 2 Caddy, step 3 relay skeleton, step 4 TLS on relay.flashdesk.org (needs the cPanel
 Zone Editor A record from Conor first), step 5 /health in a browser.
 
+## Stage 3 steps 2-3 DONE — Caddy, TLS, and the relay skeleton are live (2026-08-03)
+
+DNS: Conor added `relay` A → `139.28.36.247` in cPanel Zone Editor (flashdesk.org untouched).
+Console fallback TESTED by him and works (`root@ubuntu:~#`, exited cleanly) — so losing `.223`
+does not mean losing the server.
+
+- **Caddy v2.11.4** installed from the official repo. Two real failures caught and fixed rather
+  than worked around: (1) a `log { output file }` block made the service refuse to start — the
+  packaged systemd unit sandboxes Caddy out of `/var/log`, so logging goes to the journal;
+  (2) TLS could not be issued until DNS existed (`NXDOMAIN`), which is expected and self-healing.
+- **TLS live:** Let's Encrypt certificate obtained for relay.flashdesk.org (valid to 1 Nov 2026,
+  auto-renewing), HTTPS 200, `http://` → 308 → `https://`.
+- **Relay skeleton** — new project `src/RemoteDesktop.Relay` (net8.0 web, references
+  `RemoteDesktop.Shared`, which is the standing proof that Shared stayed platform-neutral —
+  architecture rule 4). Listens on `127.0.0.1:5000` only; Caddy terminates TLS and forwards
+  `/health`. Runs as unprivileged user `flashdesk` under systemd with a hardening sandbox.
+  `/health` answers plain text (deliberately, so a non-technical person can read it): status,
+  version, protocol version, start time, uptime.
+- **Proved, not assumed:** `/health` answered over the internet from `.223`; then the process was
+  `kill -9`ed and came back by itself in under 8 s (NRestarts 1) and answered again. Reboot
+  recovery is enabled (`WantedBy=multi-user.target`) but NOT yet exercised — offered to Conor as
+  a deliberate test while nothing depends on the server.
+- ASP.NET Core runtime 8.0.29 installed from **Ubuntu's own repo**, so security patches arrive
+  via unattended-upgrades; no third-party package source.
+- Repo now carries `server/RUNBOOK.md` (rebuild in deployment order, with both traps recorded),
+  plus the live `server/Caddyfile` and `server/flashdesk-relay.service` copies. Tests 16/16.
+
+Next: step 4 was folded into step 3 (TLS landed with Caddy). Remaining Stage 3: the WebSocket
+pairing endpoint + FlashDesk ID system, then relay-path test .223↔.222, then the cross-network
+test, then consent/allow-list/session log, then adaptive quality.
+
 ## Session handover (2026-07-30) — read this and CLAUDE.md before doing anything
 
 Everything below is durable because the conversation it came from is gone. Reasoning is included on

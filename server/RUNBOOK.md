@@ -168,9 +168,55 @@ Check propagation: dnschecker.org → `relay.flashdesk.org` → type A. Typicall
 
 ---
 
-## 7. Still to come (update this file as each lands)
+## 7. The relay service
 
-- Relay service (ASP.NET Core, listening on `127.0.0.1:5000`, systemd unit, restart on
-  crash/reboot) + `reverse_proxy 127.0.0.1:5000` in the Caddyfile
-- `/health` endpoint answering OK + version
-- FlashDesk ID registry, rate limiting, heartbeat expiry (see CLAUDE.md "The FlashDesk ID system")
+Runtime from Ubuntu's own repository (so `unattended-upgrades` patches it; no third-party repo):
+
+```bash
+apt-get -y install aspnetcore-runtime-8.0
+dotnet --list-runtimes
+```
+
+Build on `.223` and copy up:
+
+```bash
+dotnet publish src\RemoteDesktop.Relay -c Release -r linux-x64 --self-contained false -o <out>
+scp -i /c/Users/PC/.ssh/flashdesk_relay <out>/* root@139.28.36.247:/opt/flashdesk-relay/
+```
+
+On the server: dedicated unprivileged user, state directory, systemd unit.
+
+```bash
+useradd --system --no-create-home --shell /usr/sbin/nologin flashdesk
+mkdir -p /var/lib/flashdesk-relay
+chown -R flashdesk:flashdesk /opt/flashdesk-relay /var/lib/flashdesk-relay
+```
+
+`/etc/systemd/system/flashdesk-relay.service` — the copy in the repo is authoritative; key
+points: `User=flashdesk` (never root), `Restart=always` + `RestartSec=5` (crash recovery),
+`WantedBy=multi-user.target` (reboot recovery), and the sandbox block
+(`ProtectSystem=strict`, `ProtectHome`, `NoNewPrivileges`, `RestrictAddressFamilies`,
+`ReadWritePaths=/var/lib/flashdesk-relay`) so a compromised relay cannot touch the machine.
+
+```bash
+systemctl daemon-reload && systemctl enable --now flashdesk-relay
+curl -sS http://127.0.0.1:5000/health
+```
+
+Caddyfile gains a `handle /health` block that reverse-proxies to `127.0.0.1:5000`; everything
+else keeps serving the static placeholder.
+
+**Verify (from `.223`, over the internet — not by reading service status):**
+
+```bash
+curl -sS https://relay.flashdesk.org/health          # must print status: OK
+ssh ... 'kill -9 $(systemctl show -p MainPID --value flashdesk-relay)'
+sleep 8 && curl -sS https://relay.flashdesk.org/health   # must answer again, NRestarts incremented
+```
+
+## 8. Still to come (update this file as each lands)
+
+- WebSocket endpoint + FlashDesk ID registry, rate limiting, heartbeat expiry
+  (see CLAUDE.md "The FlashDesk ID system")
+- Adaptive quality / frame rate driven by measured bandwidth
+- `/download` served from the cPanel side (not this server)

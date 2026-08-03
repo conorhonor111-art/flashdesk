@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Runs on Linux. Nothing Windows-only may enter this project or RemoteDesktop.Shared. -->
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The same wire protocol both Windows sides speak. Referencing it here is also the
+         standing proof that Shared stayed platform-neutral (architecture rule 4). -->
+    <ProjectReference Include="..\RemoteDesktop.Shared\RemoteDesktop.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

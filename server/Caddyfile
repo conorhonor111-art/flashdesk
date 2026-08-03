@@ -1,0 +1,20 @@
+﻿# FlashDesk relay — Caddy config.
+# Caddy terminates TLS (certificate obtained and renewed automatically) and forwards to the
+# relay service on 127.0.0.1:5000, which is never exposed to the internet directly.
+# Logs go to the systemd journal on purpose: the packaged service sandbox forbids /var/log,
+# and journalctl rotates for us.  ->  journalctl -u caddy -f
+
+relay.flashdesk.org {
+	encode gzip
+
+	# The relay's own endpoints.
+	handle /health {
+		reverse_proxy 127.0.0.1:5000
+	}
+
+	# Everything else: the static placeholder page (replaced as the relay grows).
+	handle {
+		root * /var/www/relay
+		file_server
+	}
+}

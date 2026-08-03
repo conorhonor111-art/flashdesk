@@ -1,0 +1,29 @@
+﻿[Unit]
+Description=FlashDesk relay
+Documentation=https://relay.flashdesk.org/health
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=flashdesk
+Group=flashdesk
+WorkingDirectory=/opt/flashdesk-relay
+ExecStart=/usr/bin/dotnet /opt/flashdesk-relay/RemoteDesktop.Relay.dll
+# Come back automatically from a crash, and from a reboot (see WantedBy below).
+Restart=always
+RestartSec=5
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=DOTNET_EnableDiagnostics=0
+# The relay needs almost no access to this machine; take the rest away.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+ReadWritePaths=/var/lib/flashdesk-relay
+
+[Install]
+WantedBy=multi-user.target
