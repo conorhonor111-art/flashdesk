@@ -913,3 +913,58 @@ Everything is measured against a SIMULATED link. Two real home connections, two 
 and two different screen sizes remain untested — items 2, 3 and 5 of the handover's unproven list.
 The certificate gate is unchanged: nothing goes to any tester until `https://flashdesk.org` verifies
 `0 (ok)` from outside.
+
+---
+
+# 2026-08-03 — Measurement first, then the design system finished
+
+Two commits, in this order on purpose.
+
+## `67e094e` — measure where the frame time goes
+
+Nothing in the project had ever measured the belief that the JPEG encoder was the ceiling.
+`DiagnosticRunner` timed capture and encode but called `TileDiffer.Diff` from a `foreach` header
+with the timer inside the loop body, so diff cost fell into an untimed gap; a live session timed
+only the send. Four stages now: capture, diff, encode, send — a new `FrameTimings` (same one-second
+window as `RateMeter`), one line in the host's TECHNICAL view only, and a diff column in the
+diagnostics report.
+
+`sendTimer` was READ, never re-timed: what it measures feeds the governor's congestion signal.
+
+**First run validated the instrument** — the stages sum to the measured frame rate exactly
+(capture 179.8 + diff 16.8 + encode 52.0 = 248.5 ms = 4.0 fps, measured 4.0).
+
+**And it overturned the assumption.** Capture was ~72 % of the frame, encode ~21 %.
+⚠️ **But DXGI was unavailable, because that run went through RDP** — so it measured the GDI
+fallback, a path no ordinary client is on. This also contradicts a line in CLAUDE.md saying both
+machines provide DXGI: true only from a console session, not over RDP. The honest conclusion is not
+"capture is the ceiling"; it is that **nothing measured through RDP can rank these stages**.
+Parallel tile encoding is therefore NOT justified yet and was deliberately not built.
+
+One finding survives regardless: on an idle screen diff costs **19.4 ms against encode 1.8 ms** —
+ten times — because `HashTile` walks 8.8 MB one byte at a time every frame. That is the GDI-path
+"the client's fan runs all session" problem, now with a number.
+
+## `61f1ea0` — themed inputs, and green back to the button
+
+The palette discipline was already total (no `Color`/`Font` literal outside `Theme.cs`); the gap was
+control COVERAGE. Added `RoundedTextBox`, `ThemedComboBox`, `ThemedCheckBox` following
+`RoundedButton`'s pattern, plus `Theme.MakeTextBox/MakeComboBox/MakeCheckBox`, swapped in at all
+four call sites. Checkbox state is carried by the checkmark GLYPH, never by the blue fill, so it
+survives greyscale.
+
+Site: green had leaked onto three elements, diluting "green is the thing you click". The scam
+warning became a FILLED panel — louder than the outline it replaced — so the safety warning gained
+prominence while green became exclusive to the download button. Also added link-preview metadata
+(a preview with no title reads as a scam link when pasted to a stranger), a spacing scale, and
+focus rings on every link.
+
+## Left undone, deliberately
+
+- **Re-measure with DXGI available** (a console session, not RDP) before choosing any optimisation.
+- `TileDiffer.HashTile` vectorisation — justified by the data, not yet built.
+- `SessionWindow`'s two checkboxes have not been seen on screen; that needs a live session.
+- The outer window frame stays square on Windows 10 — `WindowCorners` is a Windows 11 feature and
+  degrades silently, as intended. Rounded corners appear on cards, buttons, fields and checkboxes.
+- The certificate gate is unchanged: nothing goes to any tester until `https://flashdesk.org`
+  verifies `0 (ok)` from outside.
