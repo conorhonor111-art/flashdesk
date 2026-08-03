@@ -654,6 +654,42 @@ Next: step 4 was folded into step 3 (TLS landed with Caddy). Remaining Stage 3: 
 pairing endpoint + FlashDesk ID system, then relay-path test .223↔.222, then the cross-network
 test, then consent/allow-list/session log, then adaptive quality.
 
+## Stage 3 step 3a DONE — the window shows a 9-digit FlashDesk number (2026-08-03)
+
+The ID system is live end to end. New code: `Shared/Identity/FlashDeskId.cs` (crypto-RNG
+generation, first digit 1–9, validation, `418 205 793` formatting) and `RegistrationContract.cs`
+(request/response defined once, so Windows client and Linux relay cannot drift);
+`Relay/IdRegistry.cs` (persisted to `/var/lib/flashdesk-relay/registry.json`, stores **salt +
+SHA-256 hash, never the secret**, fixed-time comparison); `Host/Identity/IdentityStore.cs`
+(`%APPDATA%\FlashDesk\identity.json`, secret DPAPI-protected, write-then-move so a crash cannot
+truncate it) and `Host/Identity/RelayRegistration.cs` (claims the ID, retries a collision up to 5
+times, then a clear error — never a loop).
+
+**Conor's four proofs, each tested rather than argued:**
+1. *Same number returns.* Closed and reopened FlashDesk: `373883745` both times, and the relay
+   still shows `1 registered` — a restart re-binds, it does not consume a second number.
+2. *Two machines, two numbers.* Self-contained `FlashDesk.exe` (64.9 MB) published to
+   `C:\Users\PC\Desktop\flashdesk-test\` for Conor to run on `.222`. Pending his run.
+3. *Never shows an unaccepted number.* The window renders the number only in
+   `IdentityState.Ready`; Copy is disabled otherwise. Verified live by stopping the relay.
+4. *Relay down.* Screenshot captured: hero reads "No number yet" with "FlashDesk cannot reach the
+   internet right now. Check this computer's connection, then close FlashDesk and open it again."
+
+Relay API verified by curl: new ID accepted · same ID + same secret accepted (restart) · same ID +
+different secret refused 409 · malformed ID refused 409. Registry on disk confirmed to hold only
+salt+hash.
+
+Two real defects found and fixed in this step, both recorded in the runbook: Caddy 404s any path
+it has not been told to forward (`/api/*` was missing), and a 36 pt Hero string like "No number
+yet" pushed Copy off the card — non-number states now use Display size, the read-aloud line hides
+when there is no number, and the simple view is 40 px taller so a two-line explanation cannot be
+clipped. Also caught: this project has its own `RemoteDesktop.Host.Encoding` namespace which
+shadows `System.Text.Encoding` — aliased rather than renamed.
+
+**Still IP-based for connecting.** Step 3a registers and displays the number; step 3b adds the
+WebSocket pairing so the number actually carries a session. Until then the LAN path (typed IP,
+now shown only in the technical view) is what works.
+
 ## Session handover (2026-07-30) — read this and CLAUDE.md before doing anything
 
 Everything below is durable because the conversation it came from is gone. Reasoning is included on

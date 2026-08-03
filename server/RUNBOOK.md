@@ -239,6 +239,30 @@ would hurt most and nobody thinks to check:
 | Firewall | open a TCP connection to 22 and 443 (must work) and 3306 (must fail) |
 | Password login off | `ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no root@…` → `Permission denied (publickey)` |
 
+## 7b. Relay routes — add new ones to the Caddyfile or they 404
+
+Caddy only forwards the paths it is told about; anything else falls through to the static page
+and returns 404. This cost a debugging round when `/api/register` was added to the relay but not
+to the Caddyfile.
+
+```
+handle /health   { reverse_proxy 127.0.0.1:5000 }
+handle /api/*    { reverse_proxy 127.0.0.1:5000 }
+handle           { root * /var/www/relay ; file_server }
+```
+
+State lives in `/var/lib/flashdesk-relay/registry.json` (ID → salt + hash of the secret, never
+the secret). It is deliberately outside `/opt/flashdesk-relay`, so a redeploy never wipes it.
+
+Registration rules, verifiable with curl against `https://relay.flashdesk.org/api/register`:
+
+| Case | Expected |
+|---|---|
+| New ID | `{"accepted":true}` HTTP 200 |
+| Same ID, same secret (app restart) | `{"accepted":true}` HTTP 200 |
+| Same ID, different secret | `{"accepted":false,"outcome":1}` HTTP 409 |
+| Malformed ID (e.g. leading zero) | `{"accepted":false,"outcome":2}` HTTP 409 |
+
 ## 8. Still to come (update this file as each lands)
 
 - WebSocket endpoint + FlashDesk ID registry, rate limiting, heartbeat expiry

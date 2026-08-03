@@ -104,9 +104,12 @@ public static class Theme
 
     // Deliberate window sizes — design decisions, so they live here and not in the forms.
     // The host window is sized to its content in each of its two views (no dead space).
-    public static readonly Size HostSimpleSize = new(500, 340);     // client area, simple view
-    public static readonly Size HostTechnicalSize = new(500, 650);  // client area, technical open
-    public static readonly Size HostWindowMinimum = new(460, 330);  // outer bounds
+    // Tall enough for the worst case in the simple view: "No number yet" plus a two-line
+    // explanation. In the normal state that shows as a little extra breathing room, which is
+    // the right trade — a clipped instruction is a phone call.
+    public static readonly Size HostSimpleSize = new(500, 380);     // client area, simple view
+    public static readonly Size HostTechnicalSize = new(500, 700);  // client area, technical open
+    public static readonly Size HostWindowMinimum = new(460, 360);  // outer bounds
     public static readonly Size ViewerWindowSize = new(1000, 660);  // client area — room for a scaled 1080p picture
     public static readonly Size ViewerWindowMinimum = new(640, 480);
 

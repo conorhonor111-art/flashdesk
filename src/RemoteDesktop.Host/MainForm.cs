@@ -1,7 +1,9 @@
 using System.Diagnostics;
 using RemoteDesktop.Host.Capture;
 using RemoteDesktop.Host.Diagnostics;
+using RemoteDesktop.Host.Identity;
 using RemoteDesktop.Host.Net;
+using RemoteDesktop.Shared.Identity;
 using RemoteDesktop.Shared.Protocol;
 using RemoteDesktop.UI;
 
@@ -31,6 +33,12 @@ public sealed class MainForm : Form
     private readonly Label _stateText = Theme.HeadingLabel("");
     private readonly Label _hero = new() { AutoSize = true, Font = Theme.Hero, ForeColor = Theme.TextPrimary, Margin = new Padding(0) };
     private readonly Button _copy = Theme.MakeQuietButton("Copy");
+    private readonly Label _heroNote = Theme.Caption("");
+    private readonly Label _readAloudLine = Theme.Caption(
+        "Read this number to the person helping you. Only give it to someone you contacted yourself.");
+
+    private readonly IdentityStore _identityStore = new();
+    private IdentityResult? _identity;
     private readonly Button _toggle = Theme.MakeButton("Stop sharing", ButtonKind.Neutral);
     private readonly LinkLabel _detailsLink = Theme.MakeLink("Technical details");
 
@@ -41,6 +49,9 @@ public sealed class MainForm : Form
     private readonly Label _survived = NewDetail();
     private readonly Label _failures = NewDetail();
     private readonly Label _allAddresses = NewDetail();
+    private readonly Label _identityDetail = NewDetail();
+    private readonly Label _identityFile = NewDetail();
+    private readonly Label _relayUrl = NewDetail();
     private readonly ComboBox _quality = new() { DropDownStyle = ComboBoxStyle.DropDownList, FlatStyle = FlatStyle.Flat, Font = Theme.Body, Width = Theme.SmallFieldWidth, Margin = new Padding(Theme.S2, 0, 0, 0) };
     private readonly Button _diagnostics = Theme.MakeButton("Run diagnostics", ButtonKind.Neutral);
     private readonly Button _diagnosticsGdi = Theme.MakeButton("Run diagnostics (force GDI)", ButtonKind.Neutral);
@@ -111,16 +122,16 @@ public sealed class MainForm : Form
         Controls.Add(_band);
         content.BringToFront(); // Fill must claim the space left after the Top band and Bottom actions
 
-        Load += (_, _) => StartSharing();
+        Load += (_, _) => { ShowIdentityState(); StartSharing(); _ = RegisterIdentityAsync(); };
         FormClosing += (_, _) => { _server.Dispose(); _timer.Dispose(); };
         _timer.Tick += (_, _) => UpdateStatus();
         _timer.Start();
     }
 
-    /// <summary>The address dominates the window; Copy is a quiet chip that must lose the glance.</summary>
+    /// <summary>The number dominates the window; Copy is a quiet chip that must lose the glance.</summary>
     private Control BuildHeroCard()
     {
-        var caption = Theme.Caption("Your address");
+        var caption = Theme.Caption("Your FlashDesk number");
         caption.Margin = new Padding(0, 0, 0, Theme.S1);
 
         var heroRow = new FlowLayoutPanel
@@ -133,15 +144,21 @@ public sealed class MainForm : Form
         };
         _copy.Margin = new Padding(Theme.S3, Theme.S4, 0, 0);
         _copy.TabIndex = 0;
-        _copy.Click += (_, _) => { try { if (_hero.Text.Length > 0) Clipboard.SetText(_hero.Text); } catch { } };
+        _copy.Enabled = false; // nothing to copy until the relay has accepted a number
+        _copy.Click += (_, _) =>
+        {
+            try { if (_identity?.HasUsableId == true) Clipboard.SetText(_hero.Text); } catch { }
+        };
         heroRow.Controls.Add(_hero);
         heroRow.Controls.Add(_copy);
 
-        var sentence = Theme.Caption("Read this to the person helping you — they type it into their FlashDesk.");
-        sentence.Anchor = AnchorStyles.Left | AnchorStyles.Right;
-        sentence.Margin = new Padding(0);
+        _heroNote.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        _heroNote.Margin = new Padding(0, 0, 0, Theme.S2);
 
-        return MakeCard(new Padding(Theme.S4), caption, heroRow, sentence);
+        _readAloudLine.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        _readAloudLine.Margin = new Padding(0);
+
+        return MakeCard(new Padding(Theme.S4), caption, heroRow, _heroNote, _readAloudLine);
     }
 
     private Control BuildTechnicalPanel()
@@ -179,7 +196,8 @@ public sealed class MainForm : Form
         }
 
         return MakeCard(new Padding(Theme.S3),
-            _method, _fps, _kb, _monitoring, _survived, _failures, _allAddresses, qualityRow, buttonRow);
+            _method, _fps, _kb, _monitoring, _survived, _failures,
+            _identityDetail, _identityFile, _relayUrl, _allAddresses, qualityRow, buttonRow);
     }
 
     private void SetTechnicalOpen(bool open)
@@ -218,9 +236,82 @@ public sealed class MainForm : Form
     {
         _server.Start();
         var addresses = LocalAddresses.IPv4().ToList();
-        _hero.Text = addresses.Count > 0 ? addresses[0] : "—";
-        _allAddresses.Text = "All addresses: " + (addresses.Count > 0 ? string.Join("   ", addresses) : "none found");
+        // The IP is a technical detail now; the client-facing hero is the FlashDesk number.
+        // Until the relay path is built, connecting still happens over the LAN by IP.
+        _allAddresses.Text = "Local addresses (LAN path): " + (addresses.Count > 0 ? string.Join("   ", addresses) : "none found");
         _toggle.Text = "Stop sharing";
+    }
+
+    /// <summary>
+    /// Claims this installation's number with the relay, then shows it. The window shows a
+    /// number ONLY if the relay accepted it — see RelayRegistration for why.
+    /// </summary>
+    private async Task RegisterIdentityAsync()
+    {
+        var registration = new RelayRegistration(_identityStore);
+        IdentityResult result;
+        try
+        {
+            result = await registration.RegisterAsync();
+        }
+        catch (Exception ex)
+        {
+            result = new IdentityResult(IdentityState.RelayUnreachable, null, ex.Message);
+        }
+
+        if (IsDisposed) return;
+        _identity = result;
+        ShowIdentityState();
+    }
+
+    /// <summary>
+    /// The words a stressed person reads off their own screen, and reads aloud to me on the
+    /// phone. Every failure state says what to do next — never a code or a silent blank.
+    /// </summary>
+    private void ShowIdentityState()
+    {
+        bool hasNumber = _identity?.HasUsableId == true;
+
+        // Only a real number gets Hero size. A message at 36 pt would shove Copy off the card
+        // and is not what the size is for — Hero is reserved for the number (CLAUDE.md).
+        _hero.Font = hasNumber ? Theme.Hero : Theme.Display;
+        _hero.ForeColor = hasNumber ? Theme.TextPrimary : Theme.TextSecondary;
+        _copy.Enabled = hasNumber;
+        _readAloudLine.Visible = hasNumber; // nothing to read aloud when there is no number
+
+        switch (_identity?.State)
+        {
+            case null:
+            case IdentityState.Registering:
+                _hero.Text = "Getting your number…";
+                _heroNote.Text = string.Empty;
+                break;
+
+            case IdentityState.Ready:
+                _hero.Text = FlashDeskId.Format(_identity.Id!);
+                _heroNote.Text = _identity.Detail ?? string.Empty;
+                break;
+
+            case IdentityState.RelayUnreachable:
+                _hero.Text = "No number yet";
+                _heroNote.Text = "FlashDesk cannot reach the internet right now. Check this computer's "
+                               + "connection, then close FlashDesk and open it again.";
+                break;
+
+            case IdentityState.Refused:
+                _hero.Text = "No number yet";
+                _heroNote.Text = "FlashDesk could not get a number for this computer. Please tell the "
+                               + "person helping you what this screen says.";
+                break;
+        }
+
+        _heroNote.Visible = _heroNote.Text.Length > 0;
+
+        _identityDetail.Text = "Number: " + (_identity is null
+            ? "registering…"
+            : $"{_identity.State}{(_identity.Detail is null ? "" : " — " + _identity.Detail)}");
+        _identityFile.Text = "Stored in: " + _identityStore.FilePath;
+        _relayUrl.Text = "Relay: " + ProtocolConstants.RelayBaseUrl;
     }
 
     private void OnToggle(object? sender, EventArgs e)

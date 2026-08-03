@@ -28,4 +28,11 @@ public static class ProtocolConstants
 
     /// <summary>Wire-format version. Bump when the message layout changes.</summary>
     public const byte ProtocolVersion = 1;
+
+    /// <summary>
+    /// Where the relay lives. One value, used by both Windows sides, so a move needs one edit.
+    /// The site (flashdesk.org) is deliberately a DIFFERENT machine — see CLAUDE.md: a broken
+    /// site must not be able to touch the relay.
+    /// </summary>
+    public const string RelayBaseUrl = "https://relay.flashdesk.org";
 }
