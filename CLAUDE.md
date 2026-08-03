@@ -999,11 +999,27 @@ the whole funnel and only a code signing certificate genuinely fixes it.
 - Expect **weeks to months of real downloads** before the warning stops, whichever certificate
   is bought.
 
-**What to do until (or instead of) signing:** the SmartScreen paragraph is already on the
-download page BEFORE the moment it happens; add a screenshot of the actual warning so it is
-recognised; keep the filename and download URL stable so reputation accumulates; fill in proper
-version metadata (company/product/description) on the exe; and submit the binary to Microsoft's
-file-submission service so a false-positive block can be lifted.
+**DECISION 2026-08-03 (Conor): LAUNCH UNSIGNED.** Buying now would be wasted money — reputation
+needs real downloads, there are none yet, and the 459-day clock runs regardless. **The trigger to
+revisit is a sustained download rate, not revenue: roughly 100+ downloads a month from people
+Conor does not personally know, held for two or three months.** Below that, the certificate
+expires before reputation can form. Microsoft publishes no threshold, so this is a judgement
+call, not a published number — said plainly so nobody later mistakes it for a fact.
+**If it is ever bought, buy the CLOUD (SimplySign) version even though the card kit is ~€40
+cheaper:** the card is a physical smartcard that has to be posted, which adds a delivery
+dependency and a device to lose, and the cloud version has neither.
+
+**What to do until (or instead of) signing — the free things, and their state:**
+- ✅ **Exe metadata filled in** (done 2026-08-03, verified in file properties): Product
+  `FlashDesk`, Company `FlashDesk`, Version `0.3.0.0`, and **File description
+  `FlashDesk remote support`** — that last one is `<AssemblyTitle>`, NOT `<Description>`, and it
+  is the line Windows shows in Task Manager *and inside the SmartScreen dialog itself*, so it
+  must read as a sentence rather than a filename.
+- ✅ Filename and download URL are fixed and never change, so whatever reputation accrues
+  accrues in one place.
+- ✅ The page explains the warning BEFORE it happens.
+- ⬜ Add a screenshot of the real warning to the page, so it is recognised rather than frightening.
+- ⬜ Submit to Microsoft's file-submission service if the binary is ever outright blocked.
 
 ## The consent dialog is now the only defence (2026-08-03)
 
@@ -1027,6 +1043,24 @@ Required additions, in order of how much they actually help:
 Honest limit that must not be papered over: none of this stops a determined social engineer, and
 the category's real answer is user education — which is why the page's scam warning matters more
 than any code we write.
+
+**THE DIALOG IS ONE DIALOG (Conor, 2026-08-03) — this is a safety decision, not a convenience
+one.** Everything the person needs to decide lives in a single window: who is connecting (their
+9-digit number, and their name if known), **whether that number has ever connected to this
+machine before, stated in words**, what they will be able to do (see the screen; control mouse
+and keyboard), that it can be ended at any moment with one click, and the scam line in plain
+words. Two buttons: Accept and Reject. **Reasoning that must survive into later sessions: asking
+three times is WORSE than asking once — a person asked repeatedly learns to click through
+without reading. One dialog that is actually read beats three that are dismissed. So the dialog
+is never shortened to make it faster to pass; what we removed is repetition, not information.**
+Reject is never smaller, greyer or harder to hit, and a timeout means Reject.
+
+**First-contact delay:** on the FIRST connection from a given number, Accept becomes clickable
+after a short delay and the dialog says plainly that the number is new; on EVERY later
+connection from that same number there is no delay at all. The delay exists because the scam
+depends on a reflexive click while a stranger talks on the phone — it is the difference between
+a reflex and a decision, and costs an expected caller nothing. Reject is clickable immediately,
+always. The known-numbers list lives only on the client's machine and is never transmitted.
 
 ## Phase 2 — not now
 

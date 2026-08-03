@@ -11,6 +11,23 @@
          visible gain — recorded as a separate later task in CLAUDE.md). -->
     <AssemblyName>FlashDesk</AssemblyName>
     <ApplicationIcon>..\..\assets\FlashDesk.ico</ApplicationIcon>
+
+    <!-- File properties a person sees on right-click → Properties → Details, and one of the few
+         free signals SmartScreen and antivirus engines read. A blank-properties exe looks worse
+         to both. Launching UNSIGNED is a deliberate decision (2026-08-03): signing does not
+         remove the SmartScreen warning, it only lets reputation start accruing, and reputation
+         needs real downloads we do not have yet. See CLAUDE.md "Code signing and SmartScreen". -->
+    <Product>FlashDesk</Product>
+    <!-- AssemblyTitle becomes the Win32 "File description" — the line Windows shows in Task
+         Manager AND in the SmartScreen dialog itself, so it must read as a sentence a worried
+         person can understand, not as a filename. -->
+    <AssemblyTitle>FlashDesk remote support</AssemblyTitle>
+    <Description>FlashDesk — remote support. Shows your 9-digit number so someone you trust can see and control your screen while you watch.</Description>
+    <Company>FlashDesk</Company>
+    <Copyright>Copyright © 2026 FlashDesk</Copyright>
+    <Version>0.3.0</Version>
+    <FileVersion>0.3.0.0</FileVersion>
+    <AssemblyVersion>0.3.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>
