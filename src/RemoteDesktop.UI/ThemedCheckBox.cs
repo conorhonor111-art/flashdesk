@@ -110,10 +110,12 @@ public sealed class ThemedCheckBox : CheckBox
 
         if (Focused && ShowFocusCues)
         {
-            // Around the whole control — box and word together. It was previously inset 3px while
-            // the box started at x = 0, so the dotted ring was drawn straight through the box.
-            var ring = new RectangleF(0.5f, 0.5f, Width - 1f, Height - 1f);
-            using var ringPath = Theme.RoundedPath(ring, RadiusFor(Height));
+            // Around the whole control — box and word together, inset 1px from the bounds. It was
+            // previously inset 3px while the box started at x = 0, so the dotted ring was drawn
+            // straight through the box. The box now starts at RingRoom, which puts the ring outside
+            // it with a clean gap rather than shrinking the ring and moving the collision.
+            var ring = new RectangleF(1f, 1f, Width - 2f, Height - 2f);
+            using var ringPath = Theme.RoundedPath(ring, Theme.ScaledRadius(this));
             using var ringPen = new Pen(textColour, Theme.BorderThickness) { DashStyle = DashStyle.Dot };
             g.DrawPath(ringPen, ringPath);
         }
