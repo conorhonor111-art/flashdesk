@@ -88,6 +88,21 @@ public sealed class HostServer : IDisposable
     public string? LastSessionReport { get; private set; }
 
     private SessionRecorder? _recorder;
+
+    /// <summary>
+    /// TEST INSTRUMENT — kilobits per second this machine is allowed to send, or 0 for no limit.
+    /// Offered only in the technical view so the adaptive ladder can be watched working against a
+    /// real screen. Starts at 0, and NOTHING on the wire can change it: an operator cannot reach
+    /// across and throttle someone else's machine, because no such message exists. See LinkLimiter.
+    /// </summary>
+    public int TestLinkKbps
+    {
+        get => _limiter?.Kbps ?? _pendingTestKbps;
+        set { _pendingTestKbps = value; if (_limiter is not null) _limiter.Kbps = value; }
+    }
+
+    private LinkLimiter? _limiter;
+    private volatile int _pendingTestKbps;
     public CaptureHealthLog Health { get; } = new(); // interruption counters + log; persists across start/stop
     public CaptureMethod Method => _capture?.Method ?? CaptureMethod.Dxgi; // live, so a mid-session GDI fallback shows
 
@@ -218,7 +233,11 @@ public sealed class HostServer : IDisposable
                     catch { allowed = false; }
                 }
 
-                using var stream = new WebSocketStream(socket, ownsSocket: false);
+                // The limiter is always in the path but does nothing at all while Kbps is 0, so the
+                // rate can be changed mid-session and the ladder watched reacting to it.
+                using var socketStream = new WebSocketStream(socket, ownsSocket: false);
+                _limiter = new LinkLimiter(socketStream) { Kbps = _pendingTestKbps };
+                Stream stream = _limiter;
                 if (!allowed)
                 {
                     RelayStatus = "Ready — waiting for someone to connect";

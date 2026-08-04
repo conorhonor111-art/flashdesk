@@ -28,6 +28,20 @@ public sealed class MainForm : Form
     /// <summary>The technical view's quality selector: follow the link, or pin a number for testing.</summary>
     private const string AutomaticQuality = "Automatic";
 
+    /// <summary>The resting entry of the test-throttle list: no limit at all.</summary>
+    private const string NoLinkLimit = "No — send as fast as it can";
+
+    /// <summary>
+    /// One entry in the test-throttle list. It carries the number but shows a phrase, because the
+    /// point of the control is to watch the picture change, not to admire a unit.
+    /// </summary>
+    private sealed record LinkChoice(int Kbps)
+    {
+        public override string ToString() => Kbps >= 1000
+            ? $"Yes — about {Kbps / 1000.0:0.#} Mbit/s"
+            : $"Yes — about {Kbps} Kbit/s";
+    }
+
     private readonly HostServer _server = new();
 
     private readonly Icon? _iconIdle = LoadAppIcon("FlashDesk.AppIcon");
@@ -67,6 +81,8 @@ public sealed class MainForm : Form
     private readonly Label _identityFile = NewDetail();
     private readonly Label _relayUrl = NewDetail();
     private readonly ThemedComboBox _quality = new() { Font = Theme.Body, Width = Theme.SmallFieldWidth, Margin = new Padding(Theme.S2, 0, 0, 0) };
+    // TEST INSTRUMENT, technical view only. See HostServer.TestLinkKbps and LinkLimiter.
+    private readonly ThemedComboBox _testLink = new() { Font = Theme.Body, Width = Theme.MediumFieldWidth, Margin = new Padding(Theme.S2, 0, 0, 0) };
     private readonly Button _diagnostics = Theme.MakeButton("Run diagnostics", ButtonKind.Neutral);
     private readonly Button _diagnosticsGdi = Theme.MakeButton("Run diagnostics (force GDI)", ButtonKind.Neutral);
     private readonly Button _openLog = Theme.MakeButton("Open capture log", ButtonKind.Neutral);
@@ -383,6 +399,34 @@ public sealed class MainForm : Form
             _server.Governor.ManualQuality = _quality.SelectedItem is int q ? q : (int?)null;
         qualityRow.Controls.Add(_quality);
 
+        // Deliberately throttles this machine's sending, so the adaptive ladder can be WATCHED
+        // working against a real screen with real motion — the simulation only ever proved the
+        // arithmetic. Technical view only, starts off, and no message on the wire can turn it on:
+        // an operator must never be able to degrade someone else's machine from a distance.
+        var linkRow = new FlowLayoutPanel
+        {
+            FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = false,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            Margin = new Padding(0, Theme.S2, 0, Theme.S2),
+        };
+        linkRow.Controls.Add(new Label
+        {
+            Text = "Pretend the connection is slow (testing only)",
+            AutoSize = true,
+            Font = Theme.Body,
+            ForeColor = Theme.TextPrimary,
+            Margin = new Padding(0, Theme.S1, 0, 0),
+        });
+        _testLink.Items.Add(NoLinkLimit);
+        foreach (int kbps in new[] { 5000, 2500, 1200, 600 })
+            _testLink.Items.Add(new LinkChoice(kbps));
+        _testLink.SelectedItem = NoLinkLimit;
+        _testLink.SelectedIndexChanged += (_, _) =>
+            _server.TestLinkKbps = _testLink.SelectedItem is LinkChoice c ? c.Kbps : 0;
+        linkRow.Controls.Add(_testLink);
+
         var buttonRow = new FlowLayoutPanel
         {
             FlowDirection = FlowDirection.LeftToRight,
@@ -403,7 +447,8 @@ public sealed class MainForm : Form
 
         return MakeCard(new Padding(Theme.S3),
             _method, _fps, _kb, _adaptive, _frameStages, _monitoring, _survived, _failures,
-            _relayState, _identityDetail, _identityFile, _relayUrl, _allAddresses, qualityRow, buttonRow);
+            _relayState, _identityDetail, _identityFile, _relayUrl, _allAddresses,
+            qualityRow, linkRow, buttonRow);
     }
 
     private void SetTechnicalOpen(bool open)
