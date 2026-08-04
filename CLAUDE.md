@@ -401,6 +401,21 @@ dotnet run -c Release --project src\RemoteDesktop.Host      # HOST machine
 dotnet run -c Release --project src\RemoteDesktop.Viewer    # VIEWER machine
 ```
 
+**The publish command that produces the file people download — ONE literal line.** It was missing
+from this repo until 2026-08-04, so rebuilding depended on someone's shell history:
+
+```
+dotnet publish src\RemoteDesktop.Host -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o C:\Users\PC\Desktop\flashdesk-upload
+```
+
+⚠️ **CHECK WHICH BUILD IS ACTUALLY ON THE SERVER BEFORE ANY TEST.** The exe carries the git commit
+it was built from, so this is one command and it is not optional:
+`(Get-Item FlashDesk.exe).VersionInfo.ProductVersion` → e.g. `0.3.0+84c3bab`, then
+`git log --oneline <that hash>..HEAD` lists exactly what the downloaded file is MISSING.
+This caught a real one on 2026-08-04: the file on flashdesk.org was built at `b6734e0`, **twelve
+commits behind, and therefore had no adaptive quality at all** — the feature the whole
+slow-connection story depends on. The site looked perfect and served a build without it.
+
 **Run `dotnet test` after every stage.** `RemoteDesktop.Tests` covers the wire protocol only —
 round-trip encode/decode, truncated message, an oversized length prefix, a malformed handshake — and
 holds the hardening in place so a later tidy-up cannot silently reintroduce a bug (e.g. the length
