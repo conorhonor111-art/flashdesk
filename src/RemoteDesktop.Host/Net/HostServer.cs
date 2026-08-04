@@ -2,6 +2,7 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 using RemoteDesktop.Host.Capture;
+using RemoteDesktop.Host.Diagnostics;
 using RemoteDesktop.Host.Encoding;
 using RemoteDesktop.Host.Input;
 using RemoteDesktop.Shared.Diagnostics;
@@ -78,8 +79,20 @@ public sealed class HostServer : IDisposable
 
     /// <summary>Where the frame time goes, stage by stage, over the last second. See FrameTimings.</summary>
     public FrameTimings Timings { get; } = new();
+
+    /// <summary>
+    /// How the last session went, in plain words, ready to append to the session log. Null until one
+    /// has ended. The program measures itself so a tester never has to read numbers off a screen
+    /// during a phone call — see SessionRecorder.
+    /// </summary>
+    public string? LastSessionReport { get; private set; }
+
+    private SessionRecorder? _recorder;
     public CaptureHealthLog Health { get; } = new(); // interruption counters + log; persists across start/stop
     public CaptureMethod Method => _capture?.Method ?? CaptureMethod.Dxgi; // live, so a mid-session GDI fallback shows
+
+    /// <summary>The capture method in words a non-technical reader can carry to a phone call.</summary>
+    private string MethodName => Method == CaptureMethod.Dxgi ? "DXGI Desktop Duplication" : "GDI BitBlt (fallback)";
     public string? DxgiFallbackReason { get; private set; }
     public bool IsCapturing { get; private set; }
     public volatile bool ViewerConnected;
@@ -219,7 +232,21 @@ public sealed class HostServer : IDisposable
                     continue; // dial again and wait to be called by someone else
                 }
 
-                if (!resuming) SessionLogged?.Invoke(paired.PeerId, true);
+                if (!resuming)
+                {
+                    // A genuinely new session starts a fresh record. A RESUME must not — the whole
+                    // point of the report is to show that the link dropped and came back, which a
+                    // reset counter would erase.
+                    _recorder = new SessionRecorder();
+                    _recorder.Begin(paired.PeerId, MethodName, _capture?.Width ?? 0, _capture?.Height ?? 0);
+                    SessionLogged?.Invoke(paired.PeerId, true);
+                }
+                else
+                {
+                    // _lastAcceptedAt is stamped at the END of the previous session, so this really
+                    // is the length of the gap the person sat through.
+                    _recorder?.RecordReconnect(DateTimeOffset.UtcNow - _lastAcceptedAt);
+                }
                 RelayStatus = $"Connected to {FlashDeskId.Format(paired.PeerId)}";
                 try
                 {
@@ -237,6 +264,10 @@ public sealed class HostServer : IDisposable
                     // dropped link would need to be resumed from.
                     _lastAcceptedId = paired.PeerId;
                     _lastAcceptedAt = DateTimeOffset.UtcNow;
+                    // Written on every disconnect. If the link comes back inside the grace window
+                    // the same recorder keeps running, so the NEXT block is the fuller story and
+                    // says how many interruptions there were.
+                    LastSessionReport = _recorder?.Report(Governor.LadderSize);
                     SessionLogged?.Invoke(paired.PeerId, false);
                 }
             }
@@ -457,6 +488,14 @@ public sealed class HostServer : IDisposable
             // sendTimer, which is READ here and never re-timed: what it measures belongs to the
             // governor's congestion signal and must not change.
             Timings.Record(captureTicks, diffTicks, encodeTicks, sendTimer.ElapsedTicks);
+
+            // The same four figures, plus the ladder level, accumulated for the session report that
+            // gets written into the client's own session log when the session ends.
+            const double ToMs = 1000.0;
+            double tickMs = ToMs / System.Diagnostics.Stopwatch.Frequency;
+            _recorder?.RecordFrame(bytes.Length, Governor.Level,
+                captureTicks * tickMs, diffTicks * tickMs, encodeTicks * tickMs,
+                sendTimer.ElapsedTicks * tickMs);
 
             // Recomputed AFTER the governor has seen this frame, so a screen that just started moving
             // is already back at the fast interval instead of sleeping out the idle one.

@@ -171,7 +171,19 @@ public sealed class MainForm : Form
 
         _server.SessionLogged = (callerId, starting) =>
         {
-            if (starting) _sessionLog.Started(callerId); else _sessionLog.Ended(callerId);
+            if (starting)
+            {
+                _sessionLog.Started(callerId);
+            }
+            else
+            {
+                _sessionLog.Ended(callerId);
+                // Straight after the DISCONNECTED line, so the numbers sit with the session they
+                // describe. This is what turns "watch these four figures while we talk" into
+                // "send me this file".
+                var report = _server.LastSessionReport;
+                if (!string.IsNullOrEmpty(report)) _sessionLog.Detail(report);
+            }
         };
 
         Load += (_, _) => { ShowIdentityState(); StartSharing(); _ = RegisterIdentityAsync(); };
