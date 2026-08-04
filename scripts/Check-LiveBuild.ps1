@@ -132,7 +132,67 @@ if (-not $liveCommit) {
     } finally { Pop-Location }
 }
 
-# --------------------------------------------------------------- 4. the verdict
+# ------------------------------------------------------- 4. is the PAGE current?
+# Added after being caught a SECOND time by the same class of problem: the exe was current and the
+# page was not, so the site told people the download was "about 65 MB" when it was 68.5. Everything
+# a stranger reads lives on that page, so a stale page is as bad as a stale file.
+Say ''
+Say '4. Is the download page the one in this repository'
+$localPage = Join-Path $RepoRoot 'site\index.html'
+if (-not (Test-Path $localPage)) {
+    Bad "Cannot find $localPage to compare against."
+} else {
+    try {
+        # Fetched to a file and read back as UTF-8 rather than using .Content: when the server sends
+        # no charset, Windows PowerShell decodes the body as ISO-8859-1, which mangles every em-dash
+        # and reported a page full of differences that did not exist.
+        $pageTmp = Join-Path $env:TEMP ("flashdesk-page-{0}.html" -f (Get-Date -Format 'HHmmss'))
+        Invoke-WebRequest -Uri $Site -OutFile $pageTmp -UseBasicParsing -TimeoutSec 60 -Headers @{ 'Cache-Control' = 'no-cache' }
+        $livePage = Get-Content -Raw -Encoding UTF8 -Path $pageTmp
+        Remove-Item $pageTmp -Force -ErrorAction SilentlyContinue
+        # -Encoding UTF8 matters: Windows PowerShell reads a BOM-less UTF-8 file as ANSI, which turned
+        # every em-dash into a different string on one side and produced a page full of imaginary
+        # differences the first time this ran.
+        $repoPage = Get-Content -Raw -Encoding UTF8 -Path $localPage
+
+        # Compared after normalising line endings and trailing spaces: a web server may serve either,
+        # and that difference is not staleness.
+        $lf = [string][char]10
+        $norm = {
+            param($t)
+            ($t -replace ([string][char]13), '') -split $lf | ForEach-Object { $_.TrimEnd() } | Where-Object { $_ -ne '' }
+        }
+        $liveLines = @(& $norm $livePage)
+        $repoLines = @(& $norm $repoPage)
+
+        $missing = @(Compare-Object -ReferenceObject $liveLines -DifferenceObject $repoLines |
+                     Where-Object { $_.SideIndicator -eq '=>' } | Select-Object -ExpandProperty InputObject)
+        $extra   = @(Compare-Object -ReferenceObject $liveLines -DifferenceObject $repoLines |
+                     Where-Object { $_.SideIndicator -eq '<=' } | Select-Object -ExpandProperty InputObject)
+
+        if ($missing.Count -eq 0 -and $extra.Count -eq 0) {
+            Good 'The live page is exactly the one in this repository.'
+        } else {
+            Bad ("The live page is NOT the one in this repository - {0} line(s) missing from the server, {1} line(s) on the server that are not in the repo." -f $missing.Count, $extra.Count)
+            if ($missing.Count -gt 0) {
+                Note 'In the repo but NOT on the server (these changes are not live):'
+                foreach ($l in ($missing | Select-Object -First 5)) { Note ("  + " + $l.Trim()) }
+                if ($missing.Count -gt 5) { Note ("  ... and {0} more" -f ($missing.Count - 5)) }
+            }
+            if ($extra.Count -gt 0) {
+                Note 'On the server but NOT in the repo (the server has older or hand-edited text):'
+                foreach ($l in ($extra | Select-Object -First 5)) { Note ("  - " + $l.Trim()) }
+                if ($extra.Count -gt 5) { Note ("  ... and {0} more" -f ($extra.Count - 5)) }
+            }
+            Note ''
+            Note ("Fix: upload {0} to the web root as index.html." -f $localPage)
+        }
+    } catch {
+        Bad "Could not fetch the live page to compare: $($_.Exception.Message)"
+    }
+}
+
+# --------------------------------------------------------------- 5. the verdict
 Remove-Item $temp -Force -ErrorAction SilentlyContinue
 Say ''
 Say '================================================================'
