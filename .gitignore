@@ -482,3 +482,7 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Written fresh at the end of every reply so the summary can be copied without selecting text.
+# It is a scratch artefact of the conversation, not part of the project.
+last-summary.md
