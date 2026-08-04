@@ -269,3 +269,47 @@ Registration rules, verifiable with curl against `https://relay.flashdesk.org/ap
   (see CLAUDE.md "The FlashDesk ID system")
 - Adaptive quality / frame rate driven by measured bandwidth
 - `/download` served from the cPanel side (not this server)
+
+---
+
+## §9 REQUIRED BEFORE ANY TEST — is the server serving the build we think it is?
+
+**Run this before every test, and before sending anyone the link. Double-click:**
+
+```
+scripts\Check-LiveBuild.cmd
+```
+
+It takes about ten seconds and ends in one of two words: **READY** or **NOT READY**. If it says NOT
+READY, it lists exactly what is wrong and does not need interpreting.
+
+### Why this is a required step and not a nicety
+
+On 2026-08-04 every visible check passed — valid certificate, correct page, working download — and
+the file being served was **twelve commits old, built before adaptive quality existed**. The feature
+the entire slow-connection story depends on was simply not in the program people could download. A
+test against it would have failed and the week after would have gone into "fixing" code that was
+already correct.
+
+Nothing on the website can reveal this. The site does not know what is inside the exe. The only
+thing that knows is the exe itself, which carries the git commit it was built from in its version
+string (`0.3.0+84c3bab…`). The script reads that back off the **live download** — not off a local
+copy — and compares it with this repository.
+
+### The one subtlety that makes it trustworthy
+
+A difference from HEAD is only reported as a **problem** when the missing commits actually touch
+code under `src\`. Documentation-only commits are reported as fine, with a note. This matters: a
+check that raises an alarm every time a comment changes is a check that gets ignored within a week,
+and an ignored check is worse than no check because it is mistaken for coverage.
+
+### If it says NOT READY because the build is old
+
+Republish and re-upload to `/dl/FlashDesk.exe`, replacing the file. The name and URL must never
+change — SmartScreen reputation accrues to a file at a URL, and changing either resets it.
+
+```
+dotnet publish src\RemoteDesktop.Host -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o C:\Users\PC\Desktop\flashdesk-upload
+```
+
+Then run the check again. It should say READY.

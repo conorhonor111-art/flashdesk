@@ -1,0 +1,150 @@
+<#
+    Check-LiveBuild.ps1 — the gate to run BEFORE any test, and before telling anyone to download.
+
+    WHY THIS EXISTS. On 2026-08-04 the site was perfect, the certificate was valid, the download
+    worked, and the file being served was TWELVE COMMITS OLD — built before adaptive quality
+    existed. Every visible check passed while the thing people actually download was missing the
+    feature the whole slow-connection story depends on. A test run against it would have "failed"
+    and we would have spent a week fixing working code.
+
+    So the exe carries the git commit it was built from, and this script reads it back off the
+    LIVE download and compares it with this repository.
+
+    ONE DELIBERATE SUBTLETY, and it is what makes this worth trusting: a difference from HEAD is
+    only reported as a PROBLEM when the missing commits actually touch code that goes into the exe
+    (anything under src\). Documentation-only commits are reported as fine. A check that cries wolf
+    every time a comment changes is a check people learn to ignore, and that is worse than none.
+
+    Run it by double-clicking Check-LiveBuild.cmd, or:  powershell -File scripts\Check-LiveBuild.ps1
+#>
+
+[CmdletBinding()]
+param(
+    [string] $Url  = 'https://flashdesk.org/dl/FlashDesk.exe',
+    [string] $Site = 'https://flashdesk.org',
+    [string] $RepoRoot
+)
+
+$ErrorActionPreference = 'Stop'
+
+# Windows PowerShell redraws a progress bar for every chunk of a download, which turned a 6-second
+# transfer into 264 seconds when this was first run. A check that takes four minutes is a check that
+# gets skipped, so the progress bar goes.
+$ProgressPreference = 'SilentlyContinue'
+
+# Worked out in the body, not in param(): $PSScriptRoot is not reliably populated while parameter
+# defaults are being bound, which made the script fail before it did anything useful.
+if (-not $RepoRoot) {
+    $here = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+    $RepoRoot = Split-Path -Parent $here
+}
+$problems = New-Object System.Collections.Generic.List[string]
+
+function Say  ($t) { Write-Host $t }
+function Good ($t) { Write-Host "  [ OK ]  $t" -ForegroundColor Green }
+function Bad  ($t) { Write-Host "  [FAIL]  $t" -ForegroundColor Red; $problems.Add($t) }
+function Note ($t) { Write-Host "          $t" -ForegroundColor DarkGray }
+
+Say ''
+Say '================================================================'
+Say ' FlashDesk - is the file people download the build we think?'
+Say '================================================================'
+Say ''
+
+# ---------------------------------------------------------------- 1. the site
+Say '1. The website'
+try {
+    $page = Invoke-WebRequest -Uri $Site -UseBasicParsing -TimeoutSec 30
+    if ($page.StatusCode -eq 200) { Good "$Site answers, and its certificate is trusted." }
+    else { Bad "$Site answered with status $($page.StatusCode)." }
+} catch {
+    Bad "$Site could not be loaded: $($_.Exception.Message)"
+    Note 'A certificate error shows up here. Nothing else below can be trusted until this passes.'
+}
+
+# ------------------------------------------------------------ 2. the download
+Say ''
+Say '2. The download'
+$temp = Join-Path $env:TEMP ("flashdesk-livecheck-{0}.exe" -f (Get-Date -Format 'yyyyMMdd-HHmmss'))
+$bust = "$Url" + ('?cb=' + (Get-Date -UFormat %s))
+try {
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+    Invoke-WebRequest -Uri $bust -OutFile $temp -UseBasicParsing -TimeoutSec 900
+    $sw.Stop()
+    $size = (Get-Item $temp).Length
+    Good ("Downloaded {0:N1} MB in {1:N0} seconds." -f ($size / 1MB), $sw.Elapsed.TotalSeconds)
+    if ($size -lt 20MB) {
+        Bad "That file is far too small to be FlashDesk - the server may be serving an error page."
+    }
+} catch {
+    Bad "The download failed: $($_.Exception.Message)"
+    Say ''
+    Say 'Stopping here - there is nothing to check.'
+    exit 1
+}
+
+# ------------------------------------------------ 3. which build is it, really
+Say ''
+Say '3. Which build is on the server'
+$info = (Get-Item $temp).VersionInfo
+$productVersion = $info.ProductVersion
+Note "The file says: $($info.ProductName) $productVersion"
+Note "Windows will show: `"$($info.FileDescription)`""
+
+$liveCommit = $null
+if ($productVersion -match '\+([0-9a-f]{7,40})') { $liveCommit = $Matches[1] }
+
+if (-not $liveCommit) {
+    Bad 'That file does not carry a build stamp, so it cannot be identified.'
+    Note 'Expected a version like 0.3.0+84c3bab... Republish with the documented publish command.'
+} else {
+    Push-Location $RepoRoot
+    try {
+        $head = (git rev-parse HEAD).Trim()
+        $known = $true
+        try { git cat-file -e "$liveCommit^{commit}" 2>$null; $known = ($LASTEXITCODE -eq 0) } catch { $known = $false }
+
+        if (-not $known) {
+            Bad "The server is serving build $liveCommit, which this repository has never seen."
+            Note 'Either it was built from someone else''s copy, or this repo is behind. Do not test against it.'
+        }
+        elseif ($liveCommit -eq $head -or $head.StartsWith($liveCommit)) {
+            Good "The server is serving exactly this repository's current build ($($liveCommit.Substring(0,7)))."
+        }
+        else {
+            # THE SUBTLETY: only code changes matter. Docs-only commits are not a problem.
+            $codeMissing = @(git log --oneline "$liveCommit..HEAD" -- 'src/')
+            $allMissing  = @(git log --oneline "$liveCommit..HEAD")
+
+            if ($codeMissing.Count -eq 0) {
+                Good ("The server's build is code-current ({0})." -f $liveCommit.Substring(0,7))
+                Note ("It is behind by {0} commit(s), but none of them touch src\ - documentation only." -f $allMissing.Count)
+            } else {
+                Bad ("The server is serving an OLD build - {0} code change(s) are missing from it:" -f $codeMissing.Count)
+                foreach ($c in $codeMissing) { Note "  missing: $c" }
+                Note ''
+                Note 'Republish and re-upload before testing, or the test will measure the wrong program:'
+                Note '  dotnet publish src\RemoteDesktop.Host -c Release -r win-x64 --self-contained true \'
+                Note '    -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true \'
+                Note '    -p:IncludeNativeLibrariesForSelfExtract=true -o C:\Users\PC\Desktop\flashdesk-upload'
+            }
+        }
+    } finally { Pop-Location }
+}
+
+# --------------------------------------------------------------- 4. the verdict
+Remove-Item $temp -Force -ErrorAction SilentlyContinue
+Say ''
+Say '================================================================'
+if ($problems.Count -eq 0) {
+    Write-Host ' READY - the file people download is the build you expect.' -ForegroundColor Green
+    Say '================================================================'
+    Say ''
+    exit 0
+} else {
+    Write-Host ' NOT READY - do not run a test or send anyone the link yet:' -ForegroundColor Red
+    foreach ($p in $problems) { Write-Host "   - $p" -ForegroundColor Red }
+    Say '================================================================'
+    Say ''
+    exit 1
+}
