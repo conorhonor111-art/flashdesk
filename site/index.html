@@ -112,7 +112,39 @@
     border-radius: var(--radius);
     padding: var(--s2);
   }
-  .warnbox p + p { margin-top: var(--s1); }
+  .warnbox p + p { margin-top: var(--s2); }
+
+  /* Words quoted from the screen. Set apart so a frightened person can match them against their own
+     display at a glance instead of reading a paragraph to find them. */
+  .quote {
+    background: var(--surface);
+    border-left: 4px solid var(--muted);
+    border-radius: 8px;
+    padding: var(--s1) var(--s2);
+    line-height: 1.5;
+  }
+  /* Drawn to look like the two real buttons, so the pale one can be recognised before it is hunted
+     for. Google makes "Delete from history" the solid one; that is not our choice and the page must
+     not pretend otherwise. */
+  .btn-dark, .btn-pale {
+    display: inline-block;
+    border-radius: 8px;
+    padding: 0.15rem 0.7rem;
+    font-size: 0.95rem;
+    margin-top: var(--s1);
+    white-space: nowrap;
+  }
+  .btn-dark { background: #1A73E8; color: #FFFFFF; }
+  .btn-pale { background: transparent; color: var(--text); border: 1px solid var(--muted); }
+
+  /* The scam warning repeated at the moment of maximum vulnerability: someone is being talked
+     through a security block by a voice on the telephone. */
+  .scam-inline {
+    background: var(--surface);
+    border-left: 4px solid var(--text);
+    border-radius: 8px;
+    padding: var(--s2);
+  }
 
   /* The safety warning is a FILLED panel, not an outlined one: a solid block reads louder,
      and it lets green stay exclusive to the download button. */
@@ -160,7 +192,8 @@
        promised never worries anyone, while one that runs past the stated size looks stuck. Update it
        only if the file grows past this. Actual size on 2026-08-04: 68.5 MB. -->
   <p class="download-meta">Free &middot; about 70&nbsp;MB &middot; Windows 10 and 11<br>
-  Your computer will warn you twice &mdash; <a class="quiet-link" href="#warnings">here is what to do</a>.</p>
+  Chrome will block this download and Windows will warn you &mdash;
+  <a class="quiet-link" href="#warnings">here is exactly what you will see</a>.</p>
 
   <p class="scam">If someone phoned you out of the blue and told you to come here,
   <strong>hang up</strong>. Only download this if you contacted us yourself.</p>
@@ -176,19 +209,47 @@
     number is the one who sees the other person&rsquo;s screen.</p>
   </section>
 
+  <!-- The exact strings below were read off a real Chrome download on 2026-08-05, not paraphrased.
+       They MUST stay identical to what appears on screen: a frightened person is comparing this page
+       with their own display, and a page that softens the frightening words looks like a page with
+       something to hide. If Chrome's wording changes, change it here the same day.
+       ⚠ The Windows wording in step 2 comes from Conor's own live test on 2026-08-03 and has NOT
+       been re-verified since; SmartScreen would not reproduce on the development machine. -->
   <section id="warnings">
     <div class="warnbox">
-      <h2>Your computer will warn you twice. Both are normal.</h2>
-      <p><strong>1. While downloading.</strong> Your browser may say the file
-      &ldquo;isn&rsquo;t commonly downloaded&rdquo; or offer to discard it. Choose
-      <strong>Keep</strong>. In Chrome and Edge this is in the downloads box at the top
-      right &mdash; open it and click <strong>Keep</strong>.</p>
-      <p><strong>2. When you open it.</strong> Windows shows a blue box saying
+      <h2>Your computer will try to stop you twice. Both are normal.</h2>
+
+      <p><strong>1. Chrome blocks the download.</strong> It downloads the whole file and then
+      refuses to give it to you. In the downloads box at the top right you will see:</p>
+
+      <p class="quote">FlashDesk.exe<br>
+      <strong>Suspicious download blocked</strong></p>
+
+      <p>Click the small arrow <strong>&rsaquo;</strong> at the end of that line. It opens:</p>
+
+      <p class="quote"><strong>This file isn&rsquo;t commonly downloaded and it may be
+      dangerous</strong><br>
+      Learn why Chrome blocks some downloads<br>
+      <span class="btn-dark">Delete from history</span>
+      <span class="btn-pale">Download suspicious file</span></p>
+
+      <p>To continue, press <strong>Download suspicious file</strong>. It is the
+      <strong>pale</strong> button on the right. The solid dark blue one says
+      <strong>Delete from history</strong> and will throw the file away.</p>
+
+      <p class="scam-inline">If nobody you telephoned yourself asked you to do this,
+      <strong>press Delete from history</strong> and close this page. That is what the dark button
+      is for.</p>
+
+      <p><strong>2. Windows warns you when you open it.</strong> A blue box says
       &ldquo;Windows protected your PC&rdquo;. Click <strong>More&nbsp;info</strong>, then
       <strong>Run&nbsp;anyway</strong>.</p>
-      <p>Both happen because FlashDesk is new, not because anything is wrong with it.
-      Windows trusts software it has seen many times before, and this one is only just
-      starting out.</p>
+
+      <p><strong>Why any of this happens.</strong> Not because anything is wrong with the file.
+      Chrome and Windows trust software they have seen many people download before, and count
+      everything else as unknown. FlashDesk is new, so it is unknown. That is the entire reason, and
+      it is also why the words are as strong as they are: your computer genuinely cannot tell the
+      difference between new software and bad software, so it says so.</p>
     </div>
   </section>
 
