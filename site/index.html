@@ -139,6 +139,9 @@
   }
   .btn-dark { background: #1A73E8; color: #FFFFFF; }
   .btn-pale { background: transparent; color: var(--text); border: 1px solid var(--muted); }
+  /* Drawn as a link rather than a button because that is exactly the problem: on the first Windows
+     screen the only way forward is a small text link, and the only BUTTON refuses. */
+  .link-look { color: var(--muted); text-decoration: underline; }
 
   /* The scam warning repeated at the moment of maximum vulnerability: someone is being talked
      through a security block by a voice on the telephone. */
@@ -230,28 +233,50 @@
        about a dialog nobody sees is the same failure as a page that hides one people do see. It is
        kept below, in the exact words, as the "if it happens to you" case: browser settings vary,
        and the fallback link is still a plain .exe on a small domain.
-       ⚠ The Windows wording comes from Conor's own live test on 2026-08-03 and has NOT been
-       re-verified since; SmartScreen would not reproduce on the development machine. -->
+       The Windows wording below was read off two real screenshots by Conor on 2026-08-05 and is
+       exact. It could not be reproduced on the development machine — SmartScreen would not trigger
+       there even with the file marked as internet-downloaded — so it must be re-checked by whoever
+       next meets it, not by anyone here. The two-screen shape is the important part: the FIRST
+       screen offers no way forward at all, only "Don't run"; the way through is a small text link. -->
   <section id="warnings">
     <div class="warnbox">
       <h2>Windows will warn you when you open it. This is normal.</h2>
 
-      <p>A blue box appears saying <strong>&ldquo;Windows protected your PC&rdquo;</strong>. There is
-      no obvious way past it, and that is deliberate &mdash; the button you need is hidden behind a
-      link.</p>
+      <p>A blue box appears. It says:</p>
 
-      <p>Click <strong>More&nbsp;info</strong>. The box grows, and a new button appears at the
-      bottom. Click <strong>Run&nbsp;anyway</strong>.</p>
+      <p class="quote"><strong>Windows protected your PC</strong><br>
+      Microsoft Defender SmartScreen prevented an unrecognized app from starting.
+      Running this app might put your PC at risk.<br>
+      <span class="link-look">More info</span><br>
+      <span class="btn-dark">Don&rsquo;t run</span></p>
+
+      <p><strong>There is no way forward on this screen.</strong> The only button is
+      <strong>Don&rsquo;t run</strong>. The button you need does not exist yet.</p>
+
+      <p>Click the small grey words <strong>More&nbsp;info</strong>. They are a link, not a button,
+      and they are easy to miss. The box then grows and shows:</p>
+
+      <p class="quote">App:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FlashDesk.exe<br>
+      Publisher:&nbsp;<strong>Unknown publisher</strong><br>
+      <span class="btn-pale">Run anyway</span>
+      <span class="btn-dark">Don&rsquo;t run</span></p>
+
+      <p>Now press <strong>Run&nbsp;anyway</strong>, on the <strong>left</strong>.</p>
 
       <p class="scam-inline">If nobody you telephoned yourself asked you to do this,
       <strong>press Don&rsquo;t run</strong> and close this page. Somebody who phoned you out of the
-      blue and talked you this far is not helping you.</p>
+      blue and talked you as far as a security warning is not helping you.</p>
 
-      <p><strong>Why it happens.</strong> Not because anything is wrong with the file. Windows
-      trusts software it has seen many people run before, and counts everything else as unknown.
-      FlashDesk is new, so it is unknown. That is the entire reason, and it is also why the wording
-      is as strong as it is: your computer genuinely cannot tell the difference between new software
-      and bad software, so it says so.</p>
+      <p><strong>&ldquo;Unknown publisher&rdquo; is the honest part.</strong> It does not mean the
+      file is unsafe. It means nobody has paid a certificate authority to attach a verified name to
+      it. If I had, that line would read <em>Publisher: Conor Honor</em> instead of
+      <em>Unknown publisher</em> &mdash; the file would be exactly the same file.</p>
+
+      <p><strong>Why it happens at all.</strong> Windows trusts software it has seen many people run
+      before, and counts everything else as unrecognised. FlashDesk is new, so it is unrecognised.
+      That is the entire reason, and it is also why the wording is as strong as it is: your computer
+      genuinely cannot tell the difference between new software and bad software, so it warns about
+      both.</p>
 
       <h2 class="sub">If your browser blocks the download</h2>
 

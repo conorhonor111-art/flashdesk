@@ -1,0 +1,68 @@
+FlashDesk - could you try this and tell me how it went?
+
+1. Open flashdesk.org and press the green Download button.
+   About 70 MB, so it may take a minute or two. That is normal, it is not stuck.
+
+2. Open the file you downloaded.
+
+   Windows will show a blue box. This is the only warning, and I am expecting it:
+
+       Windows protected your PC
+       Microsoft Defender SmartScreen prevented an unrecognized app from
+       starting. Running this app might put your PC at risk.
+       More info
+       [Don't run]
+
+   There is NO way forward on that screen. The only button says "Don't run".
+
+   Click the small grey words "More info". They are a link, not a button, and
+   they are easy to miss. The box then grows and shows:
+
+       App:       FlashDesk.exe
+       Publisher: Unknown publisher
+       [Run anyway]   [Don't run]
+
+   Press "Run anyway", on the left.
+
+   "Unknown publisher" does not mean the file is unsafe. It means nobody has paid
+   to attach a verified name to it yet. If I had, that line would say my name
+   instead, and it would be exactly the same file.
+
+   >>> If I did not personally ask you to do this on the telephone, press
+   >>> "Don't run" and stop here. Anyone who phoned you out of the blue and
+   >>> talked you as far as a security warning is not helping you.
+
+3. The program opens and shows a 9-digit number. Read it to me on the phone.
+
+4. I will type it in. A window appears on your screen asking whether to let me
+   connect, and showing my number. Check it is the number I just read you, then
+   press Accept.
+
+   The Accept button waits about three seconds the first time. That is on purpose.
+   The window closes itself after 30 seconds if nothing is pressed - that is a
+   safety feature, not a fault. If it closes, just tell me and I will try again.
+
+5. While I am connected, an orange band sits across the top of the FlashDesk
+   window, and there is a "Stop sharing" button. Press it at any time and I am
+   gone at once.
+
+Never give that 9-digit number to anyone else - only to someone you telephoned
+yourself.
+
+Nothing is installed. Close the window and the program is completely gone.
+
+Afterwards, four questions:
+
+   1. From opening the file to seeing the number - a few seconds, about a minute,
+      or longer?
+   2. Did anything appear on screen that I have not described above?
+   3. Did the picture ever freeze or go jerky? Roughly how long?
+   4. Was it always obvious to you that I was connected?
+
+And one thing that would help me a lot: on your computer there is a file at
+
+   C:\Users\<your name>\AppData\Roaming\FlashDesk\sessions.txt
+
+If you can find it and send it to me, it tells me how well the connection worked
+without you having to describe anything. It contains no personal information -
+only times, my number, and how fast the picture was.

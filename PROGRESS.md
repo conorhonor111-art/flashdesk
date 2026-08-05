@@ -968,3 +968,72 @@ focus rings on every link.
   degrades silently, as intended. Rounded corners appear on cards, buttons, fields and checkboxes.
 - The certificate gate is unchanged: nothing goes to any tester until `https://flashdesk.org`
   verifies `0 (ok)` from outside.
+
+---
+
+# 2026-08-05 — The download barrier removed for nothing, and the first OBSERVED capture fix
+
+## The Chrome block was the HOST, not the file — measured, single variable
+
+Chrome was not warning about the download from flashdesk.org, it was **blocking** it: transferring
+the whole file, then withholding it as `Unconfirmed …crdownload` behind "Suspicious download
+blocked". Behind a chevron: *"This file isn't commonly downloaded and it may be dangerous"*, with
+**Delete from history** as the solid primary button and **Download suspicious file** as the pale
+secondary — three clicks with the word *dangerous* in them, with the eye steered toward delete.
+
+The same file — same bytes, same SHA-256 `72E45B4E…249B19`, unsigned, no reputation of its own —
+was published as a GitHub release and downloaded in a fresh Chrome profile minutes later on the same
+machine. **It came through cleanly, with no warning at all.** Only the host changed.
+
+Two weaker tests preceded it and are recorded in CLAUDE.md so nobody repeats them believing they
+settle anything: a *signed* file from GitHub differs in two ways at once; an unsigned but hugely
+popular one (yt-dlp) carries years of its own file reputation.
+
+**Consequence:** the code-signing certificate stopped being urgent. It had been the planned rescue
+for a barrier that stopped everyone; that barrier is gone and it cost €0. The download button now
+points at the GitHub release (`/releases/latest/download/` form), and `flashdesk.org/dl/FlashDesk.exe`
+stays live and is named on the page as a fallback. **Verified that the page survives a GitHub
+takedown:** `github.com` appears in `site/index.html` exactly once, in the button's href, with no
+script, image or external fetch anywhere.
+
+## ✅ FIRST OBSERVED — the capture fixes, watched rather than inferred (Conor, 2026-08-05)
+
+Until now all four capture fixes were verified individually — the escaping-exception fix by direct
+experiment, the new protocol message by round-trip tests — but **nobody had ever seen them work in a
+live session.** That changed today.
+
+Conor ran the whole journey on two machines: GitHub download on both, two distinct 9-digit numbers,
+the consent dialog with its first-contact line, connected, screen visible, control working. Then he
+**locked the shared machine mid-session**, and:
+
+- the graphite band appeared over the operator's picture with exactly the intended sentence;
+- **the session did not drop** — no "reconnecting", which is precisely the old bug;
+- the client's own window kept its amber "Someone is connected and can see this screen" strip
+  throughout.
+
+That is the first time any of these fixes has been **observed** rather than inferred. Record kept
+because the distinction is the whole discipline: the same gap between "built" and "seen working"
+is what let a dead ComboBox chevron and a twelve-commit-stale download both ship.
+
+## The exact Windows wording, finally captured
+
+SmartScreen would not reproduce on the dev machine even with the file marked as internet-downloaded,
+so this came off Conor's own screen. The important structural fact: **the first screen offers no way
+forward at all** — its only button is *Don't run*, and the way through is a small grey text link.
+
+    Windows protected your PC
+    Microsoft Defender SmartScreen prevented an unrecognized app from starting.
+    Running this app might put your PC at risk.
+    More info
+    [Don't run]
+
+After clicking **More info** it grows to show `App: FlashDesk.exe`, `Publisher: Unknown publisher`,
+and finally offers `[Run anyway]  [Don't run]`. The page now states all of this verbatim, including
+"Unknown publisher", with the explanation that it means nobody has paid to attach a verified name —
+not that the file is unsafe.
+
+## Left undone
+
+- The remaining barrier is SmartScreen, and unlike the Chrome block it is **not** solvable by moving
+  the host: the warning names the file and its publisher, not where it came from.
+- `sessions.txt` from the live test not yet reviewed.
