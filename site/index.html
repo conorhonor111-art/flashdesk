@@ -85,6 +85,9 @@
 
   section { margin-bottom: var(--s4); }
   h2 { font-size: 1.25rem; margin-bottom: var(--s1); font-weight: 650; }
+  /* The secondary heading inside the warnings box — a case that may not happen, so it must not
+     compete with the one that will. */
+  h2.sub { font-size: 1.1rem; margin-top: var(--s4); color: var(--muted); }
 
   ol.steps { list-style: none; counter-reset: step; }
   ol.steps li {
@@ -187,12 +190,18 @@
   <h1>Remote support for your computer.</h1>
   <p class="phone-note">Open this page on the computer you need help with.</p>
 
-  <a class="download" href="https://flashdesk.org/dl/FlashDesk.exe">Download FlashDesk for Windows</a>
-  <!-- Size is stated as a slight OVER-estimate on purpose: a download that finishes sooner than
-       promised never worries anyone, while one that runs past the stated size looks stuck. Update it
-       only if the file grows past this. Actual size on 2026-08-04: 68.5 MB. -->
+  <!-- ⚠ THE BUTTON POINTS AT GITHUB ON PURPOSE, AND THIS MUST NOT BE "TIDIED" BACK.
+       The identical file served from flashdesk.org was BLOCKED by Chrome — downloaded in full and
+       then withheld as "Suspicious download blocked". Measured 2026-08-05: same bytes, same
+       SHA-256, same unsigned file, served from a GitHub release instead, downloaded cleanly with no
+       warning at all. The host was what mattered, not the file.
+       The link MUST keep the /releases/latest/download/ form: a tag-specific URL would change with
+       every release and throw away whatever reputation the address has earned.
+       Size is a slight OVER-estimate on purpose — a download that finishes early never worries
+       anyone, one that runs past its stated size looks stuck. Actual size 2026-08-05: 68.5 MB. -->
+  <a class="download" href="https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe">Download FlashDesk for Windows</a>
   <p class="download-meta">Free &middot; about 70&nbsp;MB &middot; Windows 10 and 11<br>
-  Chrome will block this download and Windows will warn you &mdash;
+  Windows will warn you once when you open it &mdash;
   <a class="quiet-link" href="#warnings">here is exactly what you will see</a>.</p>
 
   <p class="scam">If someone phoned you out of the blue and told you to come here,
@@ -215,12 +224,39 @@
        something to hide. If Chrome's wording changes, change it here the same day.
        ⚠ The Windows wording in step 2 comes from Conor's own live test on 2026-08-03 and has NOT
        been re-verified since; SmartScreen would not reproduce on the development machine. -->
+  <!-- The download-block instructions used to be step one here, because the file was served from
+       flashdesk.org and Chrome blocked it every time. Since the button moved to a GitHub release
+       that no longer happens, so it must not be described as though it does — a page that warns
+       about a dialog nobody sees is the same failure as a page that hides one people do see. It is
+       kept below, in the exact words, as the "if it happens to you" case: browser settings vary,
+       and the fallback link is still a plain .exe on a small domain.
+       ⚠ The Windows wording comes from Conor's own live test on 2026-08-03 and has NOT been
+       re-verified since; SmartScreen would not reproduce on the development machine. -->
   <section id="warnings">
     <div class="warnbox">
-      <h2>Your computer will try to stop you twice. Both are normal.</h2>
+      <h2>Windows will warn you when you open it. This is normal.</h2>
 
-      <p><strong>1. Chrome blocks the download.</strong> It downloads the whole file and then
-      refuses to give it to you. In the downloads box at the top right you will see:</p>
+      <p>A blue box appears saying <strong>&ldquo;Windows protected your PC&rdquo;</strong>. There is
+      no obvious way past it, and that is deliberate &mdash; the button you need is hidden behind a
+      link.</p>
+
+      <p>Click <strong>More&nbsp;info</strong>. The box grows, and a new button appears at the
+      bottom. Click <strong>Run&nbsp;anyway</strong>.</p>
+
+      <p class="scam-inline">If nobody you telephoned yourself asked you to do this,
+      <strong>press Don&rsquo;t run</strong> and close this page. Somebody who phoned you out of the
+      blue and talked you this far is not helping you.</p>
+
+      <p><strong>Why it happens.</strong> Not because anything is wrong with the file. Windows
+      trusts software it has seen many people run before, and counts everything else as unknown.
+      FlashDesk is new, so it is unknown. That is the entire reason, and it is also why the wording
+      is as strong as it is: your computer genuinely cannot tell the difference between new software
+      and bad software, so it says so.</p>
+
+      <h2 class="sub">If your browser blocks the download</h2>
+
+      <p>Most browsers let this download through. If yours stops it, you will see this in the
+      downloads box at the top right:</p>
 
       <p class="quote">FlashDesk.exe<br>
       <strong>Suspicious download blocked</strong></p>
@@ -233,23 +269,12 @@
       <span class="btn-dark">Delete from history</span>
       <span class="btn-pale">Download suspicious file</span></p>
 
-      <p>To continue, press <strong>Download suspicious file</strong>. It is the
-      <strong>pale</strong> button on the right. The solid dark blue one says
-      <strong>Delete from history</strong> and will throw the file away.</p>
+      <p>To continue, press <strong>Download suspicious file</strong> &mdash; the <strong>pale</strong>
+      button on the right. The solid dark blue one says <strong>Delete from history</strong> and
+      throws the file away.</p>
 
-      <p class="scam-inline">If nobody you telephoned yourself asked you to do this,
-      <strong>press Delete from history</strong> and close this page. That is what the dark button
-      is for.</p>
-
-      <p><strong>2. Windows warns you when you open it.</strong> A blue box says
-      &ldquo;Windows protected your PC&rdquo;. Click <strong>More&nbsp;info</strong>, then
-      <strong>Run&nbsp;anyway</strong>.</p>
-
-      <p><strong>Why any of this happens.</strong> Not because anything is wrong with the file.
-      Chrome and Windows trust software they have seen many people download before, and count
-      everything else as unknown. FlashDesk is new, so it is unknown. That is the entire reason, and
-      it is also why the words are as strong as they are: your computer genuinely cannot tell the
-      difference between new software and bad software, so it says so.</p>
+      <p class="scam-inline">Again: if nobody you telephoned yourself asked you to do this,
+      <strong>press Delete from history</strong>. That is what the dark button is for.</p>
     </div>
   </section>
 
@@ -261,6 +286,14 @@
       <li>It <strong>does not run when you close it</strong>. Close the window and it is gone.</li>
       <li>Nothing is installed unless you choose to install it.</li>
     </ul>
+  </section>
+
+  <section>
+    <h2>If the download button does not work</h2>
+    <p>The same file is also here:
+    <a href="https://flashdesk.org/dl/FlashDesk.exe">flashdesk.org/dl/FlashDesk.exe</a> &mdash;
+    identical in every way. Browsers are more suspicious of it there, so the button above is the
+    easier route, but if that one fails for any reason this one will still work.</p>
   </section>
 
   <section class="who">
