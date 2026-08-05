@@ -43,6 +43,13 @@ public sealed class ViewerClient : IDisposable
     public event Action<string>? Disconnected;
 
     /// <summary>
+    /// The host can or cannot currently see its own screen, with a sentence explaining why not.
+    /// Raised so the operator gets plain words instead of a frozen picture — a locked desktop or a
+    /// Windows security prompt looks identical to a crash unless somebody says otherwise.
+    /// </summary>
+    public event Action<ScreenStatePayload>? ScreenStateChanged;
+
+    /// <summary>
     /// Calls a FlashDesk number through the relay. Both sides dial OUT, so neither machine has to
     /// accept an incoming connection and no firewall permission is involved.
     /// </summary>
@@ -122,6 +129,10 @@ public sealed class ViewerClient : IDisposable
 
                 switch (msg.Value.Type)
                 {
+                    case MessageType.ScreenState:
+                        ScreenStateChanged?.Invoke(ScreenStatePayload.FromBytes(msg.Value.Payload));
+                        break;
+
                     case MessageType.ScreenInfo:
                         ScreenInfoReceived?.Invoke(ScreenInfo.FromBytes(msg.Value.Payload));
                         break;

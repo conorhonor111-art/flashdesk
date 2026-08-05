@@ -194,12 +194,15 @@ public sealed class MainForm : Form
             else
             {
                 _sessionLog.Ended(callerId);
-                // Straight after the DISCONNECTED line, so the numbers sit with the session they
-                // describe. This is what turns "watch these four figures while we talk" into
-                // "send me this file".
-                var report = _server.LastSessionReport;
-                if (!string.IsNullOrEmpty(report)) _sessionLog.Detail(report);
             }
+        };
+
+        // The account of how it went is written ONCE, when the session is genuinely over — not on
+        // every dropped link. Writing it per drop produced fourteen near-identical blocks for one
+        // session, which is noise for the one person the file exists to help.
+        _server.SessionSummaryReady = (_, report) =>
+        {
+            if (!string.IsNullOrEmpty(report)) _sessionLog.Detail(report);
         };
 
         Load += (_, _) => { ShowIdentityState(); StartSharing(); _ = RegisterIdentityAsync(); };

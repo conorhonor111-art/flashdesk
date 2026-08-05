@@ -29,6 +29,22 @@ public sealed class SessionWindow : Form
     private readonly InputCapture _input;
     private readonly StatusStrip _status = new();
     private readonly ToolStripStatusLabel _statusItem = new("Connected");
+
+    /// <summary>
+    /// Plain words over the picture when the other machine cannot see its own screen. Without this
+    /// the picture simply froze while everything else looked healthy, and the only available
+    /// conclusion was that the program had crashed.
+    /// </summary>
+    private readonly Label _screenNotice = new()
+    {
+        AutoSize = false,
+        BackColor = Theme.OperatorHeader,
+        ForeColor = Theme.OperatorHeaderText,
+        Font = Theme.Body,
+        TextAlign = ContentAlignment.MiddleCenter,
+        Padding = new Padding(Theme.S3, Theme.S2, Theme.S3, Theme.S2),
+    };
+    private string _screenNoticeWords = string.Empty;
     private readonly System.Windows.Forms.Timer _timer = new() { Interval = 500 };
 
     private ViewerClient _client;
@@ -122,9 +138,16 @@ public sealed class SessionWindow : Form
         Controls.Add(controlsBar);
         Controls.Add(header);
 
+        // Sits OVER the picture rather than docked, so showing it never relayouts the canvas and
+        // never touches the frame path. Hidden until there is something to say.
+        _screenNotice.Visible = false;
+        _canvasHost.Controls.Add(_screenNotice);
+        _screenNotice.BringToFront();
+
         _client.ScreenInfoReceived += OnScreenInfo;
         _client.FrameReceived += OnFrame;
         _client.Disconnected += OnDisconnected;
+        _client.ScreenStateChanged += OnScreenState;
 
         _timer.Tick += (_, _) => _statusItem.Text = StatusText();
         _timer.Start();
@@ -261,6 +284,7 @@ public sealed class SessionWindow : Form
             var old = _client;
             _client = fresh;
             fresh.ScreenInfoReceived += OnScreenInfo;
+            fresh.ScreenStateChanged += OnScreenState;
             fresh.FrameReceived += OnFrame;
             fresh.Disconnected += OnDisconnected;
             old.Dispose();
@@ -296,9 +320,35 @@ public sealed class SessionWindow : Form
         catch (InvalidOperationException) { return false; } // includes ObjectDisposedException — the handle went away
     }
 
+    // The host telling us whether it can see its own screen. Arrives on the receive thread, so it is
+    // hopped to the UI thread like everything else that touches a control.
+    private void OnScreenState(ScreenStatePayload state)
+    {
+        SafeBeginInvoke(() =>
+        {
+            if (IsDisposed) return;
+            _screenNoticeWords = state.Available ? string.Empty : state.Words;
+            _screenNotice.Text = state.Words;
+            _screenNotice.Visible = !state.Available;
+            if (!state.Available) PlaceScreenNotice();
+            _statusItem.Text = StatusText();
+        });
+    }
+
+    private void PlaceScreenNotice()
+    {
+        int width = Math.Max(200, _canvasHost.ClientSize.Width - Theme.S5 * 2);
+        int height = Theme.StatusBandHeight + Theme.S3;
+        _screenNotice.SetBounds(Theme.S5, Theme.S5, width, height);
+        _screenNotice.BringToFront();
+    }
+
     private string StatusText()
     {
         if (!_client.IsConnected) return "Connection lost";
+        // The connection being fine is not the same as the picture being live, and saying "Connected"
+        // over a frozen image is what made people think it had crashed.
+        if (_screenNoticeWords.Length > 0) return "Connected  |  their screen is not available right now";
         var (fps, bytesPerSecond) = _client.IncomingMeter.Read();
         return $"Connected    |    {fps:0} fps    |    latency {_client.LastLatencyMs:0} ms    |    {(bytesPerSecond / 1024.0):0.0} KB/s";
     }

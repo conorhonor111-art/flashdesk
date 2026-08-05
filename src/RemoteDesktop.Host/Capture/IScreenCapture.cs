@@ -33,4 +33,14 @@ public interface IScreenCapture : IDisposable
     /// anything, and GDI always returns true.
     /// </summary>
     bool TryCapture(int timeoutMilliseconds, out CapturedFrame frame);
+
+    /// <summary>
+    /// True when the machine cannot currently see its own screen at all — a locked desktop, a
+    /// screensaver, a Windows security prompt, or a user switch. Distinct from TryCapture returning
+    /// false, which normally just means the screen has not changed and is entirely healthy.
+    ///
+    /// Only the resilient wrapper can answer this, because it is the thing that catches the failure;
+    /// a bare implementation throws instead, so the default here is "no news".
+    /// </summary>
+    bool ScreenUnavailable => false;
 }

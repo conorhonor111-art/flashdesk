@@ -9,6 +9,51 @@ namespace RemoteDesktop.Tests;
 // that once would have allocated 32 GB.
 public class ProtocolTests
 {
+    // ---- Screen availability ----
+    // These carry the sentence an operator reads when the other machine cannot see its own screen.
+    // Getting them wrong reintroduces the failure they exist to prevent: a frozen picture with no
+    // explanation, which everyone reads as a crash.
+
+    [Fact]
+    public void ScreenState_round_trips_when_unavailable()
+    {
+        var original = ScreenStatePayload.Unavailable();
+        var back = ScreenStatePayload.FromBytes(original.ToBytes());
+        Assert.False(back.Available);
+        Assert.Equal(original.Words, back.Words);
+        Assert.NotEmpty(back.Words); // silence with no sentence is the bug, not the fix
+    }
+
+    [Fact]
+    public void ScreenState_round_trips_when_available()
+    {
+        var back = ScreenStatePayload.FromBytes(ScreenStatePayload.Available_().ToBytes());
+        Assert.True(back.Available);
+    }
+
+    [Fact]
+    public void ScreenState_survives_a_flag_with_no_words()
+    {
+        var back = ScreenStatePayload.FromBytes(new byte[] { 0 });
+        Assert.False(back.Available);
+        Assert.Equal(string.Empty, back.Words);
+    }
+
+    [Fact]
+    public void ScreenState_rejects_an_empty_payload()
+    {
+        Assert.Throws<ArgumentException>(() => ScreenStatePayload.FromBytes(Array.Empty<byte>()));
+    }
+
+    [Fact]
+    public void ScreenState_caps_absurdly_long_words()
+    {
+        var huge = new ScreenStatePayload(false, new string('x', 5000));
+        var bytes = huge.ToBytes();
+        Assert.True(bytes.Length <= 1 + ScreenStatePayload.MaxWordBytes);
+        Assert.False(ScreenStatePayload.FromBytes(bytes).Available);
+    }
+
     // ---- Handshake ----
 
     [Fact]

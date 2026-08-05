@@ -108,13 +108,42 @@ public sealed class SessionRecorder
     /// The plain-text block appended to the session log. Deliberately readable by someone who has
     /// never seen the program's internals — every line says what it means, and the units are stated.
     /// </summary>
+    /// <summary>
+    /// Seconds during which this machine could not see its own screen, so nothing was sent. Counted
+    /// separately because a session that spent half its life behind a lock screen is not a session
+    /// with poor throughput — and reporting it as one sends the reader to the wrong problem.
+    /// </summary>
+    public void RecordUnavailable(double seconds)
+    {
+        lock (_gate) { _unavailableSeconds += seconds; }
+    }
+
+    private double _unavailableSeconds;
+
     public string Report(int ladderSize)
     {
         lock (_gate)
         {
+            // Roll the per-second buckets forward to NOW before reading them. Without this, seconds
+            // in which NO frame arrived never completed, so the worst second stayed at whatever the
+            // busy opening second was — one report showed a worst second of 15 alongside an average
+            // of 3.0, which cannot happen: the minimum can never exceed the mean.
+            long nowMs = _clock.ElapsedMilliseconds;
+            long nowSecond = nowMs / 1000;
+            if (_currentSecond >= 0)
+            {
+                while (nowSecond > _currentSecond)
+                {
+                    if (_currentSecond > 0) _worstFps = Math.Min(_worstFps, (int)_framesThisSecond);
+                    _framesThisSecond = 0;
+                    _currentSecond++;
+                }
+            }
+
             double seconds = Math.Max(0.001, _clock.Elapsed.TotalSeconds);
-            double avgFps = _frames / seconds;
-            double avgKbPerSec = _totalBytes / 1024.0 / seconds;
+            double sendingSeconds = Math.Max(0.001, seconds - _unavailableSeconds);
+            double avgFps = _frames / sendingSeconds;
+            double avgKbPerSec = _totalBytes / 1024.0 / sendingSeconds;
             int worstFps = _worstFps == int.MaxValue ? (int)Math.Round(avgFps) : _worstFps;
 
             var b = new StringBuilder();
@@ -123,6 +152,11 @@ public sealed class SessionRecorder
             b.AppendLine($"    Screen         : {_width} x {_height}, captured with {_captureMethod}");
             b.AppendLine($"    Picture        : {avgFps:0.0} frames per second average, worst second {worstFps}");
             b.AppendLine($"    Sent           : {_totalBytes / 1024.0 / 1024.0:0.0} MB total, {avgKbPerSec:0.0} KB per second average");
+            if (_unavailableSeconds >= 1)
+                b.AppendLine($"    Screen hidden  : {Duration(TimeSpan.FromSeconds(_unavailableSeconds))} of that time the screen "
+                           + "could not be seen at all (locked, a Windows prompt, or a screensaver)."
+                           + Environment.NewLine
+                           + "                     Nothing was sent then, and the rates above exclude it.");
 
             if (_highestLevel == 0)
             {

@@ -65,6 +65,12 @@ public sealed class HostServer : IDisposable
 
     /// <summary>Called with the caller's number when a session actually begins and when it ends.</summary>
     public Action<string, bool>? SessionLogged;
+
+    /// <summary>
+    /// Raised ONCE per session, when it is genuinely over — not on every dropped link. Carries the
+    /// caller's number and the plain-text account of how the session went, ready for the log.
+    /// </summary>
+    public Action<string, string>? SessionSummaryReady;
     private readonly object _captureLock = new();
     private IScreenCapture? _capture;
     private InputInjector? _injector;
@@ -103,6 +109,15 @@ public sealed class HostServer : IDisposable
 
     private LinkLimiter? _limiter;
     private volatile int _pendingTestKbps;
+
+    /// <summary>
+    /// Whether the last capture attempt found the screen unreachable. Held so the change is
+    /// announced ONCE on the way in and once on the way out, rather than every frame.
+    /// </summary>
+    private bool _screenUnavailable;
+
+    /// <summary>The number of whoever is connected right now, for restoring the status line.</summary>
+    private string? _currentPeerId;
     public CaptureHealthLog Health { get; } = new(); // interruption counters + log; persists across start/stop
     public CaptureMethod Method => _capture?.Method ?? CaptureMethod.Dxgi; // live, so a mid-session GDI fallback shows
 
@@ -150,6 +165,10 @@ public sealed class HostServer : IDisposable
 
     public void Stop()
     {
+        // Sharing is ending, so any session still being recorded is now genuinely over. Written here
+        // as well as at the start of the next session, because most sessions end by the person
+        // closing the window rather than by another one beginning.
+        FinishSessionReport();
         _cts?.Cancel();
         try { _relayLoop?.Wait(2000); } catch { /* ignore shutdown races */ }
         try { _healthLoop?.Wait(2000); } catch { /* ignore */ }
@@ -256,6 +275,7 @@ public sealed class HostServer : IDisposable
                     // A genuinely new session starts a fresh record. A RESUME must not — the whole
                     // point of the report is to show that the link dropped and came back, which a
                     // reset counter would erase.
+                    FinishSessionReport(); // the previous session is now certainly over
                     _recorder = new SessionRecorder();
                     _recorder.Begin(paired.PeerId, MethodName, _capture?.Width ?? 0, _capture?.Height ?? 0);
                     SessionLogged?.Invoke(paired.PeerId, true);
@@ -267,6 +287,8 @@ public sealed class HostServer : IDisposable
                     _recorder?.RecordReconnect(DateTimeOffset.UtcNow - _lastAcceptedAt);
                 }
                 RelayStatus = $"Connected to {FlashDeskId.Format(paired.PeerId)}";
+                _currentPeerId = paired.PeerId;
+                _screenUnavailable = false; // each session starts by assuming the screen is there
                 try
                 {
                     await ServeViewerAsync(stream, ct).ConfigureAwait(false);
@@ -283,10 +305,10 @@ public sealed class HostServer : IDisposable
                     // dropped link would need to be resumed from.
                     _lastAcceptedId = paired.PeerId;
                     _lastAcceptedAt = DateTimeOffset.UtcNow;
-                    // Written on every disconnect. If the link comes back inside the grace window
-                    // the same recorder keeps running, so the NEXT block is the fuller story and
-                    // says how many interruptions there were.
-                    LastSessionReport = _recorder?.Report(Governor.LadderSize);
+                    // NO report here. A dropped link may come straight back inside the grace window,
+                    // and writing on every drop produced fourteen near-identical blocks for a single
+                    // session — noise for the one person the file is meant to help. The report is
+                    // written once, when the session is genuinely over: see FinishSessionReport.
                     SessionLogged?.Invoke(paired.PeerId, false);
                 }
             }
@@ -305,6 +327,23 @@ public sealed class HostServer : IDisposable
         }
 
         RelayReady = false;
+    }
+
+    /// <summary>
+    /// Closes off the session being recorded and hands its account over, exactly once. Called when a
+    /// genuinely NEW session begins — at which point the previous one is certainly finished — and
+    /// when sharing stops. A dropped link that comes back inside the grace window is the same
+    /// session continuing, so it deliberately does not trigger this.
+    /// </summary>
+    private void FinishSessionReport()
+    {
+        var recorder = _recorder;
+        if (recorder is null) return;
+        _recorder = null;
+
+        LastSessionReport = recorder.Report(Governor.LadderSize);
+        if (_currentPeerId is not null && LastSessionReport is not null)
+            SessionSummaryReady?.Invoke(_currentPeerId, LastSessionReport);
     }
 
     private async Task ServeViewerAsync(Stream stream, CancellationToken ct)
@@ -427,6 +466,49 @@ public sealed class HostServer : IDisposable
                 captured = capture.TryCapture(Governor.CaptureTimeoutMs, out frame);
             }
             captureTicks = System.Diagnostics.Stopwatch.GetTimestamp() - stageStart;
+
+            // ⚠️ WHEN THIS MACHINE CANNOT SEE ITS OWN SCREEN, GO QUIET AND SAY SO.
+            //
+            // This loop used to send an EMPTY frame through those moments. The connection then looked
+            // perfectly healthy — frames arriving, counters ticking — while the picture simply froze,
+            // and both people concluded the program had crashed. A stream that looks alive and carries
+            // nothing is a lie. Silence plus one plain sentence is the truth.
+            //
+            // Windows refuses capture on a locked desktop, a screensaver, a security prompt and during
+            // a user switch. All ordinary. None of them may end the session or be reported as a fault.
+            bool unavailable = capture.ScreenUnavailable;
+            if (unavailable != _screenUnavailable)
+            {
+                _screenUnavailable = unavailable;
+                var state = unavailable ? ScreenStatePayload.Unavailable() : ScreenStatePayload.Available_();
+                await channel.SendAsync(MessageType.ScreenState, state.ToBytes(), ct).ConfigureAwait(false);
+
+                // The client's own window stays calm: a statement of fact, no alarm, no error box.
+                RelayStatus = unavailable
+                    ? "Your screen is not being shared while it is locked or showing a Windows prompt."
+                    : _currentPeerId is null ? "Connected" : $"Connected to {FlashDeskId.Format(_currentPeerId)}";
+
+                if (!unavailable)
+                {
+                    // Coming back: the retained pixels are stale and the viewer's copy is out of date,
+                    // so the next frame must be a complete one rather than a diff against a memory.
+                    _differ.Configure(capture.Width, capture.Height);
+                    haveLastGood = false;
+                }
+            }
+
+            if (unavailable)
+            {
+                // Nothing is sent at all — not even an empty frame. Wait out the interval and look
+                // again; recovery is noticed on the next pass.
+                int quiet = Math.Max(200, Governor.FrameIntervalMs);
+                try { await Task.Delay(quiet, ct).ConfigureAwait(false); }
+                catch (OperationCanceledException) { break; }
+                // Counted apart from sending time: a session spent behind a lock screen is not a
+                // session with poor throughput, and the report must not read as though it were.
+                _recorder?.RecordUnavailable(quiet / 1000.0);
+                continue;
+            }
 
             // The captured resolution can change mid-session (DXGI recovering at a new resolution after a
             // mode change, or a fall-back to GDI). Reconfigure and tell the viewer the new size.
