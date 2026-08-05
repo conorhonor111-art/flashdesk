@@ -1,3 +1,21 @@
+> ## WHERE THIS PROJECT IS — read this first (2026-08-05)
+>
+> **FlashDesk works, end to end, from the file a stranger actually downloads.** A full session was
+> run on two machines on 2026-08-05: GitHub download, two 9-digit numbers, consent dialog, screen
+> shared, control working — and the screen was locked mid-session to watch the recovery behaviour
+> appear and clear. All four capture fixes are **CONFIRMED IN A LIVE SESSION**, not inferred. The
+> browser download block is **gone**, solved for €0 by moving the file to a GitHub release after
+> proving the block was caused by the HOST and not the file. One Windows warning remains, it is
+> passable, and the download page now quotes both of its screens word for word.
+>
+> **What happens next:** Conor sends `tester-message.txt` to two people who have never seen
+> FlashDesk and watches using `watch-list.txt`. That is the test this whole project was built for —
+> two strangers, one file, no help. The single measurement that matters is whether each person gets
+> past the Windows security screen **unaided**; that count is now the trigger for buying a code
+> signing certificate. The one thing still never proven is **adaptive picture quality across two
+> genuinely separate home internet connections** — every measurement so far has been a simulated
+> link or a deliberate throttle, and the testers' `sessions.txt` will be the first real evidence.
+
 # PROGRESS
 
 Short running log of what was built, decided, and left unfinished. Newest stage at the bottom.
@@ -1075,3 +1093,16 @@ message. Neither happened.
 **Why this entry exists in this shape:** the distinction between *inferred* and *observed* is the
 discipline this project keeps relearning. A dead dropdown chevron and a twelve-commit-stale download
 both shipped while every build passed. "Tests pass" is not "someone watched it work".
+
+## The two files that carry the next test (current as of 2026-08-05)
+
+Both are plain text in the repository root, written to be OPENED AND COPIED FROM rather than read in
+a terminal — Conor works in one and cannot select text reliably there.
+
+| File | For | Contains |
+|---|---|---|
+| **`tester-message.txt`** | Send to each tester | The whole journey in plain words: download from the button (the file comes from **github.com** — said explicitly so a careful person is not unsettled by seeing that address), the ONE Windows warning with its two-screen shape spelled out, a warning that they will see `Publisher: Unknown publisher`, the scam line placed at the moment somebody could be talking them through a security prompt by telephone, **what a working session looks like from their side** (the orange band, and their mouse moving on its own — someone not told that will think their computer has been taken over), and a request for `sessions.txt` so they never have to describe numbers. |
+| **`watch-list.txt`** | Conor, while on the phone | Five things in the order they happen. Step 2 is the one that matters: at the Windows security screen, count the seconds of silence, whether they found **More info** unaided, and whether they got through without coaching. **That count IS the certificate trigger**, so the file explicitly warns against rescuing them early — doing so destroys the only measurement that decides the purchase. Ends by naming the most valuable thing to bring back, which is not a number: *where each person went quiet, and what they were looking at.* |
+
+These supersede every earlier draft of a tester message in this file. Anything older describing
+"open the downloads box and choose Keep" describes a flow that no longer exists.
