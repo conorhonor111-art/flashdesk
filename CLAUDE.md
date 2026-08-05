@@ -985,6 +985,72 @@ machine is the one that needs help) — phone-first layout, and one line for exa
   tidiness — SmartScreen reputation accrues to a file+URL, so changing either resets the little
   reputation that has been earned.
 
+### 🚨 THE DOWNLOAD BUTTON POINTS AT GITHUB, NOT AT flashdesk.org (2026-08-05) — DO NOT "TIDY" IT BACK
+
+Someone will eventually look at the page, see the green button pointing at `github.com` on a site
+whose whole argument is "this is my own domain, my own name", and want to point it back at
+`flashdesk.org/dl/FlashDesk.exe`. **That change would break the product for most people.** Here is
+the evidence, so the argument is found before the edit is made.
+
+**THE PROBLEM.** Chrome did not warn about the download from flashdesk.org — it BLOCKED it. It
+transferred the whole 68.5 MB and then refused to hand it over, leaving it in the Downloads folder
+as `Unconfirmed 815538.crdownload` and showing only **"Suspicious download blocked"**. Behind a small
+chevron: *"This file isn't commonly downloaded and it may be dangerous"*, with **"Delete from
+history"** as the solid dark blue primary button and **"Download suspicious file"** as the pale
+secondary. So a path existed, but it was three clicks with the word *dangerous* in them, and Google
+had deliberately made the eye land on *delete* first. For a frightened non-technical stranger that
+is where the product ended.
+
+**THE EXPERIMENT — one variable, measured, not reasoned.** The same file was published as a GitHub
+release and downloaded in a fresh Chrome profile on the same machine minutes later:
+
+| | flashdesk.org | GitHub release |
+|---|---|---|
+| bytes | 71,784,025 | 71,784,025 |
+| SHA-256 | 72E45B4E…249B19 | **identical** |
+| signature | NotSigned | NotSigned |
+| file reputation | none | none |
+| **result** | **BLOCKED** | **downloaded cleanly, no warning at all** |
+
+Two weaker tests preceded it and are recorded so nobody repeats them thinking they settle anything:
+a SIGNED installer from GitHub (Git for Windows) downloaded cleanly — but it differs in two ways at
+once, host and signature, so it proves only that the test rig reports "not blocked" correctly. An
+UNSIGNED but hugely popular tool (yt-dlp) also downloaded cleanly — but it carries years of its own
+file reputation. **Only the FlashDesk test held the file constant and changed nothing but the host**,
+which is why it is the one that counts.
+
+**THE CONCLUSION: it was never the file. It was the host.** A small domain the browser had never
+seen distributing software. Nothing about FlashDesk itself was the problem.
+
+**WHAT THIS CHANGED.** The code-signing certificate (~€209/year) stopped being urgent. It had been
+the planned rescue for a barrier that stopped everyone; that barrier is gone and it cost nothing.
+Signing is now only a later decision about the remaining Windows warning — see the code-signing
+section below, whose "buy at ~100 downloads a month" trigger was already withdrawn as
+self-defeating.
+
+**RULES THAT COME WITH THIS — all three matter:**
+1. **The link must keep the `/releases/latest/download/FlashDesk.exe` form.** A tag-specific URL
+   changes with every release and throws away whatever reputation the address has earned — the same
+   trap already documented for `/dl/FlashDesk.exe`.
+2. **`flashdesk.org/dl/FlashDesk.exe` stays live and stays on the page**, offered by name as a
+   fallback and described honestly (identical file, browsers are more suspicious of it there).
+3. **The page must not describe a block that no longer happens.** The Windows warning is step one
+   now, because it is the only thing that certainly still occurs. The download-block wording is kept
+   underneath as the "if it happens to you" case, since browser settings vary and the fallback link
+   is still a bare `.exe` on a small domain. Describing a dialog nobody sees is the same class of
+   failure as hiding one they do — this page has already made that mistake once.
+
+**⚠️ THE TAKEDOWN RISK IS REAL, AND THE FALLBACK EXISTS FOR IT.** GitHub can remove a repository on
+report, without notice, and a remote-control tool is precisely the category that attracts such
+reports. Conor controls flashdesk.org; he does not control GitHub. **Verified 2026-08-05 that the
+page survives that scenario:** `github.com` appears in `site/index.html` exactly ONCE, in the
+button's `href`. There is no script, no image, no stylesheet, no external fetch of any kind. So if
+the repository vanished, the page would render identically, the button would 404, and the fallback
+link below it would still serve the same file from flashdesk.org (confirmed responding 200 with the
+current build). The failure is degraded, not fatal. **Honest weakness:** the fallback sits under a
+heading further down the page, so a person whose button 404s must read on to find it. If GitHub ever
+does remove it, swap the button back the same day rather than relying on that.
+
 ### ✅ RESOLVED 2026-08-03 (was a hard blocker): flashdesk.org now has a REAL certificate
 
 **Verified from `.223`, not assumed:** `issuer=C=GB, O=Sectigo Limited, CN=Sectigo Public Server
