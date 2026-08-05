@@ -1263,11 +1263,39 @@ downloads or not. So a certificate bought today would expire having earned almos
 **Conor met this warning himself in a live test and it did not change the decision — precisely
 because buying would not have prevented what he saw.**
 
-**Trigger to revisit — a rate, not a feeling: roughly 100+ downloads a month from people Conor
-does not personally know, sustained over two or three months.** Below that, the certificate
-expires before reputation can form. ⚠️ **That number is MY ESTIMATE, not a published Microsoft
-threshold** — Microsoft publishes none. Treat it as a decision rule to argue with, not a fact.
-The real input is the drop-off count from the first real testers (see PROGRESS.md).
+### ⛔ THE OLD TRIGGER WAS WITHDRAWN — it was self-defeating (2026-08-04)
+
+~~Roughly 100+ downloads a month from strangers, sustained over two or three months.~~ **Conor
+demolished this and he was right:** the download barrier was what PREVENTED those downloads, so the
+threshold could never arrive. A rule whose precondition is blocked by the thing it is meant to
+decide about is not a rule. Recorded rather than deleted so nobody re-derives it.
+
+### ✅ THE TRIGGER THAT REPLACES IT (Conor, 2026-08-05) — a person, not a number
+
+> **Buy the certificate when a real tester stops at the SmartScreen screen and does not get through
+> on their own — OR when Conor decides to promote FlashDesk beyond people he can telephone.**
+
+**What €209/year actually buys, settled 2026-08-05 — and it is NOT the day-one publisher name:**
+
+- **Without a certificate the blue box is PERMANENT.** SmartScreen reputation attaches to the FILE
+  HASH, and every rebuild produces a new hash (this project embeds the git commit in the version, so
+  every commit changes it). Reputation can therefore never accumulate. Waiting does not help. Ever.
+- **With a certificate the box is TEMPORARY.** Reputation attaches to the CERTIFICATE and is
+  inherited by every future version, so it accrues instead of resetting, and eventually the box
+  stops appearing.
+- Day one it changes exactly one line — `Publisher: Unknown publisher` becomes
+  `Publisher: Conor Honor` — and the box still appears. That line matters, but it is not the
+  purchase. **The purchase is turning a permanent obstacle into a temporary one.**
+
+**Why waiting is currently free:** reputation only accrues on real downloads, and there have been
+two. Nothing is being lost by not buying today.
+
+⚠️ **And unlike the Chrome block, this one CANNOT be solved by moving the host.** SmartScreen judges
+the file hash and the signing certificate; it shows `App:` and `Publisher:`, never
+`Downloaded from:`. Moving to GitHub fixed Chrome because Google's Safe Browsing also weighs URL
+reputation. Microsoft's does not. Do not retry that trick here.
+⚠️ **The free Microsoft file submission is PER FILE HASH**, so every rebuild voids it. It is worth
+doing only once a release has stopped changing — otherwise it is wasted effort.
 **If it is ever bought, buy the CLOUD (SimplySign) version even though the card kit is ~€40
 cheaper:** the card is a physical smartcard that has to be posted, which adds a delivery
 dependency and a device to lose, and the cloud version has neither.

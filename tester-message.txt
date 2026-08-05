@@ -1,6 +1,10 @@
 FlashDesk - could you try this and tell me how it went?
 
 1. Open flashdesk.org and press the green Download button.
+
+   The file itself comes from github.com - that is where it is stored, and it is
+   normal. So do not worry if you see a github.com address while it downloads.
+
    About 70 MB, so it may take a minute or two. That is normal, it is not stuck.
 
 2. Open the file you downloaded.
@@ -42,9 +46,14 @@ FlashDesk - could you try this and tell me how it went?
    The window closes itself after 30 seconds if nothing is pressed - that is a
    safety feature, not a fault. If it closes, just tell me and I will try again.
 
-5. While I am connected, an orange band sits across the top of the FlashDesk
-   window, and there is a "Stop sharing" button. Press it at any time and I am
-   gone at once.
+5. What it looks like when it is working:
+
+   - An orange band sits across the top of the FlashDesk window the whole time I
+     am connected. If that band is there, I can see your screen.
+   - Your mouse pointer may move on its own, and things may open and close
+     without you touching anything. That is me. It is meant to happen.
+   - There is a "Stop sharing" button. Press it at any moment and I am gone at
+     once - you do not have to ask me first.
 
 Never give that 9-digit number to anyone else - only to someone you telephoned
 yourself.

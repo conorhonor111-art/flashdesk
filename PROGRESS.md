@@ -1037,3 +1037,41 @@ not that the file is unsafe.
 - The remaining barrier is SmartScreen, and unlike the Chrome block it is **not** solvable by moving
   the host: the warning names the file and its publisher, not where it came from.
 - `sessions.txt` from the live test not yet reviewed.
+
+## ✅✅ ALL FOUR CAPTURE FIXES — CONFIRMED IN A LIVE SESSION (2026-08-05)
+
+Not "built and tested". **Observed, end to end, on two machines, from the file a stranger actually
+downloads.** The session log holds both runs, so the before and after sit side by side in one file.
+
+**Before the fixes (2026-08-04):** one CONNECTED line and **fourteen** report blocks in 38 seconds.
+Bytes frozen at 0.7 MB while the duration climbed 4s → 23s, so KB/s fell 172 → 33 purely because the
+divisor grew. `worst second 15` printed beside an average of 3.0 — arithmetically impossible, since
+a minimum cannot exceed a mean.
+
+**After the fixes (2026-08-05):** ONE block.
+
+```
+Lasted        : 2m 54s
+Screen        : 1920 x 1080, captured with DXGI Desktop Duplication
+Picture       : 12.6 fps average, worst second 0
+Sent          : 2.1 MB total, 14.7 KB/s average
+Screen hidden : 26s of that time the screen could not be seen at all
+Interruptions : none
+```
+
+| Fix | Confirmed by |
+|---|---|
+| **1. Capture failures never end a session** | No churn at all. One session, 2m 54s, `Interruptions: none`. |
+| **2. Silence + plain words instead of a frozen picture** | The `Screen hidden: 26s` line is the lock Conor performed. He **watched the graphite band appear over the operator's picture with the intended sentence, and clear again on unlock.** The session stayed up; the client kept its amber strip throughout. |
+| **3. One report at the true end** | One block, not fourteen. |
+| **4. The arithmetic holds** | `worst second 0` now sits BELOW the 12.6 average, and the 26s hidden stretch is excluded from the rates instead of dragging them down. |
+
+Noted and deliberately not chased: DXGI this time rather than GDI, and a slowest single frame of
+516 ms. Both are consistent with reaching the machine over Remote Desktop, and neither affected the
+outcome. The way to tell a real recovery failure from an RDP artefact, using only what is visible:
+a real failure leaves the band on screen after unlocking, or drops the session with a "reconnecting"
+message. Neither happened.
+
+**Why this entry exists in this shape:** the distinction between *inferred* and *observed* is the
+discipline this project keeps relearning. A dead dropdown chevron and a twelve-commit-stale download
+both shipped while every build passed. "Tests pass" is not "someone watched it work".
