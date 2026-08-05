@@ -1,0 +1,73 @@
+WHAT TO WATCH WHILE TWO STRANGERS RUN FLASHDESK
+================================================================
+
+You are on the phone. You can hear hesitation they will never describe. Five
+things, in the order they happen. Write them down as they occur - afterwards
+nobody remembers the pauses.
+
+
+1. THE DOWNLOAD
+   Expect: comes through with no block at all.
+   COUNT: does anyone mention a warning while downloading?
+   If yes, get the exact words - that would mean GitHub's treatment has changed
+   and the page is wrong again.
+
+
+2. THE SMARTSCREEN SCREEN  <<< THIS IS THE CERTIFICATE DECISION
+   This is the one measurement that matters now.
+
+   COUNT, for each person:
+     a) Seconds of silence after they open the file.
+     b) Did they find "More info" ON THEIR OWN, or did you have to say it?
+     c) Did they get through without you talking them through it?
+
+   The trigger: if a tester stops here and does NOT get through on their own,
+   that is the signal to buy the certificate. One person failing is the number.
+
+   Do not coach them before they try. Let the silence run. If you rescue them
+   too early you destroy the only measurement that decides EUR 209.
+
+
+3. THE NUMBER
+   Expect: a 9-digit number within a few seconds of the window opening.
+   COUNT: seconds from opening the file to reading the number aloud.
+   Watch for: two people getting the SAME number - that would mean cloned
+   machines and the relay will refuse the second one.
+
+
+4. THE CONSENT DIALOG
+   Expect: the caller's number, the line saying they have never connected with
+   this number before, and Accept greyed for about three seconds.
+
+   WATCH FOR THE ONE THING THAT MATTERS: did they READ it, or hunt for the
+   button? Ask afterwards what it said. If they cannot say, the dialog is
+   decoration and the whole safety design rests on nothing.
+
+   Also: did the 3-second delay annoy them, or did they not notice?
+
+
+5. DURING AND AFTER THE SESSION
+   Expect: an orange band on the shared machine the whole time, and the picture
+   moving on the other side.
+
+   WATCH FOR:
+     - Do they say the picture froze? Roughly how long?
+     - Did anyone panic when the mouse moved on its own? (They were warned, but
+       being warned and experiencing it are different.)
+     - Does closing the window really end it? Ask them to check Task Manager.
+
+   THEN ASK FOR THE FILE - it answers everything else without them describing
+   anything:
+       C:\Users\<their name>\AppData\Roaming\FlashDesk\sessions.txt
+
+   It should contain ONE block per session, and its "Speed limiting" line is the
+   first real evidence of adaptive quality on two genuinely separate home
+   connections - the one thing still never tested outside a simulation.
+
+
+================================================================
+THE SINGLE MOST VALUABLE THING YOU CAN BRING BACK
+
+Not the numbers. The place where each person WENT QUIET and what they were
+looking at. That is where a stranger who is not on the phone with you gives up
+entirely, and it is the only thing this test can measure that nothing else can.
