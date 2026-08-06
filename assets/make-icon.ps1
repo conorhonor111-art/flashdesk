@@ -44,10 +44,33 @@ function New-MarkBitmap([int]$size, [bool]$live) {
     $g.FillPath($tb, $tilePath)
 
     # Proportion P3 on the 16 grid: long steep descent, short ascent, sharp miter corner.
+    #
+    # ⚠ FITTED 2026-08-06 — the mark used to be drawn at (4.8,2.8) (10.2,13.0) (12.4,8.6) with a
+    # 2.6 stroke, and it DID NOT FIT ITS OWN TILE. Rendered and measured, the stroked outline
+    # spanned y 2.219..15.844 against a tile interior of 1.000..15.000: the miter tip hung 0.844
+    # grid units BELOW the tile (the tip extends 2.841 units past the vertex, because the interior
+    # angle is 54.46 deg and the miter ratio is 2.1854 — GDI+ MiterLimit defaults to 10, so nothing
+    # bevels it away). It was also off-centre: 2.656 units of clear tile on the left against 1.406
+    # on the right. On a LIGHT taskbar the protruding tip read as one stray green pixel outside the
+    # tile; on a dark one it was invisible, because the tile itself is invisible there (#17191E on a
+    # dark panel measures 1.08:1).
+    #
+    # The fix moves and shrinks the PATH — points scaled by 0.8807 about the mark's own centre and
+    # re-centred on the tile. Angles and the P3 proportion (long descent, short ascent) are
+    # untouched, so the shape question that cost seven rounds is not reopened.
+    #
+    # THE STROKE WIDTH DELIBERATELY DOES NOT SCALE, and that is the one place this is not a pure
+    # similarity transform. Scaling it too would have given 2.290, and measured at 16 px that drops
+    # the mark from 37 solid-core pixels to 29 and leaves the bottom terminal with no solid pixel at
+    # all — on the taskbar, which is the surface the icon exists for. A 2.6 stroke at 16 px was
+    # already measured as surviving "with no margin to spare", so thinning it trades a defect
+    # visible at 32 px and above for a worse one at 16. Rendered check at the new position: the full
+    # 2.6 stroke leaves 2.500 units of clear tile left and right, 0.906 above and 0.656 below — it
+    # fits with room. Re-run scratchpad\stroke-test.ps1 before changing either number.
     $pts = @(
-        (New-Object System.Drawing.PointF((4.8 * $u), (2.8 * $u))),
-        (New-Object System.Drawing.PointF((10.2 * $u), (13.0 * $u))),
-        (New-Object System.Drawing.PointF((12.4 * $u), (8.6 * $u)))
+        (New-Object System.Drawing.PointF((4.631 * $u), (2.512 * $u))),
+        (New-Object System.Drawing.PointF((9.387 * $u), (11.495 * $u))),
+        (New-Object System.Drawing.PointF((11.325 * $u), (7.620 * $u)))
     )
     $strokeColor = if ($live) { $Amber } else { $Green }
     $pen = New-Object System.Drawing.Pen($strokeColor, (2.6 * $u))

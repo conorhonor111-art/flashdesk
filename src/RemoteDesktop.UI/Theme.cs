@@ -61,13 +61,29 @@ public static class Theme
     public static readonly Color RedHover = Color.FromArgb(0xA8, 0x1D, 0x1B);
     public static readonly Color RedPressed = Color.FromArgb(0x8F, 0x18, 0x15);
 
-    // Disabled controls — visibly inert, still readable
+    // Disabled controls — visibly inert, still READABLE. Darkened 2026-08-06 after the consent
+    // dialog was rendered and measured: the old pair gave a 2.76:1 label inside a 1.30:1 border,
+    // i.e. during the deliberate first-contact pause the person waits at a control with no
+    // perceptible edge and a barely legible word, which reads as broken rather than as "not yet".
+    // WCAG exempts disabled components from contrast, so this is NOT a rule fix — it exists because
+    // the pause only works if the person can see what they are waiting for. The state is still
+    // carried by the flat grey fill and the missing accent colour, never by illegibility.
     public static readonly Color DisabledFill = Color.FromArgb(0xED, 0xEF, 0xF2);
-    public static readonly Color DisabledText = Color.FromArgb(0x8A, 0x91, 0x9B);
-    public static readonly Color DisabledBorder = Color.FromArgb(0xD5, 0xDA, 0xE0);
+    public static readonly Color DisabledText = Color.FromArgb(0x64, 0x6A, 0x73);   // 4.73:1 on DisabledFill
+    public static readonly Color DisabledBorder = Color.FromArgb(0xA9, 0xB1, 0xBC); // = BorderStrong, a visible edge
 
     // Type scale — Segoe UI, four sizes + one sanctioned exception, two weights (regular + semibold)
     public static readonly Font Display = new("Segoe UI", 24f, FontStyle.Regular);
+
+    /// <summary>
+    /// Display size in the emphasis weight, for a number that must be COMPARED rather than merely
+    /// read — the caller's number in the consent dialog. Added 2026-08-06 with the page line that
+    /// tells people to ask their helper for their number in advance: once a number has to be
+    /// matched against one spoken on a phone, digit distinctness matters more than size, and
+    /// semibold buys that without touching the size hierarchy (Hero 36 stays "your number",
+    /// Display 24 stays "their number", and that size gap is the only cue separating the two).
+    /// </summary>
+    public static readonly Font DisplayStrong = new("Segoe UI Semibold", 24f, FontStyle.Regular);
     public static readonly Font Heading = new("Segoe UI Semibold", 12f, FontStyle.Regular);
     public static readonly Font Body = new("Segoe UI", 10f, FontStyle.Regular);
     public static readonly Font Small = new("Segoe UI", 9f, FontStyle.Regular);
@@ -287,6 +303,26 @@ public static class Theme
         Text = text,
         Font = Small,
         ForeColor = TextSecondary,
+        AutoSize = true,
+        Margin = new Padding(0, S1, 0, 0),
+    };
+
+    /// <summary>
+    /// A short sentence that must actually be READ — not a caption. Body size in primary ink, so
+    /// it reads as a sentence rather than as a label for the thing above it.
+    ///
+    /// Added 2026-08-06 for the two lines that carry the most safety weight on a stranger's screen:
+    /// "Only give this number to someone you contacted yourself" under the hero, and "You have
+    /// never connected with this number before" in the consent dialog. Both were <see cref="Caption"/>,
+    /// which hard-sets Small AND TextSecondary — so both were the smallest, palest text on the one
+    /// surface that exists for them. A Caption whose font is not caption-sized would be an object
+    /// whose name lies, hence a separate factory rather than an override at the call site.
+    /// </summary>
+    public static Label Note(string text) => new()
+    {
+        Text = text,
+        Font = Body,
+        ForeColor = TextPrimary,
         AutoSize = true,
         Margin = new Padding(0, S1, 0, 0),
     };

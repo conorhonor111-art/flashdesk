@@ -53,7 +53,9 @@ public sealed class MainForm : Form
     private readonly Label _hero = new() { AutoSize = true, Font = Theme.Hero, ForeColor = Theme.TextPrimary, Margin = new Padding(0) };
     private readonly Button _copy = Theme.MakeQuietButton("Copy");
     private readonly Label _heroNote = Theme.Caption("");
-    private readonly Label _readAloudLine = Theme.Caption(
+    // A sentence, not a caption. This is the line CLAUDE.md says must actually be read, and as a
+    // Caption it was the smallest, palest text in the window — smaller than the label above it.
+    private readonly Label _readAloudLine = Theme.Note(
         "Read this number to the person helping you. Only give it to someone you contacted yourself.");
 
     private readonly IdentityStore _identityStore = new();
@@ -62,7 +64,11 @@ public sealed class MainForm : Form
     private IdentityResult? _identity;
 
     private readonly RoundedTextBox _peerBox = new() { Font = Theme.Body, Width = Theme.MediumFieldWidth, PlaceholderText = "their number" };
-    private readonly Button _connect = Theme.MakeButton("Connect", ButtonKind.Primary);
+    // Starts NEUTRAL and only turns blue once a full 9-digit number has been typed. Blue means
+    // "a decision is being asked of you", and until there is a number there is no decision — so a
+    // blue Connect was the loudest thing in the window while being the one action the person who
+    // downloaded FlashDesk for help will never take. See UpdateConnectAffordance.
+    private readonly Button _connect = Theme.MakeButton("Connect", ButtonKind.Neutral);
     private readonly Label _connectNote = Theme.Caption("");
     private readonly Button _toggle = Theme.MakeButton("Stop sharing", ButtonKind.Neutral);
     private readonly LinkLabel _detailsLink = Theme.MakeLink("Technical details");
@@ -206,6 +212,15 @@ public sealed class MainForm : Form
         };
 
         Load += (_, _) => { ShowIdentityState(); StartSharing(); _ = RegisterIdentityAsync(); };
+
+        // ⚠ Nothing may hold focus when this window opens. WinForms otherwise focuses the first
+        // control that will take it, which is the peer-number field — and a focused RoundedTextBox
+        // draws a 2 px Theme.Blue ring AND hides its own "their number" placeholder. So the first
+        // thing a frightened stranger saw was an empty box, ringed in the colour this product uses
+        // for "a decision is being asked of you", sitting directly beneath their own number. It
+        // read as a form demanding to be filled in before anything would work.
+        // Set on Shown, not Load: WinForms re-selects a control between the two.
+        Shown += (_, _) => ActiveControl = null;
         FormClosing += (_, _) => { _server.Dispose(); _timer.Dispose(); };
         _timer.Tick += (_, _) => UpdateStatus();
         _timer.Start();
@@ -275,8 +290,30 @@ public sealed class MainForm : Form
 
         _connectNote.Anchor = AnchorStyles.Left | AnchorStyles.Right;
         _connectNote.Margin = new Padding(0);
+        // An empty label still occupies a row, which is where the dead space under this card came
+        // from. It appears only when it has something to say — same rule as _heroNote.
+        _connectNote.Visible = false;
 
-        return MakeCard(new Padding(Theme.S3), caption, row, _connectNote);
+        // Same padding as the hero card. Uneven padding between two cards in one window is exactly
+        // what CLAUDE.md's spacing rationale names as what makes software look assembled.
+        return MakeCard(new Padding(Theme.S4), caption, row, _connectNote);
+    }
+
+    /// <summary>
+    /// Keeps Connect's weight honest: neutral until a complete number has been typed, blue only
+    /// once connecting is genuinely a decision. Called on every keystroke.
+    /// </summary>
+    private void UpdateConnectAffordance()
+    {
+        bool ready = FlashDeskId.IsValid(FlashDeskId.Normalise(_peerBox.Text));
+        Theme.Style(_connect, ready ? ButtonKind.Primary : ButtonKind.Neutral);
+    }
+
+    /// <summary>Shows the note only when it has something to say, so it never holds open a gap.</summary>
+    private void SetConnectNote(string text)
+    {
+        _connectNote.Text = text;
+        _connectNote.Visible = text.Length > 0;
     }
 
     /// <summary>
@@ -299,12 +336,13 @@ public sealed class MainForm : Form
             <= 6 => $"{digits[..3]} {digits[3..]}",
             _ => $"{digits[..3]} {digits[3..6]} {digits[6..]}",
         };
-        if (formatted == _peerBox.Text) return;
+        if (formatted == _peerBox.Text) { UpdateConnectAffordance(); return; }
 
         _reformatting = true;
         _peerBox.Text = formatted;
         _peerBox.SelectionStart = _peerBox.Text.Length; // typing continues at the end
         _reformatting = false;
+        UpdateConnectAffordance();
     }
 
     /// <summary>
@@ -316,32 +354,32 @@ public sealed class MainForm : Form
         string typed = _peerBox.Text.Trim();
         if (typed.Length == 0)
         {
-            _connectNote.Text = "Type the other person's number first.";
+            SetConnectNote("Type the other person's number first.");
             return;
         }
 
         string digits = FlashDeskId.Normalise(typed);
         if (!FlashDeskId.IsValid(digits))
         {
-            _connectNote.Text = "That does not look like a FlashDesk number. It is 9 digits, like 418 205 793.";
+            SetConnectNote("That does not look like a FlashDesk number. It is 9 digits, like 418 205 793.");
             return;
         }
 
         if (_identity?.HasUsableId != true)
         {
-            _connectNote.Text = "Wait until your own number appears above, then try again.";
+            SetConnectNote("Wait until your own number appears above, then try again.");
             return;
         }
 
         string label = FlashDeskId.Format(digits);
         _connect.Enabled = false;
         _peerBox.Enabled = false;
-        _connectNote.Text = $"Connecting to {label}…";
+        SetConnectNote($"Connecting to {label}…");
 
         var mine = _identityStore.Load();
         if (mine is null)
         {
-            _connectNote.Text = "This computer's own number could not be read. Close FlashDesk and open it again.";
+            SetConnectNote("This computer's own number could not be read. Close FlashDesk and open it again.");
             _connect.Enabled = true;
             _peerBox.Enabled = true;
             return;
@@ -356,13 +394,13 @@ public sealed class MainForm : Form
         catch (Exception ex)
         {
             client?.Dispose();
-            _connectNote.Text = $"Could not connect to {label}. {ex.Message}";
+            SetConnectNote($"Could not connect to {label}. {ex.Message}");
             _connect.Enabled = true;
             _peerBox.Enabled = true;
             return;
         }
 
-        _connectNote.Text = string.Empty;
+        SetConnectNote(string.Empty);
         _connect.Enabled = true;
         _peerBox.Enabled = true;
 
@@ -372,13 +410,13 @@ public sealed class MainForm : Form
         try
         {
             var session = new SessionWindow(client, label, digits, mine.Value.Id, mine.Value.Secret);
-            session.FormClosed += (_, _) => { if (!IsDisposed) _connectNote.Text = "Session ended."; };
+            session.FormClosed += (_, _) => { if (!IsDisposed) SetConnectNote("Session ended."); };
             session.Show(this);
         }
         catch (Exception ex)
         {
             client.Dispose();
-            _connectNote.Text = $"Connected, but the session window could not open: {ex.Message}";
+            SetConnectNote($"Connected, but the session window could not open: {ex.Message}");
         }
     }
 

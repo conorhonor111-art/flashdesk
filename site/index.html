@@ -10,7 +10,9 @@
     background = Theme.BrandTile  #17191E
     the ONE clickable green = Theme.BrandGreen  #2BD16B
     text = Theme.OperatorHeaderText  #ECEFF3
-  Rules from CLAUDE.md "The download site": one page, phone-first, no JS, no fonts, no tracking.
+  Rules from CLAUDE.md "The download site": one page, phone-first, no JS, no tracking.
+  The "no downloaded fonts" rule was lifted by Conor on 2026-08-06 for ONE self-hosted face; see the
+  @font-face block below for the measured weight and why the quoted dialogs stay on the system font.
   Placeholders {{LIKE THIS}} are deliberate — Conor fills them; nothing on this page is invented.
 -->
 
@@ -24,7 +26,12 @@
 <meta property="og:description" content="Remote support for your computer. One file, nothing installs. You see everything your helper does, and you can end the session at any moment.">
 <meta name="twitter:card" content="summary">
 
-<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Crect%20x='1'%20y='1'%20width='14'%20height='14'%20rx='3.5'%20fill='%2317191E'/%3E%3Cpolyline%20points='4.8,2.8%2010.2,13%2012.4,8.6'%20fill='none'%20stroke='%232BD16B'%20stroke-width='2.6'/%3E%3C/svg%3E">
+<!-- MARK GEOMETRY IS LOCKED TO assets\make-icon.ps1 AND TO THE HEADER SVG BELOW. All three draw the
+     same polyline on the same 16-unit grid; if one changes, all three change in the same commit,
+     or the site and the app end up wearing different marks. Points refitted 2026-08-06 so the
+     stroke sits inside its tile (it used to hang 0.844 units below it) — see make-icon.ps1 for the
+     measurements. -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Crect%20x='1'%20y='1'%20width='14'%20height='14'%20rx='3.5'%20fill='%2317191E'/%3E%3Cpolyline%20points='4.631,2.512%209.387,11.495%2011.325,7.620'%20fill='none'%20stroke='%232BD16B'%20stroke-width='2.6'/%3E%3C/svg%3E">
 <style>
   :root {
     color-scheme: dark;
@@ -48,23 +55,74 @@
     --s4: 2rem;
     --s5: 3rem;
 
-    /* ONE corner radius, used everywhere. Two radii on one page look like a mistake. */
+    /* ONE corner radius for every surface this page owns. The only other radius on the page is
+       --radius-depiction below, and it belongs to somebody else's software, not to us. */
     --radius: 14px;
+    /* Used ONLY on the little rectangles that depict Windows' and Chrome's own buttons. Those are
+       drawings of another vendor's interface — the page already renders them in that vendor's blue
+       (#1A73E8) for the same reason — and giving them our 14px would make them look like our
+       controls, which is exactly the confusion this page cannot afford. */
+    --radius-depiction: 8px;
+
+    /* Type scale, declared here so no size is invented at the point of use. */
+    --h1: 1.7rem;
+    --h2: 1.4rem;
+    --h2-sub: 1.1rem;
   }
+
+  /* ONE downloaded typeface, self-hosted from this domain — no third-party request, no tracking,
+     nothing that breaks if a font CDN disappears. Latin plus the punctuation this page uses:
+     24.2 KB measured, about half a second on a slow phone connection, and non-blocking because of
+     font-display: swap. Subset BY UNICODE RANGE, never by "the characters currently on the page":
+     that trick gave 16.3 KB and silently dropped the ellipsis, the en dash and the non-breaking
+     space, so the first wording change after it would have rendered one character in a different
+     font with nothing to warn anyone. */
+  @font-face {
+    font-family: 'Inter';
+    src: url('inter.woff2') format('woff2');
+    font-weight: 400 700;
+    font-style: normal;
+    font-display: swap;
+  }
+  /* Metric-matched fallback, so the page does not reflow when Inter arrives. Measured from the two
+     font files: Inter's average lowercase advance is 1.0860x Segoe UI's at the same size (and its
+     x-height ratio is 1.092, close enough that one number fixes both), so the fallback is scaled to
+     108.6% and the swap moves no line breaks. If the font fails to load entirely, this face is what
+     the page is set in and it still looks deliberate. */
+  @font-face {
+    font-family: 'Inter fallback';
+    src: local('Segoe UI'), local('Helvetica Neue'), local('Arial');
+    size-adjust: 108.6%;
+    ascent-override: 96.9%;
+    descent-override: 24.1%;
+  }
+
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     background: var(--tile);
     color: var(--text);
-    font-family: system-ui, "Segoe UI", Arial, sans-serif;
+    font-family: 'Inter', 'Inter fallback', system-ui, "Segoe UI", Arial, sans-serif;
     font-size: 1.2rem;
     line-height: 1.55;
     padding: var(--s3) var(--s3) var(--s5);
+  }
+
+  /* ⚠ THE QUOTED WINDOWS AND CHROME SCREENS STAY IN THE SYSTEM FONT, AND THIS IS NOT AN OVERSIGHT.
+     The whole method of the warning section is that a frightened person compares these words,
+     character for character, against the real box on their own screen — and that box is drawn by
+     Windows in Segoe UI. Setting our own page in Inter is a design choice; setting the QUOTE in
+     Inter would make the page's copy and the real dialog look like two different things at the one
+     moment where they must look like the same thing. */
+  .quote, .btn-dark, .btn-pale {
+    font-family: system-ui, "Segoe UI", Arial, sans-serif;
   }
   main { max-width: 40rem; margin: 0 auto; }
   header { display: flex; align-items: center; gap: var(--s1); margin-bottom: var(--s4); }
   header svg { width: 2rem; height: 2rem; flex: none; }
   header span { font-weight: 600; font-size: 1.1rem; letter-spacing: 0.01em; }
-  h1 { font-size: 1.7rem; line-height: 1.25; margin-bottom: var(--s1); font-weight: 650; }
+  /* Tightened tracking on the headline only. Large display type needs NEGATIVE tracking to stop
+     looking loose; the generous kind belongs to small labels, which this page does not have. */
+  h1 { font-size: var(--h1); line-height: 1.2; letter-spacing: -0.02em; margin-bottom: var(--s1); font-weight: 700; }
   .phone-note { color: var(--muted); margin-bottom: var(--s4); }
 
   /* Green appears in exactly one filled block on this page: the button. */
@@ -83,11 +141,18 @@
   .download-meta { text-align: center; color: var(--muted); font-size: 1rem; margin-bottom: var(--s4); }
   .quiet-link { color: var(--muted); }
 
-  section { margin-bottom: var(--s4); }
-  h2 { font-size: 1.25rem; margin-bottom: var(--s1); font-weight: 650; }
+  /* A hairline above each section, so the page reads as built rather than typed. Depth from a
+     1px rule and a tonal step, never from a shadow or a glow — those cost contrast, and contrast
+     is the only thing this page really sells. The first section after the safety panel does not
+     need a rule; the panel is its own edge. */
+  section { margin-bottom: var(--s3); padding-top: var(--s3); border-top: 1px solid var(--line); }
+  section:first-of-type { border-top: 0; padding-top: 0; }
+  /* h2 was 1.25rem against a 1.2rem body, so headings read as bold body text rather than as
+     headings — visible in any render of the page. */
+  h2 { font-size: var(--h2); line-height: 1.25; margin-bottom: var(--s2); font-weight: 650; }
   /* The secondary heading inside the warnings box — a case that may not happen, so it must not
      compete with the one that will. */
-  h2.sub { font-size: 1.1rem; margin-top: var(--s4); color: var(--muted); }
+  h2.sub { font-size: var(--h2-sub); margin-top: var(--s4); color: var(--muted); }
 
   ol.steps { list-style: none; counter-reset: step; }
   ol.steps li {
@@ -95,17 +160,41 @@
     display: flex; gap: var(--s2); align-items: baseline;
     padding: var(--s1) 0;
   }
-  /* Step numbers keep green: they are small ordinals inside a list, never beside the button,
-     and they are what carries the eye down the three steps. */
+  /* ⚠ The step numbers used to be GREEN, and that was the page contradicting its own rule two
+     hundred lines after stating it: green is "the ONE clickable green", and three green digits
+     that do nothing when tapped teach the eye that green is decoration. On a phone the button has
+     scrolled away by the time these are read, so the only green in view was the green that lies.
+     The counter carries the eye down the three steps perfectly well without colour. */
   ol.steps li::before {
     content: counter(step);
-    color: var(--green);
+    color: var(--text);
     font-weight: 700;
     font-size: 1.35rem;
     min-width: 1.4rem;
     text-align: center;
   }
   .note { color: var(--muted); margin-top: var(--s1); }
+
+  /* The picture of the program. A stranger was being asked to download 68 MB with no idea what
+     they were getting; one honest screenshot answers that faster than any sentence. Bordered and
+     given the page's own radius so it reads as a framed object rather than as a floating white
+     rectangle on a dark page. */
+  .shot { margin: 0 0 var(--s4); }
+  .shot img {
+    display: block;
+    width: 100%;
+    max-width: 22rem;
+    height: auto;
+    margin: 0 auto;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+  }
+  .shot figcaption {
+    text-align: center;
+    color: var(--muted);
+    font-size: 1rem;
+    margin-top: var(--s1);
+  }
 
   .plain li { margin: var(--s1) 0 var(--s1) var(--s3); }
 
@@ -122,7 +211,7 @@
   .quote {
     background: var(--surface);
     border-left: 4px solid var(--muted);
-    border-radius: 8px;
+    border-radius: var(--radius);
     padding: var(--s1) var(--s2);
     line-height: 1.5;
   }
@@ -131,7 +220,7 @@
      not pretend otherwise. */
   .btn-dark, .btn-pale {
     display: inline-block;
-    border-radius: 8px;
+    border-radius: var(--radius-depiction);
     padding: 0.15rem 0.7rem;
     font-size: 0.95rem;
     margin-top: var(--s1);
@@ -148,7 +237,7 @@
   .scam-inline {
     background: var(--surface);
     border-left: 4px solid var(--text);
-    border-radius: 8px;
+    border-radius: var(--radius);
     padding: var(--s2);
   }
 
@@ -167,10 +256,9 @@
   .who p { margin-bottom: var(--s1); }
   a { color: var(--text); }
   /* Keyboard focus must be visible on every link, not just the button. */
-  a:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; border-radius: 4px; }
+  a:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; border-radius: var(--radius); }
   .download:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; }
 
-  footer { color: var(--muted); font-size: 0.95rem; margin-top: var(--s5); }
 
   @media (min-width: 640px) {
     body { padding-top: var(--s5); font-size: 1.25rem; }
@@ -183,15 +271,24 @@
 <main>
 
   <header>
+    <!-- Same drawing as the favicon above and as assets\make-icon.ps1. The tile previously carried
+         a 0.5 #2E3440 outline here and nowhere else, so the header mark, the favicon and the app
+         icon were three slightly different pictures; the outline is gone and all three now match. -->
     <svg viewBox="0 0 16 16" aria-hidden="true">
-      <rect x="1" y="1" width="14" height="14" rx="3.5" fill="#17191E" stroke="#2E3440" stroke-width="0.5"/>
-      <polyline points="4.8,2.8 10.2,13 12.4,8.6" fill="none" stroke="#2BD16B" stroke-width="2.6"/>
+      <rect x="1" y="1" width="14" height="14" rx="3.5" fill="#17191E"/>
+      <polyline points="4.631,2.512 9.387,11.495 11.325,7.620" fill="none" stroke="#2BD16B" stroke-width="2.6"/>
     </svg>
     <span>FlashDesk</span>
   </header>
 
   <h1>Remote support for your computer.</h1>
-  <p class="phone-note">Open this page on the computer you need help with.</p>
+  <!-- The old line said only "Open this page on the computer you need help with." Read as a
+       stranger, that is a dead end: the reason they are on a phone is that the computer is broken,
+       and the page then abandoned them without saying the file is useless on a phone or how to get
+       to it on the other machine. That failure produces NO phone call, so it was invisible from
+       our side by construction. -->
+  <p class="phone-note">This runs on a Windows computer, not on a phone. If you are on your phone,
+  type <strong>flashdesk.org</strong> on the computer that needs help.</p>
 
   <!-- ⚠ THE BUTTON POINTS AT GITHUB ON PURPOSE, AND THIS MUST NOT BE "TIDIED" BACK.
        The identical file served from flashdesk.org was BLOCKED by Chrome — downloaded in full and
@@ -210,15 +307,43 @@
   <p class="scam">If someone phoned you out of the blue and told you to come here,
   <strong>hang up</strong>. Only download this if you contacted us yourself.</p>
 
+  <!-- ⚠ THE SCREENSHOT SITS BELOW THE SAFETY WARNING, NOT ABOVE IT, AND THAT ORDER IS DELIBERATE.
+       Putting a picture between the button and the warning would demote the single most important
+       sentence on the page below a photograph of a grey window. The warning stays the first thing
+       revealed on any scroll; the picture is the second.
+       The image is a real capture of the program. The ONLY thing altered is the 9-digit number,
+       replaced with the example 418 205 793 so that a real machine's address is not published on
+       the internet — same font, same size, same position, nothing else touched and no claim
+       changed. If the simple view is redesigned, this file must be regenerated or the page starts
+       advertising a window that no longer exists. -->
+  <figure class="shot">
+    <img src="flashdesk-window.png" width="500" height="500" alt="The FlashDesk window: a large
+      9-digit number with a Copy button, and one button to stop sharing.">
+    <figcaption>This is the whole program. Your number will be different.</figcaption>
+  </figure>
+
   <section>
-    <h2>Three steps</h2>
+    <!-- Called "Three steps" until the safety check was added as a fourth. A heading that counts
+         wrongly is the kind of small dishonesty this page cannot afford, so it no longer counts. -->
+    <h2>What to do</h2>
+    <!-- Each step's text is wrapped in a <span> on purpose. The list item is a flex container (the
+         counter is one item, the text the other), so an inline <strong> at the start of a step
+         became a SECOND flex item and split that step into two columns — which is exactly how
+         step 4 rendered before this wrapper was added. Caught by looking at the page, not by
+         reading the markup. -->
     <ol class="steps">
-      <li>Download the file and open it. Nothing installs.</li>
-      <li>It shows you a 9-digit number.</li>
-      <li>Read that number to the person helping you &mdash; or type theirs in and press Connect.</li>
+      <li><span>Download the file and open it. Nothing installs.</span></li>
+      <li><span>It shows you a 9-digit number. It is like a phone number for this computer &mdash;
+        it is how your helper finds it. It is not a password.</span></li>
+      <li><span>Read that number to the person helping you.</span></li>
+      <li><span><strong>Ask them to read you their number too</strong>, and check it matches the
+        one that appears on your screen when they connect. If it does not match, press
+        Reject.</span></li>
     </ol>
-    <p class="note">Both of you run the same file. Whoever types a
-    number is the one who sees the other person&rsquo;s screen.</p>
+    <!-- This is a SECURITY line, not a nicety. The consent dialog shows the caller's number and
+         asks the person to decide on it — but nothing anywhere told them to obtain that number in
+         advance, so there was nothing to compare it against and the check was decoration. Two
+         independent reviews found this same hole. -->
   </section>
 
   <!-- The exact strings below were read off a real Chrome download on 2026-08-05, not paraphrased.
@@ -307,9 +432,20 @@
     <h2>What this does — and what it does not</h2>
     <ul class="plain">
       <li>It lets your helper see and control your screen — <strong>while you watch everything they do</strong>.</li>
-      <li>You can <strong>end the session at any moment</strong> with one click.</li>
-      <li>It <strong>does not run when you close it</strong>. Close the window and it is gone.</li>
-      <li>Nothing is installed unless you choose to install it.</li>
+      <li><strong>Nobody can connect unless you press Accept</strong>, every single time. If you do
+        nothing, nobody gets in.</li>
+      <li><strong>Letting someone in once does not let them in again.</strong> The next time they
+        try, you are asked again.</li>
+      <li>While someone is connected, <strong>a band across the top of the window turns orange</strong>
+        and stays that way for the whole time. You cannot miss it, and they cannot turn it off.</li>
+      <li>You can <strong>end it at any moment</strong> with one click.</li>
+      <li>It <strong>does not run when you close it</strong>. Close the window and it is gone, and
+        nothing was installed.</li>
+      <!-- Moved down from the steps, where it introduced the "who is helping whom" question in the
+           first screenful to a person who had not asked it yet. Kept, because either person can be
+           the helper - the product is now two strangers, not one operator and his clients. -->
+      <li>Both people run the same file. If you are the one <em>helping</em>, type the other
+        person's number into your own copy and press Connect.</li>
     </ul>
   </section>
 
@@ -328,8 +464,6 @@
     not through this website:
     <a href="mailto:conor.honor111@gmail.com">conor.honor111@gmail.com</a></p>
   </section>
-
-  <footer>FlashDesk &middot; flashdesk.org</footer>
 
 </main>
 </body>

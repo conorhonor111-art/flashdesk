@@ -28,7 +28,12 @@ public sealed class ConsentDialog : Form
 
     private readonly Button _accept = Theme.MakeButton("Accept", ButtonKind.Primary);
     private readonly Button _reject = Theme.MakeButton("Reject", ButtonKind.Destructive);
-    private readonly Label _countdown = Theme.Caption("");
+    // A sentence, not a caption: while Accept is locked this line is the ONLY explanation for why
+    // the button does not work. As the palest, smallest text in the window it was routinely missed,
+    // which turned a deliberate pause into an apparently broken button — and a person who jabs at a
+    // dead button clicks the instant it lights, producing a MORE reflexive Accept than no delay at
+    // all. That is the opposite of what the delay is for.
+    private readonly Label _countdown = Theme.Note("");
     private readonly System.Windows.Forms.Timer _timer = new() { Interval = 1000 };
 
     private int _secondsLeft = TimeoutSeconds;
@@ -70,23 +75,36 @@ public sealed class ConsentDialog : Form
         heading.Margin = new Padding(0, 0, 0, Theme.S3);
         root.Controls.Add(heading);
 
-        // Who — the number, big enough to compare with what was read out over the phone.
+        // Who — the number, in the emphasis weight because it is COMPARED, not just read: the
+        // person is matching it against a number their helper gave them before the call. Display
+        // size, not Hero — the size gap between this and their own number is the only cue that
+        // says which is which.
         var who = new Label
         {
             Text = FlashDeskId.Format(callerId),
-            Font = Theme.Display,
+            Font = Theme.DisplayStrong,
             ForeColor = Theme.TextPrimary,
             AutoSize = true,
             Margin = new Padding(0, 0, 0, Theme.S1),
         };
         root.Controls.Add(who);
 
-        // First contact or not — in words, not an icon. The most valuable line in the dialog.
-        var familiarity = Theme.Caption(isKnown
+        // First contact or not — in words, not an icon. The most valuable line in the dialog, so it
+        // is a sentence (Theme.Note) and not a caption.
+        //
+        // ⚠ It used to be Theme.Amber, and that was wrong twice over (found by two independent
+        // reviews and then measured, 2026-08-06). First, amber has exactly ONE meaning in this
+        // product — "a session is LIVE, someone is watching" — so the first amber a person ever saw
+        // was on a dialog where nothing was live, which is how a safety colour stops meaning
+        // anything. Second, #B26A00 on #F5F6F8 measures 3.92:1 at 12 px regular, below the 4.5:1
+        // floor: the highest-value sentence in the product's only defence was also the only text in
+        // this window that failed contrast. It is now primary ink at 15.31:1, and the two cases stay
+        // apart by their WORDS, which is what the no-colour-alone rule actually asks for.
+        var familiarity = Theme.Note(isKnown
             ? "You have accepted this number before."
             : "You have never connected with this number before.");
-        familiarity.ForeColor = isKnown ? Theme.TextSecondary : Theme.Amber;
         familiarity.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+        familiarity.MaximumSize = new Size(Theme.ConsentDialogSize.Width - (Theme.S4 * 2) - Theme.S3, 0);
         familiarity.Margin = new Padding(0, 0, 0, Theme.S3);
         root.Controls.Add(familiarity);
 
@@ -171,9 +189,11 @@ public sealed class ConsentDialog : Form
 
     private void UpdateCountdown()
     {
+        // "…" after a bare number read as a glitch rather than as a countdown, and "refused" alone
+        // sounded like a failure the person had caused rather than the safe outcome it is.
         _countdown.Text = _acceptUnlocksIn > 0
-            ? $"Read this first. Accept becomes available in {_acceptUnlocksIn}…"
-            : $"If you do nothing, this will be refused in {_secondsLeft} seconds.";
+            ? $"Read this first. Accept unlocks in {_acceptUnlocksIn} seconds."
+            : $"If you do nothing, this is refused in {_secondsLeft} seconds — nobody gets in.";
     }
 
     private void Finish(bool accepted)

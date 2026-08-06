@@ -132,12 +132,58 @@ if (-not $liveCommit) {
     } finally { Pop-Location }
 }
 
-# ------------------------------------------------------- 4. is the PAGE current?
+# -------------------------------------------- 4. the OTHER download route, the one people use
+# Added 2026-08-06. Until now this script only checked https://flashdesk.org/dl/FlashDesk.exe — and
+# that is the FALLBACK. The green button on the page points at a GitHub release, because the
+# identical file served from flashdesk.org was blocked by Chrome (measured 2026-08-05). So the route
+# almost every stranger takes was the one route never verified, and a READY here would have meant
+# nothing about it. The link is read OFF THE PAGE rather than hard-coded, so this follows the button
+# wherever it points.
+Say ''
+Say '4. Both download routes serve the same file'
+$localPageForLink = Join-Path $RepoRoot 'site\index.html'
+$buttonUrl = $null
+if (Test-Path $localPageForLink) {
+    $html = Get-Content -Raw -Encoding UTF8 -Path $localPageForLink
+    if ($html -match 'class="download"\s+href="([^"]+)"') { $buttonUrl = $Matches[1] }
+}
+
+if (-not $buttonUrl) {
+    Bad 'Could not find the download button''s address in site\index.html, so the main route was not checked.'
+} elseif ($buttonUrl -eq $Url) {
+    Good 'The page''s button points at the same address this check already downloaded.'
+} else {
+    Note "The button points at: $buttonUrl"
+    $temp2 = Join-Path $env:TEMP ("flashdesk-livecheck-button-{0}.exe" -f (Get-Date -Format 'HHmmss'))
+    try {
+        Invoke-WebRequest -Uri $buttonUrl -OutFile $temp2 -UseBasicParsing -TimeoutSec 900
+        $sizeA = (Get-Item $temp).Length
+        $sizeB = (Get-Item $temp2).Length
+        $hashA = (Get-FileHash -Path $temp  -Algorithm SHA256).Hash
+        $hashB = (Get-FileHash -Path $temp2 -Algorithm SHA256).Hash
+        Note ("flashdesk.org/dl : {0:N0} bytes  {1}" -f $sizeA, $hashA.Substring(0, 16) + '...')
+        Note ("the green button : {0:N0} bytes  {1}" -f $sizeB, $hashB.Substring(0, 16) + '...')
+        if ($hashA -eq $hashB) {
+            Good 'Both routes serve byte-for-byte the same file.'
+        } else {
+            Bad 'THE TWO DOWNLOAD ROUTES SERVE DIFFERENT FILES.'
+            Note 'Whichever is older must be replaced. The button is what strangers actually click,'
+            Note 'so if only one can be fixed now, fix that one first.'
+        }
+    } catch {
+        Bad "The button's download could not be fetched: $($_.Exception.Message)"
+        Note 'That is the link every visitor clicks. Treat this as more serious than the fallback failing.'
+    } finally {
+        Remove-Item $temp2 -Force -ErrorAction SilentlyContinue
+    }
+}
+
+# ------------------------------------------------------- 5. is the PAGE current?
 # Added after being caught a SECOND time by the same class of problem: the exe was current and the
 # page was not, so the site told people the download was "about 65 MB" when it was 68.5. Everything
 # a stranger reads lives on that page, so a stale page is as bad as a stale file.
 Say ''
-Say '4. Is the download page the one in this repository'
+Say '5. Is the download page the one in this repository'
 $localPage = Join-Path $RepoRoot 'site\index.html'
 if (-not (Test-Path $localPage)) {
     Bad "Cannot find $localPage to compare against."
@@ -192,7 +238,7 @@ if (-not (Test-Path $localPage)) {
     }
 }
 
-# --------------------------------------------------------------- 5. the verdict
+# --------------------------------------------------------------- 6. the verdict
 Remove-Item $temp -Force -ErrorAction SilentlyContinue
 Say ''
 Say '================================================================'
