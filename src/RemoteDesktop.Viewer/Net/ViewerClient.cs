@@ -4,8 +4,11 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Channels;
 using RemoteDesktop.Shared.Diagnostics;
+using RemoteDesktop.Shared.Files;
+using RemoteDesktop.Shared.Identity;
 using RemoteDesktop.Shared.Net;
 using RemoteDesktop.Shared.Protocol;
+using RemoteDesktop.Viewer.Files;
 
 namespace RemoteDesktop.Viewer.Net;
 
@@ -50,6 +53,20 @@ public sealed class ViewerClient : IDisposable
     public event Action<ScreenStatePayload>? ScreenStateChanged;
 
     /// <summary>
+    /// What the host said it can do, from its handshake. A build that predates capabilities claims
+    /// nothing, which is correct rather than an error: the file panel is simply not offered, instead
+    /// of appearing and then failing at the moment the operator clicks it.
+    /// </summary>
+    public PeerCapabilities HostCapabilities { get; private set; } = PeerCapabilities.None;
+
+    /// <summary>
+    /// The file half of this connection, or null if the host cannot do files. Created after the
+    /// handshake and destroyed with the connection — which is what makes file consent per-connection
+    /// rather than per-caller.
+    /// </summary>
+    public ViewerFileClient? Files { get; private set; }
+
+    /// <summary>
     /// Calls a FlashDesk number through the relay. Both sides dial OUT, so neither machine has to
     /// accept an incoming connection and no firewall permission is involved.
     /// </summary>
@@ -91,8 +108,16 @@ public sealed class ViewerClient : IDisposable
         if (reply is not null && reply.Value.Type == MessageType.Refused)
             throw new InvalidOperationException(
                 "They did not accept the connection. Ask them to press Accept when the FlashDesk box appears.");
-        if (reply is null || reply.Value.Type != MessageType.Handshake || !Handshake.FromBytes(reply.Value.Payload).IsValid)
+        if (reply is null || reply.Value.Type != MessageType.Handshake)
             throw new InvalidOperationException("The other computer answered, but not as FlashDesk. It may be running a different version.");
+
+        var theirs = Handshake.FromBytes(reply.Value.Payload);
+        if (!theirs.IsValid)
+            throw new InvalidOperationException("The other computer answered, but not as FlashDesk. It may be running a different version.");
+
+        HostCapabilities = theirs.Capabilities;
+        if (theirs.Can(PeerCapabilities.FileBrowsing))
+            Files = new ViewerFileClient(_channel, new PartialFiles(FlashDeskFolder.Current));
 
         IsConnected = true;
     }
@@ -126,6 +151,11 @@ public sealed class ViewerClient : IDisposable
             {
                 var msg = await _channel!.ReceiveAsync(ct).ConfigureAwait(false);
                 if (msg is null) break;
+
+                // File messages first, and they never touch a disk on this thread — see
+                // ViewerFileClient. This loop also carries the video, so a slow disk on this
+                // machine must not be able to stall the picture.
+                if (Files is not null && Files.TryHandle(msg.Value.Type, msg.Value.Payload)) continue;
 
                 switch (msg.Value.Type)
                 {
@@ -199,6 +229,9 @@ public sealed class ViewerClient : IDisposable
 
     public void Dispose()
     {
+        // Before the socket goes: anything the panel is waiting on is woken with a failure rather
+        // than left hanging for the rest of the session.
+        Files?.Dispose();
         Disconnect();
         try { _receiveLoop?.Wait(1000); } catch { /* ignore */ }
         try { _pingLoop?.Wait(1000); } catch { /* ignore */ }

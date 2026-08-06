@@ -29,14 +29,12 @@ public sealed class IdentityStore
 
     public IdentityStore()
     {
-        // FLASHDESK_CONFIG_DIR exists so two copies can run side by side with separate numbers
-        // on one machine — that is how the relay pairing is tested without a second computer.
-        // Note it cannot be replaced by setting APPDATA: Windows resolves the Application Data
-        // folder through the shell, not that environment variable (found out the hard way).
-        string? overrideDir = Environment.GetEnvironmentVariable("FLASHDESK_CONFIG_DIR");
-        _folder = string.IsNullOrWhiteSpace(overrideDir)
-            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "FlashDesk")
-            : overrideDir;
+        // The rule (and the FLASHDESK_CONFIG_DIR override, and why APPDATA cannot be used instead)
+        // moved to FlashDeskFolder when the operator's side needed the same folder for its own
+        // unfinished-download ledger. Two copies of it would drift, and a drifted copy would not
+        // crash — it would quietly keep a second set of files, and a client's number would appear
+        // to change for no reason.
+        _folder = FlashDeskFolder.Current;
         _file = Path.Combine(_folder, "identity.json");
     }
 

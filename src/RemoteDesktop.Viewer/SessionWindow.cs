@@ -1,5 +1,6 @@
 using RemoteDesktop.Shared.Protocol;
 using RemoteDesktop.UI;
+using RemoteDesktop.Viewer.Files;
 using RemoteDesktop.Viewer.Input;
 using RemoteDesktop.Viewer.Net;
 using RemoteDesktop.Viewer.Rendering;
@@ -45,6 +46,31 @@ public sealed class SessionWindow : Form
         Padding = new Padding(Theme.S3, Theme.S2, Theme.S3, Theme.S2),
     };
     private string _screenNoticeWords = string.Empty;
+
+    /// <summary>
+    /// The band that says remote control is paused because the operator is in the file panel.
+    ///
+    /// <para><b>It is ON THE PICTURE and not in a corner, on purpose.</b> Clicking anything in the
+    /// panel takes keyboard focus, and remote control has always stopped at that moment — what was
+    /// missing was anyone being told. An operator who types into a suspended session sees their
+    /// letters go nowhere and concludes the other machine has frozen. A discreet indicator would not
+    /// fix that; the words have to be where the eyes already are.</para>
+    /// </summary>
+    private readonly Label _controlPaused = new()
+    {
+        AutoSize = false,
+        BackColor = Theme.OperatorHeader,
+        ForeColor = Theme.OperatorHeaderText,
+        Font = Theme.Body,
+        TextAlign = ContentAlignment.MiddleCenter,
+        Padding = new Padding(Theme.S3, Theme.S2, Theme.S3, Theme.S2),
+        Text = "Remote control is paused while you are in the file panel. "
+             + "Click the picture to carry on controlling their computer.",
+        Visible = false,
+    };
+
+    private FilePanel? _filePanel;
+    private readonly ThemedCheckBox _showFiles = new() { Text = "Their files", Margin = new Padding(Theme.S3, Theme.S2, 0, 0) };
     private readonly System.Windows.Forms.Timer _timer = new() { Interval = 500 };
 
     private ViewerClient _client;
@@ -120,6 +146,13 @@ public sealed class SessionWindow : Form
         controlsBar.Controls.Add(_actualSize);
         controlsBar.Controls.Add(_control);
 
+        // Offered ONLY if the host said it can do files. A build that predates the capability
+        // claims nothing, so the box simply is not there — better than a control that appears and
+        // then fails at the moment it is clicked.
+        _showFiles.Visible = _client.HostCapabilities.HasFlag(PeerCapabilities.FileBrowsing);
+        _showFiles.CheckedChanged += (_, _) => ToggleFilePanel(_showFiles.Checked);
+        controlsBar.Controls.Add(_showFiles);
+
         _status.BackColor = Theme.Window;
         _statusItem.Font = Theme.Body;
         _statusItem.ForeColor = Theme.TextSecondary;
@@ -143,6 +176,12 @@ public sealed class SessionWindow : Form
         _screenNotice.Visible = false;
         _canvasHost.Controls.Add(_screenNotice);
         _screenNotice.BringToFront();
+
+        _canvasHost.Controls.Add(_controlPaused);
+        _controlPaused.BringToFront();
+
+        // Clicking the picture is how you come back, and it needs no explanation and no shortcut.
+        _canvas.GotFocus += (_, _) => SetControlPaused(false);
 
         _client.ScreenInfoReceived += OnScreenInfo;
         _client.FrameReceived += OnFrame;
@@ -341,6 +380,65 @@ public sealed class SessionWindow : Form
         int height = Theme.StatusBandHeight + Theme.S3;
         _screenNotice.SetBounds(Theme.S5, Theme.S5, width, height);
         _screenNotice.BringToFront();
+
+        // Below the screen-unavailable band, so when both are true neither hides the other. The
+        // two say different things and a person needs both.
+        _controlPaused.SetBounds(Theme.S5, Theme.S5 + height + Theme.S2, width, height);
+        _controlPaused.BringToFront();
+    }
+
+    /// <summary>
+    /// Shows or hides the file panel. The first time it is opened, the person at the other end is
+    /// asked — never before, so a session where the operator never opens this asks them nothing.
+    /// </summary>
+    private void ToggleFilePanel(bool show)
+    {
+        if (!show)
+        {
+            if (_filePanel is not null) _filePanel.Visible = false;
+            SetControlPaused(false);
+            _canvas.Focus();
+            return;
+        }
+
+        if (_filePanel is null)
+        {
+            var files = _client.Files;
+            if (files is null)
+            {
+                _showFiles.Checked = false;
+                return;
+            }
+
+            _filePanel = new FilePanel(files) { Dock = DockStyle.Right };
+            // ONE place decides that focus in the panel means control is paused - see FilePanel,
+            // where Enter and Leave cover every child, including any control added later.
+            _filePanel.FocusHere += inPanel => SafeBeginInvoke(() => SetControlPaused(inPanel));
+            _canvasHost.Controls.Add(_filePanel);
+            _filePanel.BringToFront();
+            _ = _filePanel.StartAsync();
+        }
+
+        _filePanel.Visible = true;
+        PlaceScreenNotice();
+    }
+
+    /// <summary>
+    /// Suspends or resumes driving the remote machine, and says so across the picture.
+    ///
+    /// <para>The ORDER inside <see cref="InputCapture.Suspend"/> is what stops a modifier being
+    /// stranded on the other machine: every held key is released before forwarding stops. Here the
+    /// only extra rule is that the words go up at the same moment, because a suspension nobody can
+    /// see is indistinguishable from the other computer having frozen.</para>
+    /// </summary>
+    private void SetControlPaused(bool paused)
+    {
+        if (paused) _input.Suspend(); else _input.Resume();
+
+        // Only worth saying while the operator actually has control to lose. With "Control their
+        // mouse and keyboard" unticked, nothing is being paused and the band would be noise.
+        _controlPaused.Visible = paused && _control.Checked;
+        if (_controlPaused.Visible) _controlPaused.BringToFront();
     }
 
     private string StatusText()
