@@ -219,4 +219,39 @@ public class ProtocolTests
         var channel = new MessageChannel(stream);
         await Assert.ThrowsAsync<InvalidDataException>(async () => await channel.ReceiveAsync());
     }
+
+    /// <summary>
+    /// Pins the cap at 16 MB. The length prefix comes from the other end of the wire, so this
+    /// number is the most memory a hostile peer can make us allocate from one five-byte header.
+    /// It sat at 64 MB long after CLAUDE.md required 16, because nothing failed when it did not
+    /// change — so the boundary is now asserted rather than trusted, and raising it silently
+    /// breaks this test.
+    /// </summary>
+    [Fact]
+    public async Task MessageChannel_rejects_a_length_just_over_sixteen_megabytes()
+    {
+        var header = new byte[5];
+        header[0] = (byte)MessageType.Frame;
+        BinaryPrimitives.WriteInt32LittleEndian(header.AsSpan(1), (16 * 1024 * 1024) + 1);
+        using var stream = new MemoryStream(header);
+        var channel = new MessageChannel(stream);
+        await Assert.ThrowsAsync<InvalidDataException>(async () => await channel.ReceiveAsync());
+    }
+
+    /// <summary>
+    /// The other half of the boundary: a length of exactly 16 MB must pass the range check. It then
+    /// fails on the truncated body with a DIFFERENT exception, and that difference is the proof —
+    /// InvalidDataException would mean the cap had rejected it, which would make the limit 16 MB
+    /// minus one and leave the real boundary somewhere nobody had checked.
+    /// </summary>
+    [Fact]
+    public async Task MessageChannel_accepts_a_length_of_exactly_sixteen_megabytes()
+    {
+        var header = new byte[5];
+        header[0] = (byte)MessageType.Frame;
+        BinaryPrimitives.WriteInt32LittleEndian(header.AsSpan(1), 16 * 1024 * 1024);
+        using var stream = new MemoryStream(header); // header only: the body is not there
+        var channel = new MessageChannel(stream);
+        await Assert.ThrowsAsync<EndOfStreamException>(async () => await channel.ReceiveAsync());
+    }
 }

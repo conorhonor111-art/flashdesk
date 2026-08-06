@@ -9,7 +9,18 @@ namespace RemoteDesktop.Shared.Protocol;
 /// </summary>
 public sealed class MessageChannel : IDisposable
 {
-    private const int MaxMessageBytes = 64 * 1024 * 1024; // 64 MB guard against a corrupt length
+    /// <summary>
+    /// The largest payload this channel will accept — and it is a SECURITY bound, not a tidiness
+    /// one: the length prefix arrives from the other end of the wire, so this number is the most
+    /// memory a hostile peer can make us allocate with a single five-byte header.
+    ///
+    /// Lowered 64 MB -> 16 MB on 2026-08-06. The 16 MB figure was a Stage-3 requirement in
+    /// CLAUDE.md that had never been applied; the reduction is safe because a frame is normally
+    /// under 2 MB, and it is being done NOW because file transfer is about to start putting
+    /// attacker-influenced lengths through this same path. File chunks are bounded far below this,
+    /// so the cap is a backstop rather than a working limit.
+    /// </summary>
+    internal const int MaxMessageBytes = 16 * 1024 * 1024;
 
     private readonly Stream _stream;
     private readonly SemaphoreSlim _sendLock = new(1, 1);
