@@ -230,6 +230,35 @@ public sealed class MainForm : Form
         _server.FileSentLogged = (callerId, name, bytes, folder) =>
             _sessionLog.FileSent(callerId, name, bytes, folder);
 
+        _server.Partials = _partialFiles;
+
+        // May they put a file HERE. A different act from being looked at, so a different question.
+        _server.IncomingFileAsk = (callerId, name, bytes, folder, isProgram) =>
+            OnUiThread(() =>
+            {
+                using var dialog = new IncomingFileDialog(callerId, name, bytes, folder, isProgram);
+                dialog.ShowDialog(this);
+                return dialog.Allowed;
+            });
+
+        // Their file, their question — never the operator's. See ReplaceFileDialog.
+        _server.ReplaceFileAsk = (callerId, name, folder) =>
+            OnUiThread(() =>
+            {
+                using var dialog = new ReplaceFileDialog(callerId, name, folder);
+                dialog.ShowDialog(this);
+                return dialog.Choice;
+            });
+
+        // A PROGRAM gets its own verb in the log, so someone scanning the file afterwards can see
+        // that software was put on their machine without having to know what ".exe" means.
+        _server.FileArrivedLogged = (callerId, name, bytes, folder, isProgram, replaced) =>
+        {
+            if (replaced) _sessionLog.FileReplaced(callerId, name, folder);
+            if (isProgram) _sessionLog.ProgramReceived(callerId, name, bytes, folder);
+            else _sessionLog.FileReceived(callerId, name, bytes, folder);
+        };
+
         _server.SessionLogged = (callerId, starting) =>
         {
             if (starting)
@@ -575,6 +604,33 @@ public sealed class MainForm : Form
         // out to the relay, which is why no firewall permission is needed.
         _allAddresses.Text = "Local addresses (information only): " + (addresses.Count > 0 ? string.Join("   ", addresses) : "none found");
         _toggle.Text = "Stop sharing";
+    }
+
+    /// <summary>
+    /// Runs a dialog on THIS machine's UI thread and hands the answer back to the background loop
+    /// that asked. Every consent surface in this program goes through here, and the shape matters:
+    /// if the window has gone, the task completes with <paramref name="refusedValue"/> rather than
+    /// hanging — a question nobody can answer must never turn into a yes, and must never turn into
+    /// a transfer that waits forever.
+    /// </summary>
+    private Task<T> OnUiThread<T>(Func<T> ask, T refusedValue = default!)
+    {
+        var done = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
+        try
+        {
+            BeginInvoke(() =>
+            {
+                T answer = refusedValue;
+                try { answer = ask(); }
+                catch { answer = refusedValue; }
+                done.TrySetResult(answer);
+            });
+        }
+        catch
+        {
+            done.TrySetResult(refusedValue); // window gone: refuse
+        }
+        return done.Task;
     }
 
     /// <summary>

@@ -57,12 +57,41 @@ public class HostFileServiceTests : IAsyncLifetime
     /// <summary>Records what the service reported to the session log, so the log can be asserted.</summary>
     private readonly List<(string Caller, string Name, long Bytes, string Folder)> _logged = new();
 
-    private HostFileService NewService(bool consent) => new(
-        _hostChannel!,
-        new BandwidthGovernor(),
-        "418205793",
-        _ => Task.FromResult(consent),
-        (caller, name, bytes, folder) => { lock (_logged) _logged.Add((caller, name, bytes, folder)); });
+    /// <summary>The same, for files that ARRIVED — with the two facts the log distinguishes.</summary>
+    private readonly List<(string Name, long Bytes, string Folder, bool IsProgram, bool Replaced)> _arrived = new();
+
+    /// <summary>What the incoming-file question was asked about, and what it was told to answer.</summary>
+    private readonly List<(string Name, long Bytes, string Folder, bool IsProgram)> _asked = new();
+
+    private bool _allowIncoming = true;
+    private ReplaceChoice _replaceAnswer = ReplaceChoice.Refuse;
+    private string _configFolder = string.Empty;
+
+    private HostFileService NewService(bool consent, bool withUpload = true)
+    {
+        _configFolder = Path.Combine(_folder, "..", "config-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(_configFolder);
+
+        return new HostFileService(
+            _hostChannel!,
+            new BandwidthGovernor(),
+            "418205793",
+            new PartialFiles(_configFolder),
+            _ => Task.FromResult(consent),
+            (caller, name, bytes, folder) => { lock (_logged) _logged.Add((caller, name, bytes, folder)); },
+            withUpload ? (_, name, bytes, folder, isProgram) =>
+            {
+                lock (_asked) _asked.Add((name, bytes, folder, isProgram));
+                return Task.FromResult(_allowIncoming);
+            }
+            : null,
+            withUpload ? (_, _, _) => Task.FromResult(_replaceAnswer) : null,
+            withUpload ? (_, name, bytes, folder, isProgram, replaced) =>
+            {
+                lock (_arrived) _arrived.Add((name, bytes, folder, isProgram, replaced));
+            }
+            : null);
+    }
 
     /// <summary>Pushes one message in the way the inbound loop does, then waits for the answer.</summary>
     private async Task<ReceivedMessage> ExchangeAsync(HostFileService service, MessageType type, byte[] payload)
@@ -108,6 +137,7 @@ public class HostFileServiceTests : IAsyncLifetime
     {
         int asked = 0;
         var service = new HostFileService(_hostChannel!, new BandwidthGovernor(), "418205793",
+            new PartialFiles(_folder),
             _ => { Interlocked.Increment(ref asked); return Task.FromResult(false); }, null);
 
         var first = FileAccessReply.FromBytes(
@@ -129,7 +159,8 @@ public class HostFileServiceTests : IAsyncLifetime
     public async Task A_missing_consent_callback_refuses_rather_than_allows()
     {
         // A wiring mistake must fail closed. This is the shape of the bug that would matter most.
-        var service = new HostFileService(_hostChannel!, new BandwidthGovernor(), "418205793", null, null);
+        var service = new HostFileService(_hostChannel!, new BandwidthGovernor(), "418205793",
+            new PartialFiles(_folder), null, null);
 
         var reply = FileAccessReply.FromBytes(
             (await ExchangeAsync(service, MessageType.FileAccessRequest, new FileAccessRequest(1).ToBytes())).Payload);
@@ -413,6 +444,309 @@ public class HostFileServiceTests : IAsyncLifetime
         var service = NewService(consent: true);
         Assert.False(service.TryHandle(MessageType.Ping, Array.Empty<byte>(), CancellationToken.None));
         Assert.False(service.TryHandle(MessageType.Input, Array.Empty<byte>(), CancellationToken.None));
+    }
+
+    // ------------------------------------------------------------------ putting a file ON the machine
+
+    /// <summary>Drives a whole upload the way a viewer would, and returns how the host said it went.</summary>
+    private async Task<(FileSendReply Reply, FileSendResult? Result)> UploadAsync(
+        HostFileService service, int id, string name, byte[] content, string? folder = null)
+    {
+        Assert.True(service.TryHandle(MessageType.FileSendRequest,
+            new FileSendRequest(id, folder ?? _folder, name, content.Length).ToBytes(), CancellationToken.None));
+
+        var reply = FileSendReply.FromBytes((await NextAsync()).Payload);
+        if (reply.Status != FileStatus.Ok) return (reply, null);
+
+        for (int offset = 0; offset < content.Length; offset += 64 * 1024)
+        {
+            int size = Math.Min(64 * 1024, content.Length - offset);
+            Assert.True(service.TryHandle(MessageType.FileSendChunk,
+                new FileChunk(id, offset, content.AsSpan(offset, size).ToArray()).ToBytes(), CancellationToken.None));
+        }
+
+        return (reply, FileSendResult.FromBytes((await NextAsync()).Payload));
+    }
+
+    [Fact]
+    public async Task A_file_lands_byte_for_byte_and_the_partial_is_gone()
+    {
+        var content = new byte[700_000];
+        Random.Shared.NextBytes(content);
+
+        var service = NewService(consent: true);
+        var (reply, result) = await UploadAsync(service, 5, "driver-setup.zip", content);
+
+        Assert.Equal(FileStatus.Ok, reply.Status);
+        Assert.Equal(FileStatus.Ok, result!.Value.Status);
+        Assert.Equal(content.Length, result.Value.WrittenBytes);
+
+        string landed = Path.Combine(_folder, "driver-setup.zip");
+        Assert.Equal(content, File.ReadAllBytes(landed));
+
+        // Nothing left behind wearing a temporary name, and nothing left in the ledger.
+        Assert.Single(Directory.GetFiles(_folder));
+        Assert.False(File.Exists(Path.Combine(_configFolder, PartialFiles.LedgerFileName)));
+
+        var line = Assert.Single(_arrived);
+        Assert.Equal("driver-setup.zip", line.Name);
+        Assert.Equal(content.Length, line.Bytes);
+        Assert.Equal(_folder, line.Folder);
+        Assert.False(line.IsProgram);
+        Assert.False(line.Replaced);
+    }
+
+    [Fact]
+    public async Task Refusing_the_file_means_nothing_is_written_at_all()
+    {
+        _allowIncoming = false;
+        var service = NewService(consent: true);
+
+        var (reply, result) = await UploadAsync(service, 5, "invoice.pdf", new byte[1000]);
+
+        Assert.Equal(FileStatus.RefusedByPerson, reply.Status);
+        Assert.Null(result);
+        Assert.Empty(Directory.GetFiles(_folder)); // not even a partial
+        Assert.Empty(_arrived);
+    }
+
+    [Fact]
+    public async Task A_missing_question_refuses_rather_than_writes()
+    {
+        // Fail closed. A build wired up without the dialog must not quietly accept files.
+        var service = NewService(consent: true, withUpload: false);
+        var (reply, _) = await UploadAsync(service, 5, "invoice.pdf", new byte[10]);
+
+        Assert.Equal(FileStatus.RefusedByPerson, reply.Status);
+        Assert.Empty(Directory.GetFiles(_folder));
+    }
+
+    [Fact]
+    public async Task A_PROGRAM_is_asked_about_by_name_every_single_time()
+    {
+        // The general yes is given ONCE. A program is asked about again, because the first upload
+        // being a text file must not make every executable after it arrive in silence.
+        var service = NewService(consent: true);
+
+        await UploadAsync(service, 5, "notes.txt", new byte[10]);
+        await UploadAsync(service, 6, "setup.exe", new byte[10]);
+        await UploadAsync(service, 7, "other.txt", new byte[10]);
+        await UploadAsync(service, 8, "tool.bat", new byte[10]);
+
+        // notes.txt (the once-per-connection question), then setup.exe, then tool.bat.
+        // other.txt is NOT asked about again.
+        Assert.Equal(3, _asked.Count);
+        Assert.Equal("notes.txt", _asked[0].Name);
+        Assert.Equal("setup.exe", _asked[1].Name);
+        Assert.True(_asked[1].IsProgram);
+        Assert.Equal("tool.bat", _asked[2].Name);
+        Assert.True(_asked[2].IsProgram);
+
+        // And the log can tell a person that software arrived, without them knowing what .exe means.
+        Assert.Equal(2, _arrived.Count(a => a.IsProgram));
+    }
+
+    [Fact]
+    public async Task The_question_names_the_file_its_size_and_the_FULL_folder()
+    {
+        var service = NewService(consent: true);
+        await UploadAsync(service, 5, "Report.docx", new byte[2048]);
+
+        var asked = Assert.Single(_asked);
+        Assert.Equal("Report.docx", asked.Name);
+        Assert.Equal(2048, asked.Bytes);
+        // The full path, not "Documents": a folder name alone is ambiguous across profiles.
+        Assert.Equal(_folder, asked.Folder);
+        Assert.True(Path.IsPathFullyQualified(asked.Folder));
+    }
+
+    [Theory]
+    [InlineData(@"sub\evil.txt")]        // a separator would move the write out of the folder
+    [InlineData("../evil.txt")]
+    [InlineData("evil.exe.")]            // Windows strips the trailing dot AFTER any check
+    [InlineData("evil.exe ")]
+    [InlineData("CON")]
+    [InlineData("report.txt:hidden")]    // an alternate data stream Explorer does not show
+    [InlineData("")]
+    public async Task A_name_that_is_not_a_bare_name_is_refused(string name)
+    {
+        var service = NewService(consent: true);
+        Assert.True(service.TryHandle(MessageType.FileSendRequest,
+            new FileSendRequest(5, _folder, name, 10).ToBytes(), CancellationToken.None));
+
+        var reply = FileSendReply.FromBytes((await NextAsync()).Payload);
+        Assert.Equal(FileStatus.NotAllowed, reply.Status);
+        Assert.Empty(Directory.GetFiles(_folder));
+        Assert.Empty(_asked); // refused before the person was even troubled
+    }
+
+    [Theory]
+    [InlineData(@"\\fileserver\finance")]
+    [InlineData(@"\\?\C:\Windows")]
+    public async Task A_destination_folder_off_this_machine_is_refused(string folder)
+    {
+        var service = NewService(consent: true);
+        Assert.True(service.TryHandle(MessageType.FileSendRequest,
+            new FileSendRequest(5, folder, "note.txt", 10).ToBytes(), CancellationToken.None));
+
+        Assert.Equal(FileStatus.NotAllowed, FileSendReply.FromBytes((await NextAsync()).Payload).Status);
+    }
+
+    [Fact]
+    public async Task Keep_both_saves_the_new_file_beside_the_old_one_and_says_the_new_name()
+    {
+        string existing = Path.Combine(_folder, "Report.docx");
+        File.WriteAllText(existing, "the one they already had");
+
+        _replaceAnswer = ReplaceChoice.KeepBoth;
+        var service = NewService(consent: true);
+        var (reply, result) = await UploadAsync(service, 5, "Report.docx", new byte[64]);
+
+        Assert.Equal(FileStatus.Ok, reply.Status);
+        // The operator is TOLD the name, or they would assume theirs replaced the other.
+        Assert.Equal("Report (2).docx", reply.SavedAs);
+        Assert.Equal(FileStatus.Ok, result!.Value.Status);
+
+        Assert.Equal("the one they already had", File.ReadAllText(existing));
+        Assert.Equal(64, new FileInfo(Path.Combine(_folder, "Report (2).docx")).Length);
+        Assert.False(_arrived.Single().Replaced);
+    }
+
+    [Fact]
+    public async Task Replace_overwrites_only_after_they_said_so_and_is_logged_as_a_replacement()
+    {
+        string existing = Path.Combine(_folder, "config.ini");
+        File.WriteAllText(existing, "old");
+
+        _replaceAnswer = ReplaceChoice.Replace;
+        var service = NewService(consent: true);
+        var (_, result) = await UploadAsync(service, 5, "config.ini", new byte[] { 1, 2, 3, 4 });
+
+        Assert.Equal(FileStatus.Ok, result!.Value.Status);
+        Assert.Equal(new byte[] { 1, 2, 3, 4 }, File.ReadAllBytes(existing));
+        Assert.Single(Directory.GetFiles(_folder));
+        Assert.True(_arrived.Single().Replaced);
+    }
+
+    [Fact]
+    public async Task Refusing_the_replacement_keeps_their_file_untouched()
+    {
+        string existing = Path.Combine(_folder, "config.ini");
+        File.WriteAllText(existing, "mine");
+
+        _replaceAnswer = ReplaceChoice.Refuse;
+        var service = NewService(consent: true);
+        var (reply, _) = await UploadAsync(service, 5, "config.ini", new byte[] { 9 });
+
+        Assert.Equal(FileStatus.RefusedByPerson, reply.Status);
+        Assert.Equal("mine", File.ReadAllText(existing));
+        Assert.Single(Directory.GetFiles(_folder));
+    }
+
+    [Fact]
+    public async Task More_bytes_than_promised_are_refused_and_nothing_is_kept()
+    {
+        var service = NewService(consent: true);
+
+        // Declares 100 bytes and then pushes 200. The declared size is what the free-space check and
+        // the question shown to the person were based on, so exceeding it is not a small matter.
+        Assert.True(service.TryHandle(MessageType.FileSendRequest,
+            new FileSendRequest(5, _folder, "lying.bin", 100).ToBytes(), CancellationToken.None));
+        Assert.Equal(FileStatus.Ok, FileSendReply.FromBytes((await NextAsync()).Payload).Status);
+
+        Assert.True(service.TryHandle(MessageType.FileSendChunk,
+            new FileChunk(5, 0, new byte[200]).ToBytes(), CancellationToken.None));
+
+        var result = FileSendResult.FromBytes((await NextAsync()).Payload);
+        Assert.Equal(FileStatus.WriteError, result.Status);
+        Assert.Empty(Directory.GetFiles(_folder)); // the partial is removed, not left as litter
+        Assert.Empty(_arrived);
+    }
+
+    [Fact]
+    public async Task A_chunk_at_the_wrong_place_ends_the_upload_instead_of_scattering_bytes()
+    {
+        var service = NewService(consent: true);
+
+        Assert.True(service.TryHandle(MessageType.FileSendRequest,
+            new FileSendRequest(5, _folder, "jumpy.bin", 1000).ToBytes(), CancellationToken.None));
+        Assert.Equal(FileStatus.Ok, FileSendReply.FromBytes((await NextAsync()).Payload).Status);
+
+        // Offset 500 with nothing before it. Only the next bytes in sequence are ever accepted.
+        Assert.True(service.TryHandle(MessageType.FileSendChunk,
+            new FileChunk(5, 500, new byte[100]).ToBytes(), CancellationToken.None));
+
+        var result = FileSendResult.FromBytes((await NextAsync()).Payload);
+        Assert.NotEqual(FileStatus.Ok, result.Status);
+        Assert.Empty(Directory.GetFiles(_folder));
+    }
+
+    [Fact]
+    public async Task Cancelling_an_upload_leaves_no_file_and_no_ledger_entry()
+    {
+        var service = NewService(consent: true);
+
+        Assert.True(service.TryHandle(MessageType.FileSendRequest,
+            new FileSendRequest(5, _folder, "big.bin", 5_000_000).ToBytes(), CancellationToken.None));
+        Assert.Equal(FileStatus.Ok, FileSendReply.FromBytes((await NextAsync()).Payload).Status);
+
+        Assert.True(service.TryHandle(MessageType.FileSendChunk,
+            new FileChunk(5, 0, new byte[64_000]).ToBytes(), CancellationToken.None));
+        Assert.True(service.TryHandle(MessageType.FileGetCancel,
+            new FileGetCancel(5).ToBytes(), CancellationToken.None));
+
+        var result = FileSendResult.FromBytes((await NextAsync()).Payload);
+        Assert.Equal(FileStatus.Cancelled, result.Status);
+        Assert.NotEmpty(result.Message);
+
+        // The whole point of PartialFiles: nothing half-written is left on a stranger's disk, and
+        // nothing is left in the ledger for a start-up sweep to find either.
+        Assert.Empty(Directory.GetFiles(_folder));
+        Assert.False(File.Exists(Path.Combine(_configFolder, PartialFiles.LedgerFileName)));
+    }
+
+    [Fact]
+    public async Task A_file_bigger_than_the_disk_is_refused_before_a_byte_is_written()
+    {
+        var service = NewService(consent: true);
+        Assert.True(service.TryHandle(MessageType.FileSendRequest,
+            new FileSendRequest(5, _folder, "enormous.bin", long.MaxValue / 2).ToBytes(), CancellationToken.None));
+
+        var reply = FileSendReply.FromBytes((await NextAsync()).Payload);
+        Assert.Equal(FileStatus.NoRoom, reply.Status);
+        Assert.NotEmpty(reply.Message);
+        Assert.Empty(Directory.GetFiles(_folder));
+        Assert.Empty(_asked); // and without troubling the person about a file that cannot fit
+    }
+
+    [Fact]
+    public async Task An_empty_file_still_lands()
+    {
+        // Zero bytes is a real file and the loop must not wait forever for a chunk that never comes.
+        var service = NewService(consent: true);
+        var (reply, result) = await UploadAsync(service, 5, "empty.txt", Array.Empty<byte>());
+
+        Assert.Equal(FileStatus.Ok, reply.Status);
+        Assert.Equal(FileStatus.Ok, result!.Value.Status);
+        Assert.True(File.Exists(Path.Combine(_folder, "empty.txt")));
+    }
+
+    [Fact]
+    public async Task Chunks_arriving_with_no_upload_agreed_are_dropped()
+    {
+        var service = NewService(consent: true);
+
+        // No FileSendRequest at all. The bytes must go nowhere, not into a file of their choosing.
+        Assert.True(service.TryHandle(MessageType.FileSendChunk,
+            new FileChunk(5, 0, new byte[100]).ToBytes(), CancellationToken.None));
+
+        Assert.Empty(Directory.GetFiles(_folder));
+
+        // And the channel still works afterwards.
+        var reply = DirListReply.FromBytes(
+            (await ExchangeAsync(await AllowedServiceAsync(), MessageType.DirListRequest,
+                new DirListRequest(9, _folder, 0).ToBytes())).Payload);
+        Assert.Equal(FileStatus.Ok, reply.Status);
     }
 
     private async Task<(byte[] Bytes, FileGetEnd End)> CollectTransferAsync(int requestId)

@@ -21,6 +21,14 @@ public enum PeerCapabilities : uint
 
     /// <summary>This host can list folders and send files when the person at it agrees.</summary>
     FileBrowsing = 1 << 0,
+
+    /// <summary>
+    /// This host can RECEIVE a file when the person at it agrees. A separate bit from
+    /// <see cref="FileBrowsing"/> because they are separate acts and separate questions — reading
+    /// somebody's disk and writing to it are not the same permission, and a build could have one
+    /// without the other.
+    /// </summary>
+    FileUpload = 1 << 1,
 }
 
 public readonly record struct Handshake(uint Magic, byte Version, PeerRole Role, PeerCapabilities Capabilities)

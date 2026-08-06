@@ -1201,3 +1201,99 @@ a terminal — Conor works in one and cannot select text reliably there.
 
 These supersede every earlier draft of a tester message in this file. Anything older describing
 "open the downloads box and choose Keep" describes a flow that no longer exists.
+
+## Files, part one — the client's side of it (built + tested 2026-08-06)
+
+Three items from the handover's "Next, in order", in that order. **Nothing here is visible to a
+stranger yet: there is no viewer panel, so none of this can be reached from a session.** It is the
+half that runs on the client's machine, and it is finished and tested.
+
+`dotnet test` **162 → 262**. Everything below was proved by running it, not by reading it.
+
+### 1. A cut-off transfer no longer leaves litter — `Shared\Files\PartialFiles.cs`
+
+A transfer writes to a temporary name and renames only at the last byte, which is what stops a half
+file ever wearing the real name. The cost is that a hard drop leaves the temporary file behind in
+the client's own folder and nothing ever comes back for it.
+
+- Every partial is recorded in a ledger (`%APPDATA%\FlashDesk\unfinished-files.txt`) **before the
+  file is created**. The other order looks tidier and loses exactly the case this exists for.
+- The next start deletes what it recorded and did not finish, and writes one `CLEANED` line to
+  `sessions.txt` — only when something was actually removed.
+- **Deleting is the dangerous half, so it is guarded twice:** a path is removed only if its name
+  carries BOTH our prefix and our suffix. A corrupted or hand-edited ledger cannot name
+  `kernel32.dll` and have it deleted. Cleanup follows the **ledger**, never the folder.
+- The partial lives in the **destination** folder, not a FlashDesk temp folder, because the
+  finishing rename is only atomic inside one volume.
+- The sweep runs off the UI thread: a sleeping drive must not delay the number appearing.
+
+### 2. Chunks are sized from the link — `Shared\Files\FileChunkSize.cs`
+
+**The bug this fixes was not slowness, it was the picture.** Every send is serialised behind one
+lock, so while a chunk is written the latency ping waits behind it; the viewer measures that wait as
+round-trip time, and the governor treats a round trip 250 ms above the session's best as a link
+backing up — and drops the picture. A fixed 256 KB chunk takes ~430 ms to leave a 0.6 MB/s uplink,
+so a download would have blurred the screen it was not competing with.
+
+- The chunk is now sized to a **200 ms hold**, pinned deliberately under that 250 ms threshold. The
+  coupling is written at both ends (`ProtocolConstants.MaxChunkSendHoldMs` and `QueueHeavyMs`).
+- The measured rate **reads 2–3× high** (CLAUDE.md, against a known 600 KB/s link), so it is divided
+  by 3 first. Believing it would give chunks three times too big — the original bug in new code.
+- Unmeasured link → **64 KB**, not the ceiling: the first chunks are sent in ignorance and are
+  exactly the ones that would stall the picture.
+- `BandwidthGovernor.OnBulkSent` feeds chunk sends into the **rate estimate only, never the ladder**:
+  during a download of a still screen the frames never block, so chunks are the only measurement
+  available — and a link being full is not a link being broken.
+- Tests assert the **hold time on real uplink speeds**, not the arithmetic against itself.
+
+### 3. The host file service — `Host\Files\HostFileService.cs`
+
+Look, list, copy off, and receive. No delete, rename, move or new folders.
+
+- **Every request runs off the message loop.** That loop also answers the latency ping and injects
+  the mouse; listing `WinSxS` on it would freeze the remote cursor and have the governor conclude
+  the link had collapsed.
+- **Two consent questions, both per connection, both discarded with the socket** — deliberately not
+  covered by the 90-second reconnect grace, or an operator could drop the link on purpose and come
+  back with file access unasked. Both dialogs block FlashDesk's own injected input while up.
+- `LocalDrives` is the second half of the path rule: **a mapped network drive is another machine
+  wearing a drive letter**, and no string check can see that. The `OpenedPath` handle re-check runs
+  after the open, on the handle, for both reading and writing.
+- Listings are paged, folders before files. Bounded work: one listing and one transfer at a time,
+  anything more is answered `Busy`.
+- Uploads: bare-name rules, containment on the resolved path, free-space check before a byte,
+  sequential offsets only, more-than-promised refused, one exit for every failure that always
+  deletes the partial and always sends a sentence.
+- **A PROGRAM is asked about by name every time**, even after the general yes — see "one deviation"
+  below. Logged with its own verb, so a person scanning `sessions.txt` sees software arrived.
+- Handshake now actually advertises `FileBrowsing | FileUpload`. It advertised nothing before.
+
+### One deviation from the approved plan, flagged rather than buried
+
+The plan says the upload question is asked **once per connection**. Implemented as: once per
+connection for files in general, **plus every time for a program, by name**. Otherwise the first
+upload could be a text file and every `.exe` after it would arrive in silence — the exact step a
+tech-support scam needs. Reversing it is one line in `HostFileService.AllowedToWriteAsync`.
+
+### The test project moved to `net8.0-windows`
+
+It now references Host. The file service's safety checks need `DriveInfo` and Win32 and cannot live
+in Shared, which would have left the code with the worst failure mode as the only code with no
+tests. **`RemoteDesktop.Shared` is unchanged and still platform-neutral** — the Linux relay
+references it (architecture rule 4 intact).
+
+### Still UNVERIFIED, and not to be described otherwise
+
+- **None of this has been driven by a viewer**, because the viewer panel does not exist. The tests
+  drive the host over a real loopback socket against real folders; that is not the same as two
+  machines.
+- **The mapped-network-drive refusal is read by eye, not asserted.** Proving it needs a real share
+  and an administrator to map it. Named at the top of `LocalDrivesTests` so it is not forgotten.
+- Nothing about the client's live indicator, the second band line or the direction arrow is built.
+- The claim that a transfer slows the picture is still reasoned, never measured on a real link.
+
+### Next, unchanged from the handover
+
+4. The viewer file panel — must NOT take focus.
+5. The client indicator — second band line, direction arrow, restore-without-focus.
+6. Per-monitor DPI, as its own stage.

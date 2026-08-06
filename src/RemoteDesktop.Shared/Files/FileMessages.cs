@@ -35,6 +35,22 @@ public enum FileStatus : byte
     /// is buggy or hostile cannot spawn an unbounded number of directory walks on someone's machine.
     /// </summary>
     Busy = 10,
+
+    // --- Only an upload can end these ways. ---
+
+    /// <summary>The drive being written to has not got room for the file.</summary>
+    NoRoom = 11,
+
+    /// <summary>
+    /// A file with that name was at the destination when the moment came to put this one there.
+    /// Kept apart from a plain write error because it is the one failure with a cause a person can
+    /// act on, and because it is what a race looks like: the overwrite question was answered, and
+    /// then something else created the file before this one landed.
+    /// </summary>
+    NameTaken = 12,
+
+    /// <summary>The bytes arrived but could not be written to the disk.</summary>
+    WriteError = 13,
 }
 
 /// <summary>
@@ -288,7 +304,10 @@ public readonly record struct FileGetEnd(int RequestId, FileStatus Status, long 
     }
 }
 
-/// <summary>The operator pressed Cancel. The host stops reading and answers with a FileGetEnd.</summary>
+/// <summary>
+/// Stop transfer N. Carries nothing but a request id, so it works in either direction: the host
+/// stops reading and answers with a FileGetEnd, or stops writing and answers with a FileSendResult.
+/// </summary>
 public readonly record struct FileGetCancel(int RequestId)
 {
     public byte[] ToBytes()
@@ -302,5 +321,104 @@ public readonly record struct FileGetCancel(int RequestId)
     {
         int o = 0;
         return new FileGetCancel(FileWire.ReadInt32(bytes, ref o));
+    }
+}
+
+// ================================================================================================
+// PUTTING A FILE ON THE CLIENT'S MACHINE. The write side is not the read side with the arrow turned
+// round, and these messages carry the difference: a folder and a BARE NAME rather than one path,
+// because the filename is attacker-controlled too and must be checked as a name in its own right;
+// a declared size, so the receiving machine can refuse before it starts rather than fill up
+// halfway; and a reply that can come back with a DIFFERENT name, because the person at that machine
+// may have answered "keep both".
+// ================================================================================================
+
+/// <summary>
+/// Ask to put a file into one folder. The folder and the name travel SEPARATELY and are never
+/// joined by the sender: joining them here would make the whole destination one attacker-controlled
+/// string, and the confinement check exists precisely to keep the folder something the operator
+/// chose and the name something that cannot move a write out of it.
+/// </summary>
+public readonly record struct FileSendRequest(int RequestId, string Folder, string Name, long TotalBytes)
+{
+    public byte[] ToBytes()
+    {
+        var b = new List<byte>(96);
+        FileWire.WriteInt32(b, RequestId);
+        FileWire.WriteString(b, Folder);
+        FileWire.WriteString(b, Name);
+        FileWire.WriteInt64(b, TotalBytes);
+        return b.ToArray();
+    }
+
+    public static FileSendRequest FromBytes(ReadOnlySpan<byte> bytes)
+    {
+        int o = 0;
+        int id = FileWire.ReadInt32(bytes, ref o);
+        string folder = FileWire.ReadString(bytes, ref o);
+        string name = FileWire.ReadString(bytes, ref o);
+        long total = FileWire.ReadInt64(bytes, ref o);
+
+        // A negative size is not a small file, it is a broken or hostile sender. Refused at the
+        // edge so nothing downstream has to wonder.
+        if (total < 0) throw new InvalidDataException($"Declared size {total} out of range.");
+
+        return new FileSendRequest(id, folder, name, total);
+    }
+}
+
+/// <summary>
+/// Whether the file may come, and under what name it will actually be saved.
+///
+/// <para><paramref name="SavedAs"/> is empty unless the person chose "keep both", in which case it
+/// is the name that was actually free. The operator is TOLD the new name rather than left to assume
+/// their file replaced something — "it saved as Report (2).docx" is the whole point of offering the
+/// choice.</para>
+/// </summary>
+public readonly record struct FileSendReply(int RequestId, FileStatus Status, string Message, string SavedAs)
+{
+    public byte[] ToBytes()
+    {
+        var b = new List<byte>(48);
+        FileWire.WriteInt32(b, RequestId);
+        b.Add((byte)Status);
+        FileWire.WriteString(b, Message);
+        FileWire.WriteString(b, SavedAs);
+        return b.ToArray();
+    }
+
+    public static FileSendReply FromBytes(ReadOnlySpan<byte> bytes)
+    {
+        int o = 0;
+        int id = FileWire.ReadInt32(bytes, ref o);
+        var status = (FileStatus)FileWire.ReadByte(bytes, ref o);
+        string message = FileWire.ReadString(bytes, ref o);
+        return new FileSendReply(id, status, message, FileWire.ReadString(bytes, ref o));
+    }
+}
+
+/// <summary>
+/// What actually happened on the disk, always sent, whether the file landed or not. The operator's
+/// panel must never be left showing a bar that stopped moving with nothing to read.
+/// </summary>
+public readonly record struct FileSendResult(int RequestId, FileStatus Status, long WrittenBytes, string Message)
+{
+    public byte[] ToBytes()
+    {
+        var b = new List<byte>(32);
+        FileWire.WriteInt32(b, RequestId);
+        b.Add((byte)Status);
+        FileWire.WriteInt64(b, WrittenBytes);
+        FileWire.WriteString(b, Message);
+        return b.ToArray();
+    }
+
+    public static FileSendResult FromBytes(ReadOnlySpan<byte> bytes)
+    {
+        int o = 0;
+        int id = FileWire.ReadInt32(bytes, ref o);
+        var status = (FileStatus)FileWire.ReadByte(bytes, ref o);
+        long written = FileWire.ReadInt64(bytes, ref o);
+        return new FileSendResult(id, status, written, FileWire.ReadString(bytes, ref o));
     }
 }

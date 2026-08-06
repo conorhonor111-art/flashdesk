@@ -256,4 +256,105 @@ public class FileMessageTests
         var cut = full.AsSpan(0, Math.Min(keep, full.Length)).ToArray();
         Assert.Throws<InvalidDataException>(() => FileGetRequest.FromBytes(cut));
     }
+
+    // ------------------------------------------------------------------ the upload messages
+
+    [Theory]
+    [InlineData(@"C:\Users\Ann\Documents", "Invoice März.pdf")]
+    [InlineData(@"C:\ProgramData\App", "config.ini")]
+    [InlineData(@"C:\მომხმარებელი", "ანგარიში.pdf")]
+    public void FileSendRequest_round_trips_folder_and_name_separately(string folder, string name)
+    {
+        // Separately, and that is the point: joining them at the sender would make the whole
+        // destination one attacker-controlled string, and the containment check exists precisely to
+        // keep the folder something the operator chose and the name something that cannot leave it.
+        var back = FileSendRequest.FromBytes(new FileSendRequest(31, folder, name, 2_411_724).ToBytes());
+
+        Assert.Equal(31, back.RequestId);
+        Assert.Equal(folder, back.Folder);
+        Assert.Equal(name, back.Name);
+        Assert.Equal(2_411_724, back.TotalBytes);
+    }
+
+    [Fact]
+    public void A_negative_declared_size_throws()
+    {
+        // Not a small file: a broken or hostile sender. The declared size is what the free-space
+        // check and the question shown to the person are built on, so it is refused at the edge.
+        var bytes = new FileSendRequest(1, @"C:\x", "a.txt", 0).ToBytes();
+        BinaryPrimitives.WriteInt64LittleEndian(bytes.AsSpan(bytes.Length - 8), -1);
+        Assert.Throws<InvalidDataException>(() => FileSendRequest.FromBytes(bytes));
+    }
+
+    [Fact]
+    public void FileSendReply_carries_the_name_it_was_actually_saved_as()
+    {
+        var back = FileSendReply.FromBytes(
+            new FileSendReply(31, FileStatus.Ok, "", "Report (2).docx").ToBytes());
+
+        Assert.Equal(FileStatus.Ok, back.Status);
+        Assert.Equal("Report (2).docx", back.SavedAs);
+    }
+
+    [Theory]
+    [InlineData(FileStatus.NoRoom)]
+    [InlineData(FileStatus.NameTaken)]
+    [InlineData(FileStatus.WriteError)]
+    [InlineData(FileStatus.RefusedByPerson)]
+    public void FileSendResult_round_trips_every_way_an_upload_can_end(FileStatus status)
+    {
+        var back = FileSendResult.FromBytes(
+            new FileSendResult(31, status, 1_048_576, "There is not enough room on that computer.").ToBytes());
+
+        Assert.Equal(status, back.Status);
+        Assert.Equal(1_048_576, back.WrittenBytes);
+        Assert.Equal("There is not enough room on that computer.", back.Message);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(5)]
+    [InlineData(20)]
+    public void The_upload_messages_refuse_a_truncated_body(int keep)
+    {
+        var request = new FileSendRequest(1, @"C:\Users\Ann\Documents", "report.docx", 100).ToBytes();
+        Assert.Throws<InvalidDataException>(() =>
+            FileSendRequest.FromBytes(request.AsSpan(0, Math.Min(keep, request.Length)).ToArray()));
+
+        var reply = new FileSendReply(1, FileStatus.Ok, "a message", "saved as").ToBytes();
+        Assert.Throws<InvalidDataException>(() =>
+            FileSendReply.FromBytes(reply.AsSpan(0, Math.Min(keep, reply.Length)).ToArray()));
+    }
+
+    [Fact]
+    public void An_upload_name_claiming_more_bytes_than_are_present_throws()
+    {
+        // The same shape as the 32 GB bug, on the write side: the folder length is honest, the
+        // name's is not.
+        var bytes = new FileSendRequest(1, @"C:\x", "a.txt", 10).ToBytes();
+        BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(4 + 4 + 4), 4000); // the name's length
+        Assert.Throws<InvalidDataException>(() => FileSendRequest.FromBytes(bytes));
+    }
+
+    [Fact]
+    public void A_capability_a_peer_does_not_have_is_not_claimed_by_accident()
+    {
+        // Browsing and upload are separate bits because they are separate permissions. A build with
+        // one must not read as having both.
+        var browsingOnly = Handshake.FromBytes(
+            Handshake.Create(PeerRole.Host, PeerCapabilities.FileBrowsing).ToBytes());
+
+        Assert.True(browsingOnly.Can(PeerCapabilities.FileBrowsing));
+        Assert.False(browsingOnly.Can(PeerCapabilities.FileUpload));
+
+        var both = Handshake.FromBytes(
+            Handshake.Create(PeerRole.Host, PeerCapabilities.FileBrowsing | PeerCapabilities.FileUpload).ToBytes());
+
+        Assert.True(both.Can(PeerCapabilities.FileBrowsing));
+        Assert.True(both.Can(PeerCapabilities.FileUpload));
+
+        // A greeting from a build that predates capabilities claims nothing, and that is not an error.
+        Assert.False(Handshake.FromBytes(new byte[] { 0x31, 0x4B, 0x44, 0x52, 1, 1 })
+            .Can(PeerCapabilities.FileUpload));
+    }
 }

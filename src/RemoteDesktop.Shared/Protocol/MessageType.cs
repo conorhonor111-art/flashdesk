@@ -57,6 +57,31 @@ public enum MessageType : byte
     /// <summary>host -> viewer: the transfer is over, and how it ended. Always sent.</summary>
     FileGetEnd = 15,
 
-    /// <summary>viewer -> host: the operator pressed Cancel.</summary>
+    /// <summary>
+    /// viewer -> host: stop transfer N. It carries nothing but a request id, so it cancels a
+    /// transfer in EITHER direction — the ids are assigned by the viewer and are unique across both.
+    /// The name is kept from when only downloads existed rather than renamed, because renaming a
+    /// wire message that already shipped buys nothing.
+    /// </summary>
     FileGetCancel = 16,
+
+    // --- Putting a file ON the client's machine, added 2026-08-06. ------------------------------
+    // Justified by the same rule that rules delete and rename OUT: with mouse control the operator
+    // can already open a browser on that machine and download anything, so upload is not a new
+    // power — it is an existing one made visible and logged. Where that does NOT hold, and it is
+    // written down rather than glossed: a file from the operator's own disk is genuinely new, and
+    // an uploaded program plus mouse control is the tech-support scam in two steps. Which is why
+    // a program arriving is asked about by name, every time, and logged with its own verb.
+
+    /// <summary>viewer -> host: I want to put this file, of this size, into this folder.</summary>
+    FileSendRequest = 17,
+
+    /// <summary>host -> viewer: whether the person agreed, and under what name it will be saved.</summary>
+    FileSendReply = 18,
+
+    /// <summary>viewer -> host: a piece of it. Same payload shape as a FileChunk, other direction.</summary>
+    FileSendChunk = 19,
+
+    /// <summary>host -> viewer: what actually happened on the disk. Always sent.</summary>
+    FileSendResult = 20,
 }

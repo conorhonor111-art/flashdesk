@@ -1,9 +1,19 @@
 using System.Diagnostics;
+using System.Threading.Channels;
 using RemoteDesktop.Host.Net;
 using RemoteDesktop.Shared.Files;
 using RemoteDesktop.Shared.Protocol;
 
 namespace RemoteDesktop.Host.Files;
+
+/// <summary>Asks the person at this machine whether a file may be put on it. False means no.</summary>
+public delegate Task<bool> AskIncomingFile(string callerId, string name, long bytes, string folder, bool isProgram);
+
+/// <summary>Asks the person at this machine what to do about a file that is already there.</summary>
+public delegate Task<ReplaceChoice> AskReplaceFile(string callerId, string name, string folder);
+
+/// <summary>A file finished arriving. <paramref name="isProgram"/> gets its own line in the log.</summary>
+public delegate void FileArrived(string callerId, string name, long bytes, string folder, bool isProgram, bool replaced);
 
 /// <summary>
 /// Answers the operator's file requests on the client's machine: may I look, what is in this folder,
@@ -42,6 +52,12 @@ internal sealed class HostFileService : IDisposable
     /// <summary>Told when a file actually left this machine: name, bytes, the folder it came from.</summary>
     private readonly Action<string, string, long, string>? _fileSent;
 
+    /// <summary>The three things the WRITE side needs. All null-safe: a missing ask means refuse.</summary>
+    private readonly AskIncomingFile? _askIncoming;
+    private readonly AskReplaceFile? _askReplace;
+    private readonly FileArrived? _fileArrived;
+    private readonly PartialFiles _partials;
+
     /// <summary>0 = free, 1 = in use. One listing and one transfer at a time, no more.</summary>
     private int _listingBusy;
     private int _transferBusy;
@@ -58,14 +74,22 @@ internal sealed class HostFileService : IDisposable
         MessageChannel channel,
         BandwidthGovernor governor,
         string callerId,
+        PartialFiles partials,
         Func<string, Task<bool>>? askAllowed,
-        Action<string, string, long, string>? fileSent)
+        Action<string, string, long, string>? fileSent,
+        AskIncomingFile? askIncoming = null,
+        AskReplaceFile? askReplace = null,
+        FileArrived? fileArrived = null)
     {
         _channel = channel;
         _governor = governor;
         _callerId = callerId;
+        _partials = partials;
         _askAllowed = askAllowed;
         _fileSent = fileSent;
+        _askIncoming = askIncoming;
+        _askReplace = askReplace;
+        _fileArrived = fileArrived;
     }
 
     /// <summary>
@@ -86,6 +110,16 @@ internal sealed class HostFileService : IDisposable
 
             case MessageType.FileGetRequest:
                 Spawn(() => AnswerGetAsync(payload, ct));
+                return true;
+
+            case MessageType.FileSendRequest:
+                Spawn(() => AnswerSendAsync(payload, ct));
+                return true;
+
+            case MessageType.FileSendChunk:
+                // Routed inline — it is a queue push, nothing more. The bytes are WRITTEN on the
+                // upload's own task; this thread never touches the disk.
+                TakeChunk(payload);
                 return true;
 
             case MessageType.FileGetCancel:
@@ -394,6 +428,408 @@ internal sealed class HostFileService : IDisposable
         }
     }
 
+    // ---------------------------------------------------------------- put a file on this machine
+
+    /// <summary>
+    /// Most bytes that may sit in memory waiting to be written. It is a MEMORY bound, not a speed
+    /// one: the sender can push faster than a disk accepts, and without a limit a slow or sleeping
+    /// drive would turn into unbounded growth on the client's machine. In practice a home uplink is
+    /// far slower than any disk and this is never reached — which is exactly why it must be a hard
+    /// failure rather than a silent drop if it ever is.
+    /// </summary>
+    private const long MaxBufferedUploadBytes = 8L * 1024 * 1024;
+
+    /// <summary>Kept clear of the last of the disk: filling a stranger's drive is its own damage.</summary>
+    private const long FreeSpaceMargin = 32L * 1024 * 1024;
+
+    /// <summary>One upload at a time, held while it runs. Null between uploads.</summary>
+    private volatile Upload? _upload;
+
+    /// <summary>Asked once per connection: may they put files here at all.</summary>
+    private readonly SemaphoreSlim _uploadConsentGate = new(1, 1);
+    private bool _uploadAsked;
+    private bool _uploadAllowed;
+
+    private sealed class Upload
+    {
+        public required int RequestId { get; init; }
+        public required long Expected { get; init; }
+        public required Channel<byte[]> Chunks { get; init; }
+        public long Queued;      // bytes accepted from the wire, written or not
+        public long Buffered;    // bytes accepted and not yet written
+        public volatile bool Overrun;
+    }
+
+    /// <summary>
+    /// Pushes an arriving chunk onto the upload's queue. Runs on the inbound loop, so it does three
+    /// cheap things and returns: parse, check it belongs to the upload in progress, queue.
+    /// </summary>
+    private void TakeChunk(byte[] payload)
+    {
+        var current = _upload;
+        if (current is null) return; // no upload agreed: the bytes are dropped, not written
+
+        FileChunk chunk;
+        try { chunk = FileChunk.FromBytes(payload); }
+        catch { return; }
+
+        if (chunk.RequestId != current.RequestId) return;
+
+        // A sender that jumps around is broken or is trying something. Only the next bytes in
+        // sequence are accepted; writing at an offset the sender chose would let one upload scatter
+        // bytes through a file that is already there.
+        if (chunk.Offset != current.Queued) { current.Overrun = true; current.Chunks.Writer.TryComplete(); return; }
+
+        if (Interlocked.Read(ref current.Buffered) + chunk.Bytes.Length > MaxBufferedUploadBytes)
+        {
+            current.Overrun = true;
+            current.Chunks.Writer.TryComplete();
+            return;
+        }
+
+        if (!current.Chunks.Writer.TryWrite(chunk.Bytes)) return;
+        Interlocked.Add(ref current.Buffered, chunk.Bytes.Length);
+        current.Queued += chunk.Bytes.Length;
+    }
+
+    private async Task AnswerSendAsync(byte[] payload, CancellationToken ct)
+    {
+        var request = FileSendRequest.FromBytes(payload);
+
+        // Reading and writing are DIFFERENT permissions and are asked separately. Agreeing to be
+        // looked at is not agreeing to be written to, so the read consent above grants nothing here.
+        if (Interlocked.CompareExchange(ref _transferBusy, 1, 0) != 0)
+        {
+            await SendReplyAsync(request.RequestId, FileStatus.Busy,
+                "That computer is already moving a file.", ct).ConfigureAwait(false);
+            return;
+        }
+
+        try { await ReceiveFileAsync(request, ct).ConfigureAwait(false); }
+        finally { Interlocked.Exchange(ref _transferBusy, 0); }
+    }
+
+    private async Task ReceiveFileAsync(FileSendRequest request, CancellationToken ct)
+    {
+        // 1. The path rules. The folder is checked as a path, the NAME as a bare name, and the join
+        //    is proved to still be inside the folder — on the RESOLVED path, so C:\Temp2 cannot pass
+        //    a check for C:\Temp.
+        if (!RemotePath.TryResolveInside(request.Folder, request.Name, out string? full, out string? problem)
+            || !RemotePath.TryResolve(request.Folder, out string? folder, out problem)
+            || !LocalDrives.IsOnLocalDrive(folder!, out problem))
+        {
+            await SendReplyAsync(request.RequestId, FileStatus.NotAllowed, problem!, ct).ConfigureAwait(false);
+            return;
+        }
+
+        if (!Directory.Exists(folder!))
+        {
+            await SendReplyAsync(request.RequestId, FileStatus.NotFound,
+                "That folder is not on that computer any more.", ct).ConfigureAwait(false);
+            return;
+        }
+
+        if (!HasRoomFor(folder!, request.TotalBytes))
+        {
+            await SendReplyAsync(request.RequestId, FileStatus.NoRoom,
+                "There is not enough room on that computer's disk for this file.", ct).ConfigureAwait(false);
+            return;
+        }
+
+        bool isProgram = RemotePath.LooksExecutable(request.Name);
+
+        // 2. The person decides. Once per connection for files in general; EVERY time for a program,
+        //    by name — see IncomingFileDialog for why that is not the same question.
+        if (!await AllowedToWriteAsync(request, folder!, isProgram, ct).ConfigureAwait(false))
+        {
+            await SendReplyAsync(request.RequestId, FileStatus.RefusedByPerson,
+                "They said no to putting that file on their computer.", ct).ConfigureAwait(false);
+            return;
+        }
+
+        // 3. Their file, their question. Never the operator's.
+        string finalPath = full!;
+        string savedAs = request.Name;
+        bool replacing = false;
+
+        if (File.Exists(finalPath) || Directory.Exists(finalPath))
+        {
+            ReplaceChoice choice;
+            try { choice = _askReplace is null ? ReplaceChoice.Refuse : await _askReplace(_callerId, request.Name, folder!).ConfigureAwait(false); }
+            catch { choice = ReplaceChoice.Refuse; }
+
+            switch (choice)
+            {
+                case ReplaceChoice.Replace:
+                    replacing = true;
+                    break;
+
+                case ReplaceChoice.KeepBoth:
+                    if (!TryFreeName(folder!, request.Name, out string? free, out string? why))
+                    {
+                        await SendReplyAsync(request.RequestId, FileStatus.NameTaken, why!, ct).ConfigureAwait(false);
+                        return;
+                    }
+                    savedAs = free!;
+                    RemotePath.TryResolveInside(folder!, savedAs, out finalPath!, out _);
+                    break;
+
+                default:
+                    await SendReplyAsync(request.RequestId, FileStatus.RefusedByPerson,
+                        "They chose to keep the file they already had.", ct).ConfigureAwait(false);
+                    return;
+            }
+        }
+
+        // 4. The partial. Recorded BEFORE it is created, and in the DESTINATION folder so the
+        //    finishing rename stays inside one volume. See PartialFiles.
+        string temp = _partials.Begin(folder!);
+        FileStream file;
+        try
+        {
+            // CreateNew, so a name collision is an error rather than a silent overwrite.
+            // FileShare.None, so a second copy of FlashDesk starting mid-transfer cannot sweep this
+            // very file away — its delete is refused by Windows and the entry stays for next time.
+            file = new FileStream(temp, FileMode.CreateNew, FileAccess.Write, FileShare.None,
+                bufferSize: 1, useAsync: true);
+        }
+        catch (Exception)
+        {
+            _partials.Finished(temp);
+            await SendReplyAsync(request.RequestId, FileStatus.WriteError,
+                "That computer would not let the file be written there.", ct).ConfigureAwait(false);
+            return;
+        }
+
+        // 5. THE RE-CHECK, on the handle, after the open. A junction at the destination redirects a
+        //    write, and no string check can see it — see OpenedPath. Done before a single byte is
+        //    accepted, so nothing has been written anywhere by the time it can fail.
+        if (!OpenedPath.IsInsideFolder(file.SafeFileHandle, folder!, out string? elsewhere))
+        {
+            file.Dispose();
+            TryDelete(temp);
+            _partials.Finished(temp);
+            await SendReplyAsync(request.RequestId, FileStatus.NotAllowed, elsewhere!, ct).ConfigureAwait(false);
+            return;
+        }
+
+        var upload = new Upload
+        {
+            RequestId = request.RequestId,
+            Expected = request.TotalBytes,
+            Chunks = Channel.CreateUnbounded<byte[]>(new UnboundedChannelOptions { SingleReader = true, SingleWriter = true }),
+        };
+        _upload = upload;
+
+        // Only NOW is the sender told to start. Everything that could refuse has already run, so a
+        // "yes" is never followed by bytes arriving into a decision that had not been made.
+        await SendReplyAsync(request.RequestId, FileStatus.Ok, string.Empty, ct, savedAs).ConfigureAwait(false);
+
+        try
+        {
+            await WriteChunksAsync(upload, file, temp, finalPath, folder!, savedAs, replacing, isProgram, ct)
+                .ConfigureAwait(false);
+        }
+        finally
+        {
+            _upload = null;
+        }
+    }
+
+    private async Task WriteChunksAsync(
+        Upload upload, FileStream file, string temp, string finalPath, string folder,
+        string savedAs, bool replacing, bool isProgram, CancellationToken ct)
+    {
+        long written = 0;
+        FileStatus status;
+        string message;
+
+        try
+        {
+            using (file)
+            {
+                while (written < upload.Expected)
+                {
+                    if (ct.IsCancellationRequested || _dead.IsCancellationRequested)
+                    { status = FileStatus.Cancelled; message = "The connection ended."; goto failed; }
+
+                    if (_cancelledRequestId == upload.RequestId)
+                    { status = FileStatus.Cancelled; message = "Stopped."; goto failed; }
+
+                    if (upload.Overrun)
+                    { status = FileStatus.WriteError; message = "The file arrived faster than that computer could write it."; goto failed; }
+
+                    byte[] chunk;
+                    try
+                    {
+                        // A timeout rather than an indefinite wait: a sender that simply stops must
+                        // not leave a partial file and a held handle on someone's disk forever.
+                        using var idle = CancellationTokenSource.CreateLinkedTokenSource(ct, _dead.Token);
+                        idle.CancelAfter(TimeSpan.FromSeconds(60));
+                        chunk = await upload.Chunks.Reader.ReadAsync(idle.Token).ConfigureAwait(false);
+                    }
+                    catch (ChannelClosedException)
+                    { status = FileStatus.WriteError; message = "The file stopped arriving before it was complete."; goto failed; }
+                    catch (OperationCanceledException)
+                    {
+                        status = FileStatus.Cancelled;
+                        message = ct.IsCancellationRequested || _dead.IsCancellationRequested
+                            ? "The connection ended."
+                            : "Nothing more arrived, so the file was not kept.";
+                        goto failed;
+                    }
+
+                    Interlocked.Add(ref upload.Buffered, -chunk.Length);
+
+                    // More bytes than were declared. Refused rather than written: the size was the
+                    // basis for the free-space check and for what the person was shown.
+                    if (written + chunk.Length > upload.Expected)
+                    { status = FileStatus.WriteError; message = "More arrived than was promised, so the file was not kept."; goto failed; }
+
+                    try { await file.WriteAsync(chunk, ct).ConfigureAwait(false); }
+                    catch (IOException)
+                    { status = FileStatus.NoRoom; message = "That computer ran out of room while the file was arriving."; goto failed; }
+                    catch (Exception)
+                    { status = FileStatus.WriteError; message = "The file could not be written to that computer's disk."; goto failed; }
+
+                    written += chunk.Length;
+                }
+
+                await file.FlushAsync(ct).ConfigureAwait(false);
+            }
+
+            // 6. Into place, and only now. Every byte is on the disk and the count matches what was
+            //    promised, which is what makes the rename safe to be the moment the real name appears.
+            try
+            {
+                File.Move(temp, finalPath, overwrite: replacing);
+            }
+            catch (IOException)
+            {
+                // The destination appeared between the question and this moment. The safe outcome:
+                // nothing of theirs is destroyed, and the operator is told why.
+                TryDelete(temp);
+                _partials.Finished(temp);
+                await SendResultAsync(upload.RequestId, FileStatus.NameTaken, written,
+                    "A file with that name appeared on that computer before this one could be saved.", ct).ConfigureAwait(false);
+                return;
+            }
+
+            _partials.Finished(temp);
+            await SendResultAsync(upload.RequestId, FileStatus.Ok, written, string.Empty, ct).ConfigureAwait(false);
+
+            try { _fileArrived?.Invoke(_callerId, savedAs, written, folder, isProgram, replacing); }
+            catch { /* a log that cannot be written must never fail a transfer */ }
+            return;
+        }
+        catch (Exception)
+        {
+            status = FileStatus.WriteError;
+            message = "The file could not be saved on that computer.";
+        }
+
+    failed:
+        // ONE exit for every failure, and it always ends the same way: no half file, no half file
+        // wearing the real name, no forgotten entry in the ledger, and a sentence for the operator.
+        try { file.Dispose(); } catch { }
+        TryDelete(temp);
+        _partials.Finished(temp);
+        await SendResultAsync(upload.RequestId, status, written, message, ct).ConfigureAwait(false);
+    }
+
+    private async Task<bool> AllowedToWriteAsync(FileSendRequest request, string folder, bool isProgram, CancellationToken ct)
+    {
+        await _uploadConsentGate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            if (!_uploadAsked)
+            {
+                _uploadAsked = true;
+                try
+                {
+                    _uploadAllowed = _askIncoming is not null
+                        && await _askIncoming(_callerId, request.Name, request.TotalBytes, folder, isProgram).ConfigureAwait(false);
+                }
+                catch { _uploadAllowed = false; }
+
+                // That question already named this file, so a program asked about here is not asked
+                // about twice in a row.
+                return _uploadAllowed;
+            }
+
+            if (!_uploadAllowed) return false;
+
+            // ⚠ A PROGRAM IS ASKED ABOUT EVERY TIME, by name. Without this, the first upload could
+            // be a text file and every executable afterwards would arrive in silence — which is
+            // precisely the step a tech-support scam needs. Reversing it is one line, and it is the
+            // one place this goes beyond the written plan.
+            if (!isProgram) return true;
+
+            try
+            {
+                return _askIncoming is not null
+                    && await _askIncoming(_callerId, request.Name, request.TotalBytes, folder, true).ConfigureAwait(false);
+            }
+            catch { return false; }
+        }
+        finally { _uploadConsentGate.Release(); }
+    }
+
+    /// <summary>
+    /// "Report.docx" -> "Report (2).docx", the first number that is actually free. Every candidate
+    /// goes back through the same name and containment rules as the original: a stem near the
+    /// 255-character limit grows when a number is added, and a name that no longer passes must fail
+    /// rather than be trimmed into one that does.
+    /// </summary>
+    private static bool TryFreeName(string folder, string name, out string? chosen, out string? problem)
+    {
+        chosen = null;
+        problem = null;
+
+        string stem = Path.GetFileNameWithoutExtension(name);
+        string extension = Path.GetExtension(name);
+
+        for (int i = 2; i <= 99; i++)
+        {
+            string candidate = $"{stem} ({i}){extension}";
+            if (!RemotePath.TryResolveInside(folder, candidate, out string? full, out _)) continue;
+            if (File.Exists(full) || Directory.Exists(full)) continue;
+
+            chosen = candidate;
+            return true;
+        }
+
+        problem = "There were already too many files with that name, so nothing was saved.";
+        return false;
+    }
+
+    private static bool HasRoomFor(string folder, long bytes)
+    {
+        try
+        {
+            string? root = Path.GetPathRoot(folder);
+            if (string.IsNullOrEmpty(root)) return false;
+            return new DriveInfo(root).AvailableFreeSpace > bytes + FreeSpaceMargin;
+        }
+        catch
+        {
+            // A drive that will not say how full it is: let the write itself find out rather than
+            // refusing a transfer that might be perfectly fine.
+            return true;
+        }
+    }
+
+    private static void TryDelete(string path)
+    {
+        try { if (File.Exists(path)) File.Delete(path); } catch { }
+    }
+
+    private Task SendReplyAsync(int requestId, FileStatus status, string message, CancellationToken ct, string savedAs = "") =>
+        SendAsync(MessageType.FileSendReply, new FileSendReply(requestId, status, message, savedAs).ToBytes(), ct);
+
+    private Task SendResultAsync(int requestId, FileStatus status, long written, string message, CancellationToken ct) =>
+        SendAsync(MessageType.FileSendResult, new FileSendResult(requestId, status, written, message).ToBytes(), ct);
+
     // ---------------------------------------------------------------- plumbing
 
     /// <summary>
@@ -413,7 +849,11 @@ internal sealed class HostFileService : IDisposable
     public void Dispose()
     {
         try { _dead.Cancel(); } catch { }
+        // Wakes the upload's reader immediately rather than leaving it on its idle timeout, so the
+        // partial file is deleted when the session ends instead of at the next start-up sweep.
+        try { _upload?.Chunks.Writer.TryComplete(); } catch { }
         _dead.Dispose();
         _consentGate.Dispose();
+        _uploadConsentGate.Dispose();
     }
 }

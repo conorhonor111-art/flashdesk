@@ -7,6 +7,7 @@ using RemoteDesktop.Host.Encoding;
 using RemoteDesktop.Host.Files;
 using RemoteDesktop.Host.Input;
 using RemoteDesktop.Shared.Diagnostics;
+using RemoteDesktop.Shared.Files;
 using RemoteDesktop.Shared.Identity;
 using RemoteDesktop.Shared.Net;
 using RemoteDesktop.Shared.Protocol;
@@ -76,6 +77,23 @@ public sealed class HostServer : IDisposable
 
     /// <summary>A file finished leaving this machine: caller, file name, bytes, the folder it came from.</summary>
     public Action<string, string, long, string>? FileSentLogged;
+
+    /// <summary>Asked before any file may be WRITTEN here. Null means refuse.</summary>
+    public AskIncomingFile? IncomingFileAsk;
+
+    /// <summary>Asked when the destination already exists. Null means refuse, which keeps their file.</summary>
+    public AskReplaceFile? ReplaceFileAsk;
+
+    /// <summary>A file finished arriving on this machine.</summary>
+    public FileArrived? FileArrivedLogged;
+
+    /// <summary>
+    /// Where unfinished transfers are recorded, so a link that dies mid-upload does not leave litter
+    /// on the client's disk. Defaults to the same folder the identity lives in; the window replaces
+    /// it with the store's own folder, which honours FLASHDESK_CONFIG_DIR.
+    /// </summary>
+    public PartialFiles Partials { get; set; } =
+        new(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "FlashDesk"));
 
     /// <summary>Called with the caller's number when a session actually begins and when it ends.</summary>
     public Action<string, bool>? SessionLogged;
@@ -369,7 +387,12 @@ public sealed class HostServer : IDisposable
         if (hello is null || hello.Value.Type != MessageType.Handshake) return;
         var theirs = Handshake.FromBytes(hello.Value.Payload);
         if (!theirs.IsValid || theirs.Role != PeerRole.Viewer) return;
-        await channel.SendAsync(MessageType.Handshake, Handshake.Create(PeerRole.Host).ToBytes(), ct).ConfigureAwait(false);
+        // Announce what this build can do. The viewer shows the file panel only if this says so, so
+        // an older host talking to a newer viewer offers nothing rather than failing at the moment
+        // the operator clicks — which is why the capability field exists at all.
+        await channel.SendAsync(MessageType.Handshake,
+            Handshake.Create(PeerRole.Host, PeerCapabilities.FileBrowsing | PeerCapabilities.FileUpload).ToBytes(),
+            ct).ConfigureAwait(false);
 
         // Send the screen size and force a full first frame for this viewer.
         await channel.SendAsync(MessageType.ScreenInfo,
@@ -381,7 +404,7 @@ public sealed class HostServer : IDisposable
         // One per connection, and it dies with the socket — which is what makes file consent
         // per-connection rather than per-caller. See HostFileService.
         using var files = new HostFileService(channel, Governor, _currentPeerId ?? string.Empty,
-            FileAccessAsk, FileSentLogged);
+            Partials, FileAccessAsk, FileSentLogged, IncomingFileAsk, ReplaceFileAsk, FileArrivedLogged);
 
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct);
         var inbound = InboundLoopAsync(channel, files, linked.Token);
