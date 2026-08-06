@@ -147,16 +147,44 @@ public sealed class InputInjector
 
     private static void Send(INPUT input) => SendInput(1, new[] { input }, Marshal.SizeOf<INPUT>());
 
+    // ⚠ EVERY injected event is stamped with InjectedInput.Tag, and the stamp is applied HERE, in
+    // the two constructors, rather than in Send() — so an event cannot be built without it. Before
+    // 2026-08-06 dwExtraInfo was left at zero, which made the remote hand indistinguishable from
+    // the real one; a mid-session consent dialog could then be answered by the operator on the
+    // client's behalf. See InjectedInput for the full reasoning.
+    //
+    // dwExtraInfo sits at a DIFFERENT offset in MOUSEINPUT and KEYBDINPUT, so it must be set on the
+    // right member of the union — setting "the union's" copy would write to the wrong field for one
+    // of the two.
     private static INPUT NewMouse(int dx, int dy, uint data, uint flags) => new()
     {
         type = INPUT_MOUSE,
-        U = new InputUnion { mi = new MOUSEINPUT { dx = dx, dy = dy, mouseData = data, dwFlags = flags } },
+        U = new InputUnion
+        {
+            mi = new MOUSEINPUT
+            {
+                dx = dx,
+                dy = dy,
+                mouseData = data,
+                dwFlags = flags,
+                dwExtraInfo = InjectedInput.Tag,
+            },
+        },
     };
 
     private static INPUT NewKey(ushort scan, uint flags) => new()
     {
         type = INPUT_KEYBOARD,
-        U = new InputUnion { ki = new KEYBDINPUT { wVk = 0, wScan = scan, dwFlags = flags } },
+        U = new InputUnion
+        {
+            ki = new KEYBDINPUT
+            {
+                wVk = 0,
+                wScan = scan,
+                dwFlags = flags,
+                dwExtraInfo = InjectedInput.Tag,
+            },
+        },
     };
 
     private const uint INPUT_MOUSE = 0, INPUT_KEYBOARD = 1;

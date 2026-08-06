@@ -1,3 +1,4 @@
+using RemoteDesktop.Host.Input;
 using RemoteDesktop.Shared.Identity;
 using RemoteDesktop.UI;
 
@@ -33,6 +34,15 @@ public sealed class ConsentDialog : Form
     // which turned a deliberate pause into an apparently broken button — and a person who jabs at a
     // dead button clicks the instant it lights, producing a MORE reflexive Accept than no delay at
     // all. That is the opposite of what the delay is for.
+    /// <summary>
+    /// Alive for exactly as long as this window is. While it exists, FlashDesk's own injected mouse
+    /// and keyboard events cannot reach any window on this thread — so the remote operator cannot
+    /// press Accept on behalf of the person being asked. See <see cref="InjectedInput"/>: an
+    /// earlier attempt at this guard compiled, looked right, and did nothing, which is why the
+    /// mechanism is a message filter rather than an override on this class.
+    /// </summary>
+    private readonly InjectedInput.Blocker _blockRemoteHand = new();
+
     private readonly Label _countdown = Theme.Note("");
     private readonly System.Windows.Forms.Timer _timer = new() { Interval = 1000 };
 
@@ -206,7 +216,14 @@ public sealed class ConsentDialog : Form
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing) _timer.Dispose();
+        if (disposing)
+        {
+            _timer.Dispose();
+            // Released with the window: the filter is thread-wide, so leaving it registered would
+            // go on swallowing the operator's input everywhere, including the ordinary remote
+            // control this product exists to provide.
+            _blockRemoteHand.Dispose();
+        }
         base.Dispose(disposing);
     }
 }
