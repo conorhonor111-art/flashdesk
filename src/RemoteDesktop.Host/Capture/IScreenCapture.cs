@@ -20,6 +20,20 @@ public interface IScreenCapture : IDisposable
     int Height { get; }
 
     /// <summary>
+    /// Where the captured screen's top-left corner sits on the whole virtual desktop.
+    ///
+    /// <para>Zero on a single-screen machine, which is why nothing needed it before. On a machine
+    /// with two screens it is what turns a pixel in the picture into a point Windows can be told to
+    /// click — and it is NEGATIVE for a screen placed to the left of or above the primary. Without
+    /// it the injection has to assume zero, and every click on such a screen lands on the primary
+    /// instead, which looks like a coordinate bug and is not.</para>
+    /// </summary>
+    int OriginX => 0;
+
+    /// <inheritdoc cref="OriginX"/>
+    int OriginY => 0;
+
+    /// <summary>
     /// Try to get the current screen into the capture's own reusable buffer. Returns true with a
     /// frame when pixels are available; returns false when nothing new was ready within the timeout
     /// (only the DXGI path reports this — it means the screen did not change). The returned frame

@@ -43,6 +43,19 @@ public static class DiagnosticRunner
         report.AppendLine($"Logical CPUs    : {Environment.ProcessorCount}");
         report.AppendLine($"Build config    : {BuildConfig}");
         report.AppendLine($"Capture method  : {method}");
+
+        // ⚠ THE LINE THAT SETTLES MULTI-MONITOR ON THE FIRST REAL TWO-SCREEN MACHINE.
+        // None of the multi-display code has ever run on hardware with a second screen — this
+        // machine has one, and the rig that would have had two cannot be reconfigured from here. So
+        // the first person with two monitors must be able to answer "did it see both, and which one
+        // is it sending?" by reading one line of a file, instead of turning it into a debugging
+        // session over the telephone.
+        var displays = DisplayEnumerator.All();
+        int capturedNumber = displays.FirstOrDefault(d =>
+            d.X == capture.OriginX && d.Y == capture.OriginY)?.Number ?? 1;
+        report.AppendLine($"Displays        : {DisplayEnumerator.Describe(displays, capturedNumber)}");
+        if (displays.Count > 1)
+            report.AppendLine("                  UNVERIFIED: multi-display capture has never run on real hardware.");
         if (forceGdi)
             report.AppendLine("Capture forced  : GDI (for the DXGI-vs-GDI comparison)");
         else if (capture.Method == CaptureMethod.Gdi && !string.IsNullOrEmpty(dxgiReason))

@@ -28,9 +28,42 @@ public sealed class DxgiScreenCapture : IScreenCapture
     private byte[] _buffer = Array.Empty<byte>();
     private long _failingSince; // Environment.TickCount64 when the current failure streak began; 0 = healthy
 
+    /// <summary>Which DXGI output is being duplicated. Changed only through <see cref="SwitchTo"/>.</summary>
+    private int _outputIndex;
+
     public CaptureMethod Method => CaptureMethod.Dxgi;
     public int Width { get; private set; }
     public int Height { get; private set; }
+
+    /// <inheritdoc/>
+    public int OriginX { get; private set; }
+
+    /// <inheritdoc/>
+    public int OriginY { get; private set; }
+
+    /// <summary>
+    /// Capture a different screen. Returns false if the new output cannot be duplicated, having
+    /// already fallen back to a working one — a failed switch must never leave the session with no
+    /// picture at all.
+    ///
+    /// <para><b>⚠ UNVERIFIED ON REAL HARDWARE.</b> This has only ever run on a machine with one
+    /// screen, where it is a no-op that rebuilds the same output. The path that actually changes
+    /// screens has never been executed.</para>
+    /// </summary>
+    public bool SwitchTo(int outputIndex)
+    {
+        if (outputIndex < 0) return false;
+
+        int previous = _outputIndex;
+        DropDuplication();
+        _outputIndex = outputIndex;
+
+        if (EnsureDuplication()) return true;
+
+        _outputIndex = previous;
+        EnsureDuplication();
+        return false;
+    }
 
     public DxgiScreenCapture(CaptureHealthLog? health = null)
     {
@@ -116,10 +149,29 @@ public sealed class DxgiScreenCapture : IScreenCapture
         {
             using var dxgiDevice = _device.QueryInterface<IDXGIDevice>();
             using var adapter = dxgiDevice.GetAdapter();
-            adapter.EnumOutputs(0, out IDXGIOutput? output).CheckError();
-            using var output0 = output!;
-            using var output1 = output0.QueryInterface<IDXGIOutput1>();
+
+            // ⚠ THE OUTPUT INDEX IS THE ONLY THING THAT CHANGES WHEN SWITCHING SCREENS, and that is
+            // deliberate: switching is the SAME operation as recovering from ACCESS_LOST — drop the
+            // duplication, build a new one — so it reuses this path rather than adding a second
+            // implementation of the same thing. Whatever hardens recovery hardens switching.
+            // If the chosen output has gone (a monitor unplugged), fall back to the first one rather
+            // than failing: a session must never end because a screen was disconnected.
+            if (adapter.EnumOutputs((uint)_outputIndex, out IDXGIOutput? output).Failure || output is null)
+            {
+                _outputIndex = 0;
+                adapter.EnumOutputs(0, out output).CheckError();
+            }
+
+            using var chosen = output!;
+            using var output1 = chosen.QueryInterface<IDXGIOutput1>();
             _duplication = output1.DuplicateOutput(_device);
+
+            // Where this screen sits on the whole virtual desktop. Zero for a single-screen machine,
+            // and NEGATIVE for a screen placed to the left of or above the primary — which is what
+            // the input mapping needs and what it would otherwise have to guess.
+            var coords = chosen.Description.DesktopCoordinates;
+            OriginX = coords.Left;
+            OriginY = coords.Top;
 
             var desc = _duplication.Description;
             int w = (int)desc.ModeDescription.Width;

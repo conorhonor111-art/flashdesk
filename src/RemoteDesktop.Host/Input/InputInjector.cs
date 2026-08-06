@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using RemoteDesktop.Shared.Displays;
 using RemoteDesktop.Shared.Protocol;
 
 namespace RemoteDesktop.Host.Input;
@@ -20,6 +21,13 @@ public sealed class InputInjector
 {
     private int _screenWidth;
     private int _screenHeight;
+
+    // Where the captured screen sits on the whole desktop, and how big that desktop is.
+    // _desktop stays NULL on a single-screen machine, which keeps the original code path in
+    // charge of the only case that has ever been tested on real hardware.
+    private int _originX;
+    private int _originY;
+    private VirtualBounds? _desktop;
     private readonly object _gate = new();
     private readonly HashSet<ushort> _downScanCodes = new();
     private readonly HashSet<MouseButton> _downButtons = new();
@@ -36,6 +44,21 @@ public sealed class InputInjector
     {
         _screenWidth = Math.Max(1, width);
         _screenHeight = Math.Max(1, height);
+    }
+
+    /// <summary>
+    /// Tell the injector which screen is being captured and how the whole desktop is laid out.
+    ///
+    /// <para>Called whenever the captured display changes, and whenever the display set changes.
+    /// Until it is called, the injector behaves exactly as it did before multi-monitor existed:
+    /// origin (0,0) and a desktop the size of the captured screen — which is correct for the
+    /// single-screen machine that is the only kind this has ever run on.</para>
+    /// </summary>
+    public void SetDisplayLayout(int originX, int originY, VirtualBounds desktop)
+    {
+        _originX = originX;
+        _originY = originY;
+        _desktop = desktop.Width > 0 && desktop.Height > 0 ? desktop : null;
     }
 
     /// <summary>Inject one event that arrived from the viewer.</summary>
@@ -96,10 +119,30 @@ public sealed class InputInjector
 
     private void MoveMouse(int hostX, int hostY)
     {
-        // Absolute mouse coordinates run 0..65535 across the primary screen.
-        int nx = (int)(hostX * 65535L / Math.Max(1, _screenWidth - 1));
-        int ny = (int)(hostY * 65535L / Math.Max(1, _screenHeight - 1));
-        Send(NewMouse(nx, ny, 0, MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE));
+        // SINGLE SCREEN — unchanged, and it stays the default so nothing that works today can be
+        // broken by code that has never run on real hardware. Absolute coordinates run 0..65535
+        // across the PRIMARY screen, which is the whole desktop when there is only one.
+        if (_desktop is not VirtualBounds desktop)
+        {
+            int nx0 = (int)(hostX * 65535L / Math.Max(1, _screenWidth - 1));
+            int ny0 = (int)(hostY * 65535L / Math.Max(1, _screenHeight - 1));
+            Send(NewMouse(nx0, ny0, 0, MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE));
+            return;
+        }
+
+        // MORE THAN ONE SCREEN. Two things change together, and one without the other is worse than
+        // neither:
+        //   1. the pixel is turned into a point on the WHOLE desktop by adding the captured
+        //      screen's origin, which is negative for a screen left of or above the primary;
+        //   2. MOUSEEVENTF_VIRTUALDESK is set, because without it Windows spreads 0..65535 across
+        //      the PRIMARY SCREEN ONLY — so every coordinate computed in step 1 would be squeezed
+        //      back onto screen one, and the feature would look like it worked while sending every
+        //      click to the wrong place.
+        var (vx, vy) = DisplayLayout.ToVirtual(
+            new DisplayInfo(0, "", _originX, _originY, _screenWidth, _screenHeight, false), hostX, hostY);
+        var (nx, ny) = DisplayLayout.ToAbsolute(desktop, vx, vy);
+
+        Send(NewMouse(nx, ny, 0, MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK));
     }
 
     private void PressButton(MouseButton button, bool down)
@@ -189,6 +232,9 @@ public sealed class InputInjector
 
     private const uint INPUT_MOUSE = 0, INPUT_KEYBOARD = 1;
     private const uint MOUSEEVENTF_MOVE = 0x0001, MOUSEEVENTF_ABSOLUTE = 0x8000;
+    // Spreads the 0..65535 range across EVERY screen instead of only the primary. Without it
+    // multi-monitor coordinates are silently squeezed onto screen one.
+    private const uint MOUSEEVENTF_VIRTUALDESK = 0x4000;
     private const uint MOUSEEVENTF_LEFTDOWN = 0x0002, MOUSEEVENTF_LEFTUP = 0x0004;
     private const uint MOUSEEVENTF_RIGHTDOWN = 0x0008, MOUSEEVENTF_RIGHTUP = 0x0010;
     private const uint MOUSEEVENTF_MIDDLEDOWN = 0x0020, MOUSEEVENTF_MIDDLEUP = 0x0040;
