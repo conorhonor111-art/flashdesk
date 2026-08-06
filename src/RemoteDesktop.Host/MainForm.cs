@@ -95,6 +95,10 @@ public sealed class MainForm : Form
     private readonly Button _diagnostics = Theme.MakeButton("Run diagnostics", ButtonKind.Neutral);
     private readonly Button _diagnosticsGdi = Theme.MakeButton("Run diagnostics (force GDI)", ButtonKind.Neutral);
     private readonly Button _openLog = Theme.MakeButton("Open capture log", ButtonKind.Neutral);
+    // The program proving its own housekeeping to itself, so the answer is PASS or FAIL on this
+    // screen rather than a person typing commands and interpreting the result. See SelfTest.
+    private readonly Button _selfTest = Theme.MakeButton("Run self-test", ButtonKind.Neutral);
+    private readonly Label _selfTestResult = NewDetail();
     private Control? _technicalPanel;
     private bool _technicalOpen;
 
@@ -548,7 +552,8 @@ public sealed class MainForm : Form
         _diagnostics.Click += (_, _) => RunDiagnostics(forceGdi: false);
         _diagnosticsGdi.Click += (_, _) => RunDiagnostics(forceGdi: true);
         _openLog.Click += (_, _) => OpenFile(_server.Health.LogPath);
-        foreach (Button button in new[] { _diagnostics, _diagnosticsGdi, _openLog })
+        _selfTest.Click += (_, _) => RunSelfTest();
+        foreach (Button button in new[] { _diagnostics, _diagnosticsGdi, _openLog, _selfTest })
         {
             button.Margin = new Padding(0, 0, Theme.S2, Theme.S2);
             buttonRow.Controls.Add(button);
@@ -557,7 +562,7 @@ public sealed class MainForm : Form
         return MakeCard(new Padding(Theme.S3),
             _method, _fps, _kb, _adaptive, _frameStages, _monitoring, _survived, _failures,
             _relayState, _identityDetail, _identityFile, _relayUrl, _allAddresses,
-            qualityRow, linkRow, buttonRow);
+            qualityRow, linkRow, buttonRow, _selfTestResult);
     }
 
     private void SetTechnicalOpen(bool open)
@@ -745,6 +750,53 @@ public sealed class MainForm : Form
         {
             StartSharing();
         }
+    }
+
+    /// <summary>
+    /// Runs the program's own housekeeping checks and puts the verdict on this screen. The full
+    /// report is written to a file and opened, but the ONE word that matters is on the line here, so
+    /// the answer does not depend on anyone reading a report to find it.
+    ///
+    /// It touches nothing but its own temporary folder — see <see cref="SelfTest"/> — so it is safe
+    /// to press during a live session. Off the UI thread because it writes to a disk.
+    /// </summary>
+    private async void RunSelfTest()
+    {
+        string originalText = _selfTest.Text;
+        _selfTest.Enabled = false;
+        _selfTest.Text = "Running…";
+        _selfTestResult.Text = "Self-test: running…";
+
+        SelfTest.Result result;
+        try
+        {
+            result = await Task.Run(SelfTest.Run);
+        }
+        catch (Exception ex)
+        {
+            // A check that cannot run is a FAIL, not a blank. Silence would read as a pass.
+            result = new SelfTest.Result(false, 0, 1, ex.Message);
+        }
+
+        _selfTest.Text = originalText;
+        _selfTest.Enabled = true;
+        _selfTestResult.Text = "Self-test: " + result.Summary;
+        _selfTestResult.ForeColor = result.Passed ? Theme.TextSecondary : Theme.Red;
+
+        try
+        {
+            string path = Path.Combine(DesktopOrBase(),
+                $"FlashDesk-selftest-{Environment.MachineName}-{DateTime.Now:yyyyMMdd-HHmmss}.txt");
+            File.WriteAllText(path, result.Report, new System.Text.UTF8Encoding(true));
+            OpenFile(path);
+        }
+        catch { /* the verdict is already on screen; the file is the detail, not the answer */ }
+    }
+
+    private static string DesktopOrBase()
+    {
+        string desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+        return string.IsNullOrEmpty(desktop) ? AppContext.BaseDirectory : desktop;
     }
 
     private async void RunDiagnostics(bool forceGdi)

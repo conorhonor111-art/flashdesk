@@ -69,6 +69,14 @@ public static class LinkTest
     public static string Run(string? outputPath = null, int secondsPerRun = 8)
     {
         var report = new StringBuilder();
+
+        // The self-test goes FIRST, and at the top rather than in an appendix, because a failure
+        // here is the kind that must not be scrolled past: it says the program's own housekeeping
+        // is broken on this machine, which matters more than any number below it.
+        var selfTest = SelfTest.Run();
+        report.AppendLine(selfTest.Report);
+        report.AppendLine();
+
         report.AppendLine("FlashDesk link test — adaptive quality and frame rate");
         report.AppendLine("====================================================");
         report.AppendLine($"Time            : {DateTime.Now:yyyy-MM-dd HH:mm:ss}");

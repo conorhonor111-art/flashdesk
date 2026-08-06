@@ -31,6 +31,18 @@ internal static class Program
             return;
         }
 
+        // The housekeeping checks on their own: `FlashDesk.exe --selftest`. Prints the report and
+        // exits 0 for PASS, 1 for FAIL, so it can be checked without anyone reading it. The same
+        // checks run from the technical view's button and at the top of --linktest — one piece of
+        // code, three ways in, so they can never disagree about what passing means.
+        if (args.Length > 0 && args[0] == "--selftest")
+        {
+            var result = SelfTest.Run();
+            Console.WriteLine(result.Report);
+            Environment.Exit(result.Passed ? 0 : 1);
+            return;
+        }
+
         ApplicationConfiguration.Initialize();
         Application.Run(new MainForm());
     }
