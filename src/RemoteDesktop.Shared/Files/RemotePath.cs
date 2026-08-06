@@ -118,6 +118,146 @@ public static class RemotePath
         return true;
     }
 
+    // ============================================================================================
+    // THE WRITE SIDE. Reading and writing are not the same risk and are not checked the same way.
+    // Reading is allowed across the whole drive, so a path only has to be a real place on this
+    // machine. Writing is confined to ONE folder the operator chose, because writing is where
+    // damage is permanent — and that confinement rests on two things: the filename must be a BARE
+    // NAME, and the containment test must run on the RESOLVED path, never on the joined string.
+    // ============================================================================================
+
+    /// <summary>Longest filename Windows accepts in a single path segment.</summary>
+    public const int MaxFileNameLength = 255;
+
+    /// <summary>
+    /// True when <paramref name="name"/> is a plain filename that cannot move a write anywhere but
+    /// into the folder it is joined to.
+    /// </summary>
+    public static bool IsSafeFileName(string? name, out string? problem)
+    {
+        problem = null;
+
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            problem = "No file name was given.";
+            return false;
+        }
+
+        if (name.Length > MaxFileNameLength)
+        {
+            problem = "That file name is too long.";
+            return false;
+        }
+
+        if (name.IndexOf('\0') >= 0 || name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+        {
+            // GetInvalidFileNameChars covers both separators and the colon, so this one test
+            // catches "sub\file.txt", "sub/file.txt", "C:evil.txt" and "report.txt:hidden" — the
+            // alternate-data-stream form that writes bytes Explorer does not show.
+            problem = "That file name contains characters that are not allowed.";
+            return false;
+        }
+
+        if (name == "." || name == "..")
+        {
+            problem = "That is not a file name.";
+            return false;
+        }
+
+        // ⚠ Windows SILENTLY STRIPS a trailing dot or space. "evil.exe." becomes "evil.exe" AFTER
+        // any check that saw a different name — so the thing written is not the thing approved.
+        // Refused rather than trimmed: a name that changes between being checked and being used is
+        // the shape of a bypass, and trimming it would hide that rather than stop it.
+        if (name.EndsWith('.') || name.EndsWith(' '))
+        {
+            problem = "A file name cannot end with a dot or a space.";
+            return false;
+        }
+
+        if (IsReservedStem(name))
+        {
+            problem = "That name is reserved by Windows and is not a file.";
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Joins a bare filename to the folder the operator chose and proves the result is still inside
+    /// it. Returns false, with a reason, for anything else.
+    ///
+    /// <para>The containment test compares against the folder PLUS a separator. Without that,
+    /// <c>C:\Temp2</c> passes a check for <c>C:\Temp</c> — the prefix bug — and a file lands in a
+    /// folder nobody chose.</para>
+    ///
+    /// <para><b>This is not the whole defence.</b> A junction placed at the destination between
+    /// this check and the write redirects it, and no string test can see that. The handle must be
+    /// re-checked after opening, and that belongs with the code that does the opening.</para>
+    /// </summary>
+    public static bool TryResolveInside(string? folder, string? name, out string? full, out string? problem)
+    {
+        full = null;
+
+        if (!TryResolve(folder, out string? canonicalFolder, out problem)) return false;
+        if (!IsSafeFileName(name, out problem)) return false;
+
+        string root = canonicalFolder!.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        string candidate;
+        try
+        {
+            candidate = Path.GetFullPath(Path.Combine(root, name!));
+        }
+        catch (Exception)
+        {
+            problem = "That destination could not be understood.";
+            return false;
+        }
+
+        // The separator is what makes this containment rather than string matching.
+        string prefix = root + Path.DirectorySeparatorChar;
+        if (!candidate.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+        {
+            problem = "That file would be written outside the chosen folder.";
+            return false;
+        }
+
+        full = candidate;
+        return true;
+    }
+
+    /// <summary>
+    /// File types Windows will run, or that run something, so the person being asked can be told a
+    /// PROGRAM is arriving rather than a file. Not a security boundary — the list cannot be
+    /// complete and a renamed executable defeats it — it exists so the consent question can say
+    /// what is actually happening.
+    /// </summary>
+    public static bool LooksExecutable(string name)
+    {
+        string ext = Path.GetExtension(name);
+        foreach (string e in ExecutableExtensions)
+            if (ext.Equals(e, StringComparison.OrdinalIgnoreCase)) return true;
+        return false;
+    }
+
+    private static readonly string[] ExecutableExtensions =
+    {
+        ".exe", ".com", ".scr", ".pif",
+        ".bat", ".cmd", ".ps1", ".vbs", ".vbe", ".js", ".jse", ".wsf", ".wsh",
+        ".msi", ".msp", ".msc",
+        ".dll", ".cpl", ".ocx",
+        ".lnk", ".url", ".reg", ".hta", ".jar",
+    };
+
+    private static bool IsReservedStem(string segment)
+    {
+        int dot = segment.IndexOf('.');
+        string stem = (dot >= 0 ? segment[..dot] : segment).TrimEnd(' ');
+        foreach (string reserved in ReservedNames)
+            if (stem.Equals(reserved, StringComparison.OrdinalIgnoreCase)) return true;
+        return false;
+    }
+
     private static bool HasReservedName(string canonical)
     {
         foreach (string segment in canonical.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
