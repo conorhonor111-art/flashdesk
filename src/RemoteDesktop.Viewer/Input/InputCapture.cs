@@ -31,6 +31,36 @@ public sealed class InputCapture
         set { _enabled = value; if (!value) ReleaseHeld(); }
     }
 
+    private bool _suspended;
+
+    /// <summary>
+    /// True while the operator is typing into FlashDesk's own window instead of driving the remote
+    /// machine. Kept SEPARATE from <see cref="Enabled"/> on purpose: Enabled is the operator's own
+    /// "Control remote" choice, and a temporary suspension must not silently turn it off and leave
+    /// it off when they finish typing.
+    /// </summary>
+    public bool Suspended => _suspended;
+
+    /// <summary>
+    /// Stop driving the remote machine, because the operator is about to type into this program.
+    ///
+    /// <para><b>THE ORDER IS THE WHOLE POINT.</b> Every held key is released FIRST, and only then
+    /// does forwarding stop. The other way round, the key-ups would be swallowed by the very
+    /// suspension they are meant to precede, and the remote machine would be left with Ctrl or Alt
+    /// held down — unusable, with nothing on screen explaining why. (<see cref="ReleaseHeld"/>
+    /// deliberately does not consult <see cref="Active"/>, so it works either way; the order is
+    /// still written this way so it stays correct if that ever changes.)</para>
+    /// </summary>
+    public void Suspend()
+    {
+        if (_suspended) return;
+        ReleaseHeld();
+        _suspended = true;
+    }
+
+    /// <summary>Back to driving the remote machine. Nothing is pressed on the way out.</summary>
+    public void Resume() => _suspended = false;
+
     public InputCapture(ScreenCanvas canvas, Action<InputEvent> send)
     {
         _canvas = canvas;
@@ -47,7 +77,7 @@ public sealed class InputCapture
         _canvas.LostFocus += (_, _) => ReleaseHeld();
     }
 
-    private bool Active => _enabled && _canvas.Focused;
+    private bool Active => _enabled && !_suspended && _canvas.Focused;
 
     private bool Map(MouseEventArgs e, out int x, out int y) => _canvas.TryMapToHost(e.Location, out x, out y);
 
