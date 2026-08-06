@@ -74,4 +74,4 @@ And one thing that would help me a lot: on your computer there is a file at
 
 If you can find it and send it to me, it tells me how well the connection worked
 without you having to describe anything. It contains no personal information -
-only times, my number, and how fast the picture was.
+only times, my number, the size of your screen, and how fast the picture was.

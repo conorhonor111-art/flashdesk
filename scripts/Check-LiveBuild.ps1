@@ -178,6 +178,9 @@ if (-not $buttonUrl) {
     }
 }
 
+# The live page's HTML, kept for the asset sweep in section 6.
+$livePage = $null
+
 # ------------------------------------------------------- 5. is the PAGE current?
 # Added after being caught a SECOND time by the same class of problem: the exe was current and the
 # page was not, so the site told people the download was "about 65 MB" when it was 68.5. Everything
@@ -238,7 +241,66 @@ if (-not (Test-Path $localPage)) {
     }
 }
 
-# --------------------------------------------------------------- 6. the verdict
+# -------------------------------------------- 6. does everything the page asks for actually exist?
+# ⚠ ADDED 2026-08-06, AFTER THIS SCRIPT SAID "READY" WHILE THE PAGE WAS VISIBLY BROKEN.
+# The page had just gained its first two files that are not index.html - a screenshot and a font -
+# and only index.html was uploaded. Section 5 compared the HTML and found it identical, section 3
+# found the exe current, so the check reported READY while every visitor saw the alt text
+# "The FlashDesk window: a large 9-digit number..." where the picture should have been.
+#
+# THE LESSON, and it is the same one this whole script exists for: a page that is byte-identical to
+# the repository can still be broken, because being correct is not the same as being complete. So
+# now every URL the page asks the browser to fetch is fetched.
+Say ''
+Say '6. Everything the page asks the browser to load'
+if (-not $livePage) {
+    Bad 'The live page was not readable, so its images and fonts could not be checked.'
+} else {
+    $refs = New-Object System.Collections.Generic.List[string]
+    foreach ($m in [regex]::Matches($livePage, '(?i)\ssrc\s*=\s*"([^"]+)"'))          { $refs.Add($m.Groups[1].Value) }
+    foreach ($m in [regex]::Matches($livePage, '(?i)url\(\s*[''"]?([^''")]+)[''"]?\s*\)')) { $refs.Add($m.Groups[1].Value) }
+    foreach ($m in [regex]::Matches($livePage, '(?i)<link[^>]+href\s*=\s*"([^"]+)"'))  { $refs.Add($m.Groups[1].Value) }
+
+    # data: URIs are already inside the page, and #anchors and mail links fetch nothing.
+    $assets = $refs | Where-Object { $_ -notmatch '^(data:|#|mailto:|tel:)' } | Sort-Object -Unique
+
+    if ($assets.Count -eq 0) {
+        Good 'The page loads nothing but itself.'
+    }
+    foreach ($a in $assets) {
+        if ($a -match '^https?://') {
+            $assetHost = ([uri]$a).Host
+            if ($assetHost -notlike '*flashdesk.org') {
+                # CLAUDE.md records that this page fetches NOTHING from anywhere else, which is what
+                # makes it survive a GitHub takedown. An external asset silently ends that property.
+                Bad "The page loads an asset from another site: $a"
+                Note 'This page is supposed to fetch nothing external - that is what keeps it working'
+                Note 'if GitHub ever removes the repository. Host the file on flashdesk.org instead.'
+                continue
+            }
+            $full = $a
+        } else {
+            $full = ($Site.TrimEnd('/')) + '/' + $a.TrimStart('/')
+        }
+
+        try {
+            $r = Invoke-WebRequest -Uri $full -UseBasicParsing -TimeoutSec 60 -Method Get
+            if ($r.StatusCode -eq 200) {
+                Good ("{0}  ({1:N0} bytes)" -f $a, $r.RawContentLength)
+            } else {
+                Bad ("{0} answered with status {1}." -f $a, $r.StatusCode)
+            }
+        } catch {
+            $code = $null
+            if ($_.Exception.Response) { $code = [int]$_.Exception.Response.StatusCode }
+            if ($code) { Bad ("{0} is MISSING from the server (HTTP {1})." -f $a, $code) }
+            else       { Bad ("{0} could not be fetched: {1}" -f $a, $_.Exception.Message) }
+            Note ("Upload it to the same folder as index.html. In this repository it is site\{0}" -f ($a -replace '^/',''))
+        }
+    }
+}
+
+# --------------------------------------------------------------- 7. the verdict
 Remove-Item $temp -Force -ErrorAction SilentlyContinue
 Say ''
 Say '================================================================'

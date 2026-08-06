@@ -262,8 +262,63 @@
 
   @media (min-width: 640px) {
     body { padding-top: var(--s5); font-size: 1.25rem; }
-    h1 { font-size: 2.1rem; }
+    :root { --h1: 2.1rem; }
     .download { font-size: 1.5rem; padding: var(--s3) var(--s4); }
+  }
+
+  /* ---------------------------------------------------------------------------------------------
+     THE DESKTOP LAYOUT. Below 900px nothing here applies and the phone layout is untouched — that
+     one carries the product and must never get worse to make a monitor look better.
+
+     What the width is for: the page used to be a 640px phone column stranded in a black field, and
+     the largest thing on a 1200px screen was a green slab the width of a wall. So above 900px the
+     screenshot moves BESIDE the words rather than below them, the button shrinks to its own size
+     instead of spanning the measure, and the type steps up. The prose below the hero deliberately
+     does NOT widen: a line of body text is readable to about 70 characters and no further, so the
+     column stays put and the space to its right is left empty on purpose rather than filled.
+     --------------------------------------------------------------------------------------------- */
+  @media (min-width: 900px) {
+    :root { --h1: 2.9rem; --h2: 1.6rem; }
+    main { max-width: 66rem; }
+
+    /* Two columns. The figure is placed by GRID, not by moving it in the markup, so the phone's
+       reading order (scam warning, then picture) survives untouched. */
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      column-gap: var(--s5);
+      align-items: start;
+      margin-bottom: var(--s5);
+      padding-bottom: var(--s5);
+      border-bottom: 1px solid var(--line);
+    }
+    .hero-main { grid-column: 1; min-width: 0; }
+    .hero .shot { grid-column: 2; grid-row: 1; margin: 0; align-self: center; }
+    .hero .shot img { max-width: 25rem; }
+
+    h1 { margin-bottom: var(--s2); }
+    .phone-note { max-width: 30rem; }
+
+    /* A slab of green the width of the column is a wall at this size. The button takes its own
+       width, and the eye still finds it because it is the only filled block on the page. */
+    .download {
+      display: inline-block;
+      padding: var(--s2) var(--s5);
+      margin-bottom: var(--s2);
+    }
+    .download-meta { text-align: left; margin-bottom: var(--s3); }
+    .scam { font-size: 1.2rem; max-width: 32rem; margin-bottom: 0; }
+
+    /* Everything after the hero keeps a readable measure and stays on the hero's left edge, so the
+       page reads as one column of prose under a full-width band rather than as text that forgot to
+       stretch. */
+    main > section { max-width: 40rem; }
+  }
+
+  @media (min-width: 1300px) {
+    :root { --h1: 3.2rem; }
+    .hero { column-gap: 4rem; }
+    .hero .shot img { max-width: 28rem; }
   }
 </style>
 </head>
@@ -280,6 +335,17 @@
     </svg>
     <span>FlashDesk</span>
   </header>
+
+  <!-- The hero exists ONLY so the desktop layout has something to work with. On a phone it is a
+       plain block and everything inside it stacks exactly as it did before — the phone layout is
+       the one that matters and it must not get worse. On a wide screen it becomes two columns with
+       the screenshot beside the words instead of below them.
+       DOM ORDER IS LOAD-BEARING: the scam warning is inside .hero-main and the picture is its
+       sibling, so on a phone the warning is still read BEFORE the picture. Do not move the figure
+       above .hero-main to "fix" the desktop column order — use grid placement, which is what the
+       stylesheet does. -->
+  <div class="hero">
+   <div class="hero-main">
 
   <h1>Remote support for your computer.</h1>
   <!-- The old line said only "Open this page on the computer you need help with." Read as a
@@ -307,6 +373,8 @@
   <p class="scam">If someone phoned you out of the blue and told you to come here,
   <strong>hang up</strong>. Only download this if you contacted us yourself.</p>
 
+   </div><!-- /.hero-main -->
+
   <!-- ⚠ THE SCREENSHOT SITS BELOW THE SAFETY WARNING, NOT ABOVE IT, AND THAT ORDER IS DELIBERATE.
        Putting a picture between the button and the warning would demote the single most important
        sentence on the page below a photograph of a grey window. The warning stays the first thing
@@ -321,6 +389,7 @@
       9-digit number with a Copy button, and one button to stop sharing.">
     <figcaption>This is the whole program. Your number will be different.</figcaption>
   </figure>
+  </div><!-- /.hero -->
 
   <section>
     <!-- Called "Three steps" until the safety check was added as a fourth. A heading that counts
