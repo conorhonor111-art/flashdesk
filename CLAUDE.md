@@ -136,8 +136,21 @@ Stage 3.)*
 
 ## 4. Hard rules — do not design around these
 
-1. **The client must accept every session by hand.** An incoming connection shows a dialog
-   with my ID and name, and Accept / Reject buttons. Timeout means Reject.
+1. **The client must accept every session by hand.** An incoming connection shows a dialog with
+   **the caller's verified 9-digit number** and Accept / Reject buttons. Timeout means Reject.
+
+   ⚠️ **THE DIALOG SHOWS THE NUMBER AND NOTHING ELSE. NEVER A NAME.** This rule said "my ID and
+   name" until 2026-08-06, and that was a hole waiting to be dug: **a name is whatever the caller
+   types, so a scammer would put "Microsoft Support" in it** — and the one window standing between
+   a stranger and their machine would be helping the lie. The 9-digit number cannot be chosen; the
+   relay binds it to a secret and refuses anyone claiming an ID that is not theirs, so it is the
+   only identifier on that screen that has been *verified* rather than *asserted*.
+   Checked 2026-08-06: no peer-supplied name exists anywhere today — not on the wire, not in the
+   relay handshake, not in the dialog. The danger was never a bug in the code; it was **this
+   sentence**, which invited a future session to add the field in good faith. It is fixed here so
+   that cannot happen. The same rule governs every later consent surface, including the file-access
+   and overwrite prompts: **identify the caller by the verified number, never by anything they
+   chose for themselves.**
 2. **A live session is always visible on their screen** — a persistent on-screen strip or
    border with a Disconnect button, which I cannot hide or suppress from my side.
 3. **No hidden, silent or invisible mode ever.** Visible window, visible tray icon, and the
