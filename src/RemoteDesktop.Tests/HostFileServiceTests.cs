@@ -716,7 +716,39 @@ public class HostFileServiceTests : IAsyncLifetime
         Assert.Equal(FileStatus.NoRoom, reply.Status);
         Assert.NotEmpty(reply.Message);
         Assert.Empty(Directory.GetFiles(_folder));
-        Assert.Empty(_asked); // and without troubling the person about a file that cannot fit
+
+        // The person IS asked first, and that is deliberate — it changed on 2026-08-06 and this row
+        // changed with it. Checking the disk before the answer looks tidier and leaks: it lets a
+        // refused operator tell "folder exists" from "folder does not" for any path they like, with
+        // nothing appearing on the client's screen, which enumerates their account names and their
+        // installed software. Nothing may be learned from the disk before consent.
+        Assert.Single(_asked);
+    }
+
+    [Fact]
+    public async Task After_a_refusal_the_disk_answers_no_more_questions()
+    {
+        // The oracle in full: refuse once, then probe. Every answer must be identical whether the
+        // folder exists or not, or the refusal was only about writing and not about knowing.
+        _allowIncoming = false;
+        var service = NewService(consent: true);
+
+        var first = await UploadAsync(service, 5, "a.txt", new byte[10]);
+        Assert.Equal(FileStatus.RefusedByPerson, first.Reply.Status);
+
+        var real = await UploadAsync(service, 6, "b.txt", new byte[10], _folder);
+        var imaginary = await UploadAsync(service, 7, "b.txt", new byte[10], Path.Combine(_folder, "no-such-folder"));
+
+        Assert.Equal(FileStatus.RefusedByPerson, real.Reply.Status);
+        Assert.Equal(FileStatus.RefusedByPerson, imaginary.Reply.Status);
+        Assert.Equal(real.Reply.Message, imaginary.Reply.Message);
+
+        // And a size no disk could hold is answered the same way, so free space cannot be bisected.
+        Assert.True(service.TryHandle(MessageType.FileSendRequest,
+            new FileSendRequest(8, _folder, "huge.bin", long.MaxValue / 2).ToBytes(), CancellationToken.None));
+        Assert.Equal(FileStatus.RefusedByPerson, FileSendReply.FromBytes((await NextAsync()).Payload).Status);
+
+        Assert.Single(_asked); // asked exactly once, at the start, and never again
     }
 
     [Fact]
@@ -747,6 +779,123 @@ public class HostFileServiceTests : IAsyncLifetime
             (await ExchangeAsync(await AllowedServiceAsync(), MessageType.DirListRequest,
                 new DirListRequest(9, _folder, 0).ToBytes())).Payload);
         Assert.Equal(FileStatus.Ok, reply.Status);
+    }
+
+    // ------------------------------------------------------------------ found by an adversarial read
+
+    [System.Runtime.InteropServices.DllImport("kernel32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+    private static extern int GetShortPathNameW(string path, System.Text.StringBuilder shortPath, int length);
+
+    [Fact]
+    public async Task A_short_name_alias_cannot_be_used_to_destroy_a_file_the_dialog_never_names()
+    {
+        // THE ATTACK: Windows keeps an 8.3 alias for a long file name, and Path.GetFullPath expands
+        // it. So "IMPORT~1.DOC" resolves onto "important-document.docx". Every path rule passes, the
+        // overwrite dialog says "They are sending IMPORT~1.DOC" — a name the person has never seen —
+        // they conclude it is junk, press Replace, and their own document is destroyed under a name
+        // that appeared nowhere on their screen. The session log records the same fiction.
+        string real = Path.Combine(_folder, "important-document.docx");
+        File.WriteAllText(real, "somebody's actual work");
+
+        var buffer = new System.Text.StringBuilder(300);
+        GetShortPathNameW(real, buffer, buffer.Capacity);
+        string alias = Path.GetFileName(buffer.ToString());
+
+        // 8.3 alias creation can be switched off per volume. If it is, there is nothing to attack
+        // here and saying so is better than a test that silently proves nothing.
+        if (string.Equals(alias, "important-document.docx", StringComparison.OrdinalIgnoreCase) || alias.Length == 0)
+            return;
+
+        _replaceAnswer = ReplaceChoice.Replace; // the person is talked into it
+        var service = NewService(consent: true);
+
+        Assert.True(service.TryHandle(MessageType.FileSendRequest,
+            new FileSendRequest(5, _folder, alias, 16).ToBytes(), CancellationToken.None));
+        var reply = FileSendReply.FromBytes((await NextAsync()).Payload);
+
+        Assert.Equal(FileStatus.NotAllowed, reply.Status);
+        Assert.Equal("somebody's actual work", File.ReadAllText(real));
+        Assert.Empty(_asked);    // and the person was never troubled with the misleading name
+        Assert.Empty(_arrived);
+    }
+
+    [Fact]
+    public async Task A_yes_for_one_folder_is_not_a_yes_for_every_folder()
+    {
+        // The dialog says "into <folder>" and then "Nothing else on this computer is changed".
+        // Until this was fixed, one yes for a readme in Downloads licensed writes anywhere the
+        // account could reach for the rest of the connection.
+        string other = Path.Combine(_folder, "elsewhere");
+        Directory.CreateDirectory(other);
+
+        var service = NewService(consent: true);
+
+        await UploadAsync(service, 5, "readme.txt", new byte[8]);
+        Assert.Single(_asked);
+        Assert.Equal(_folder, _asked[0].Folder);
+
+        await UploadAsync(service, 6, "second.txt", new byte[8]);
+        Assert.Single(_asked); // same folder: not asked again, as intended
+
+        await UploadAsync(service, 7, "user.js", new byte[8], other);
+        Assert.Equal(2, _asked.Count);         // a DIFFERENT folder is a different question
+        Assert.Equal(other, _asked[1].Folder);
+    }
+
+    [Fact]
+    public async Task A_folder_that_points_somewhere_else_is_not_listed()
+    {
+        // A directory link is invisible in a string: C:\Projects can BE \\fileserver\finance, and
+        // every check that reads the path agrees it is on drive C. Only the open handle knows.
+        // A UNC target needs a privilege this account does not have, so the link here is local —
+        // which still proves the handle check RUNS on the listing path, which is what was missing.
+        string real = Path.Combine(_folder, "real");
+        string link = Path.Combine(_folder, "link");
+        Directory.CreateDirectory(real);
+        File.WriteAllBytes(Path.Combine(real, "secret.txt"), new byte[10]);
+
+        var made = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(
+            "cmd.exe", $"/c mklink /J \"{link}\" \"{real}\"") { UseShellExecute = false, CreateNoWindow = true });
+        made!.WaitForExit();
+        if (!Directory.Exists(link)) return; // no junction, nothing to prove
+
+        var service = await AllowedServiceAsync();
+        var reply = DirListReply.FromBytes(
+            (await ExchangeAsync(service, MessageType.DirListRequest, new DirListRequest(9, link, 0).ToBytes())).Payload);
+
+        Assert.Equal(FileStatus.NotAllowed, reply.Status);
+        Assert.Empty(reply.Entries);
+
+        // ...and the real folder still lists perfectly, so the check refuses the redirection and not
+        // ordinary work.
+        var honest = DirListReply.FromBytes(
+            (await ExchangeAsync(service, MessageType.DirListRequest, new DirListRequest(10, real, 0).ToBytes())).Payload);
+        Assert.Equal(FileStatus.Ok, honest.Status);
+        Assert.Equal("secret.txt", Assert.Single(honest.Entries).Name);
+
+        // Remove the junction itself, or the folder cleanup cannot delete the tree and the test
+        // leaves litter behind — which would be a poor advertisement for this feature.
+        try { Directory.Delete(link); } catch { }
+    }
+
+    [Fact]
+    public async Task Hidden_data_inside_a_file_cannot_be_read()
+    {
+        // An alternate data stream is a second body of bytes attached to a file that appears in no
+        // listing at all — not ours, not Explorer's. Reading one would hand over content the person
+        // has no way of knowing is there.
+        string host = Path.Combine(_folder, "innocent.txt");
+        File.WriteAllText(host, "nothing to see");
+        try { File.WriteAllText(host + ":hidden", "the real payload"); }
+        catch { return; } // the volume does not support streams
+
+        var service = await AllowedServiceAsync();
+        Assert.True(service.TryHandle(MessageType.FileGetRequest,
+            new FileGetRequest(11, host + ":hidden", 0).ToBytes(), CancellationToken.None));
+
+        var end = FileGetEnd.FromBytes((await NextAsync()).Payload);
+        Assert.Equal(FileStatus.NotAllowed, end.Status);
+        Assert.Equal(0, end.TotalBytes);
     }
 
     private async Task<(byte[] Bytes, FileGetEnd End)> CollectTransferAsync(int requestId)

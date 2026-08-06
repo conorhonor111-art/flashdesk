@@ -49,6 +49,11 @@ public static class SelfTest
         report.AppendLine("Unfinished-file cleanup - what a transfer that was cut off leaves behind,");
         report.AppendLine("and, far more importantly, what must never be deleted.");
         report.AppendLine();
+        report.AppendLine("WHAT THIS DOES NOT CHECK, so a PASS is not read as more than it is: it does not");
+        report.AppendLine("run a transfer. It checks the LEDGER half only. If the code that renames a");
+        report.AppendLine("finished file, or the one exit that cleans up after a failure, were broken, this");
+        report.AppendLine("would still say PASS. Those are covered by the test suite, not from in here.");
+        report.AppendLine();
 
         var checks = new List<(string What, bool Passed, string Detail)>();
         string root = Path.Combine(Path.GetTempPath(), "FlashDesk-selftest-" + Guid.NewGuid().ToString("N"));

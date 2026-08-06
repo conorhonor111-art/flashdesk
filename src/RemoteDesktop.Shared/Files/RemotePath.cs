@@ -108,6 +108,19 @@ public static class RemotePath
             return false;
         }
 
+        // ⚠ THE SECOND COLON IS AN ALTERNATE DATA STREAM. `report.txt:hidden` is a separate body of
+        // bytes attached to a file, and it does not appear in any listing — not ours, not Explorer's.
+        // Without this, an operator could read content the person at that machine has no way of even
+        // knowing is there, from a file whose visible contents are innocent. The write side has
+        // refused this since it was written (IsSafeFileName rejects the colon outright); the read
+        // side did not, and reading is the side where the secrecy matters.
+        // Found by an adversarial read of this file, 2026-08-06.
+        if (canonical.IndexOf(':', 2) >= 0)
+        {
+            problem = "That name refers to hidden data inside a file, which cannot be opened.";
+            return false;
+        }
+
         if (HasReservedName(canonical))
         {
             problem = "That name is reserved by Windows and is not a file.";
@@ -180,8 +193,36 @@ public static class RemotePath
             return false;
         }
 
+        // ⚠ A NAME THAT DOES NOT READ THE WAY IT IS SPELLED. Unicode has characters that reverse the
+        // direction of the text after them, and Windows, our own dialogs and Explorer all honour
+        // them. `Invoice‮xcod.exe` is displayed as `Invoiceexe.docx` — so the ONE line on the
+        // consent dialog whose job is to say what is arriving would show a document while a program
+        // arrived. The whole feature rests on that line being true, so a name containing one of
+        // these is refused rather than displayed. Found by an adversarial read, 2026-08-06.
+        foreach (char c in name)
+        {
+            if (IsDirectionOverride(c))
+            {
+                problem = "That file name contains characters that are not allowed.";
+                return false;
+            }
+        }
+
         return true;
     }
+
+    /// <summary>
+    /// The Unicode characters that change which way following text is displayed: the explicit
+    /// bidirectional marks and the isolates. Listed by code point rather than by category, because
+    /// "is this character invisible" is a much larger and more arguable question than "can this
+    /// character make a name read backwards".
+    /// </summary>
+    /// <remarks>Written as escapes, not as the characters themselves: these are INVISIBLE, so a
+    /// literal here would be a rule nobody could see or review.</remarks>
+    private static bool IsDirectionOverride(char c) => c is
+        (char)0x200E or (char)0x200F              // left-to-right / right-to-left mark
+        or >= (char)0x202A and <= (char)0x202E    // the embeddings and the two overrides
+        or >= (char)0x2066 and <= (char)0x2069;   // the isolates
 
     /// <summary>
     /// Joins a bare filename to the folder the operator chose and proves the result is still inside

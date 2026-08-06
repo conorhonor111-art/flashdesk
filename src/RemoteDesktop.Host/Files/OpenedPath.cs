@@ -32,6 +32,34 @@ internal static class OpenedPath
     private static extern uint GetFinalPathNameByHandleW(
         SafeFileHandle hFile, [Out] char[] lpszFilePath, uint cchFilePath, uint dwFlags);
 
+    private const uint FILE_READ_ATTRIBUTES = 0x0080;
+    private const uint FILE_SHARE_ALL = 0x00000001 | 0x00000002 | 0x00000004; // read | write | delete
+    private const uint OPEN_EXISTING = 3;
+
+    /// <summary>Without this flag CreateFile refuses to open a FOLDER at all.</summary>
+    private const uint FILE_FLAG_BACKUP_SEMANTICS = 0x02000000;
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern SafeFileHandle CreateFileW(
+        string lpFileName, uint dwDesiredAccess, uint dwShareMode, IntPtr lpSecurityAttributes,
+        uint dwCreationDisposition, uint dwFlagsAndAttributes, IntPtr hTemplateFile);
+
+    /// <summary>
+    /// Opens a FOLDER just far enough to ask Windows where it really is.
+    ///
+    /// <para>.NET has no way to hold a directory handle — <c>FileStream</c> refuses one — so this is
+    /// the P/Invoke it needs. Attributes only, shared with everything, so opening a folder to check
+    /// it can never block anybody else's use of it.</para>
+    /// </summary>
+    internal static SafeFileHandle? OpenFolder(string path)
+    {
+        var handle = CreateFileW(path, FILE_READ_ATTRIBUTES, FILE_SHARE_ALL, IntPtr.Zero,
+            OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, IntPtr.Zero);
+
+        if (handle.IsInvalid) { handle.Dispose(); return null; }
+        return handle;
+    }
+
     /// <summary>
     /// The real path of whatever this handle has open, or null if Windows would not say.
     /// </summary>

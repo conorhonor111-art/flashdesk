@@ -17,6 +17,47 @@ namespace RemoteDesktop.Tests;
 /// </summary>
 public class RemotePathTests
 {
+    // ---- Found by an adversarial read of these rules, 2026-08-06. Both are names that are not
+    // what they appear to be, which is the one failure this whole file exists to prevent.
+
+    [Theory]
+    [InlineData(@"C:\Users\Ann\report.txt:hidden")]      // a second body of bytes, in no listing
+    [InlineData(@"C:\Users\Ann\report.txt:$DATA")]
+    [InlineData(@"C:\Users\Ann\folder:stream\a.txt")]
+    public void Hidden_data_inside_a_file_is_not_a_readable_location(string path)
+    {
+        // The write side has always refused a colon (IsSafeFileName). The READ side did not, and
+        // reading is the side where the secrecy matters: an alternate data stream is content the
+        // person at that machine has no way of knowing exists.
+        Assert.False(RemotePath.TryResolve(path, out _, out string? problem));
+        Assert.False(string.IsNullOrWhiteSpace(problem));
+    }
+
+    [Theory]
+    [InlineData("Invoice\u202Excod.exe")]   // displays as "Invoiceexe.docx"
+    [InlineData("\u202Egnp.exe")]
+    [InlineData("a\u200Fb.txt")]
+    [InlineData("a\u2066b\u2069.txt")]
+    public void A_name_that_does_not_read_the_way_it_is_spelled_is_refused(string name)
+    {
+        // Windows, our own dialogs and Explorer all honour these characters. The consent dialog's
+        // one job is to say what is arriving; a name that renders backwards makes that line a lie.
+        Assert.False(RemotePath.IsSafeFileName(name, out string? problem));
+        Assert.False(string.IsNullOrWhiteSpace(problem));
+    }
+
+    [Theory]
+    [InlineData("Invoice März.pdf")]
+    [InlineData("ანგარიში.pdf")]
+    [InlineData("Отчёт 2026.xlsx")]
+    [InlineData("normal-file (2).txt")]
+    public void Ordinary_names_in_any_language_are_still_accepted(string name)
+    {
+        // The direction rule must not become a rule against non-English names. It is aimed at four
+        // ranges of invisible formatting characters, not at alphabets.
+        Assert.True(RemotePath.IsSafeFileName(name, out _), name);
+    }
+
     // ---------------------------------------------------------------- must be REJECTED
 
     [Theory]

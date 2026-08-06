@@ -210,6 +210,24 @@ internal sealed class HostFileService : IDisposable
                 return;
             }
 
+            // ⚠ THE HANDLE RE-CHECK BELONGS HERE TOO, AND UNTIL 2026-08-06 IT WAS ONLY ON THE
+            // READ-A-FILE PATH. Everything above this line looks at a string, and a directory
+            // symbolic link is invisible in a string: C:\Projects can BE \\fileserver\finance, and
+            // both checks above would pass it happily — LocalDrives only asks what kind of drive
+            // C:\ is. Directory.EnumerateFiles then walks straight through the link and hands back
+            // every file name, size and date on somebody's employer's share, which the person in
+            // front of us cannot consent for.
+            //
+            // The contents were never reachable this way (StreamFileAsync has always re-checked),
+            // so what leaked was the listing — but a listing of a finance share is not a small
+            // thing. LocalDrives' own comment already said OpenedPath was what caught this case;
+            // on this path it was never called. Found by an adversarial read.
+            if (!FolderIsWhereWeMeant(folder!, out string? elsewhere))
+            {
+                await ListFailureAsync(request, FileStatus.NotAllowed, elsewhere!, ct).ConfigureAwait(false);
+                return;
+            }
+
             var reply = ReadPage(request.RequestId, folder!, request.Skip);
             await SendAsync(MessageType.DirListReply, reply.ToBytes(), ct).ConfigureAwait(false);
         }
@@ -285,6 +303,24 @@ internal sealed class HostFileService : IDisposable
         {
             return Failed(requestId, skip, FileStatus.ReadError, "That folder could not be read.");
         }
+    }
+
+    /// <summary>
+    /// Opens the folder and asks Windows where it actually is, before anything is enumerated out of
+    /// it. A folder that cannot be opened is reported as missing rather than as forbidden — that is
+    /// the ordinary case (a folder that is genuinely not there), and the caller's own checks will
+    /// produce the right words for the rest.
+    /// </summary>
+    private static bool FolderIsWhereWeMeant(string folder, out string? problem)
+    {
+        problem = null;
+
+        using var handle = OpenedPath.OpenFolder(folder);
+        if (handle is null) return true; // not openable: ReadPage will report NotFound or AccessDenied
+
+        return OpenedPath.IsWhereWeMeant(handle, folder.TrimEnd(Path.DirectorySeparatorChar).Length == 2
+            ? folder // a drive root: "C:\" is its own final path and must keep its separator
+            : folder.TrimEnd(Path.DirectorySeparatorChar), out problem);
     }
 
     private static IEnumerable<(string Path, bool IsDirectory)> Walk(string folder)
@@ -522,6 +558,46 @@ internal sealed class HostFileService : IDisposable
             return;
         }
 
+        // ⚠ THE NAME THAT WAS CHECKED MUST BE THE NAME THAT IS USED, AND UNTIL 2026-08-06 IT WAS NOT.
+        //
+        // Path.GetFullPath expands an 8.3 short name — measured, not assumed: joining a folder with
+        // "IMPORT~1.DOC" comes back as "important-document.docx". So a request could name a file the
+        // person at that machine has never seen, pass every rule, and resolve onto one of their real
+        // documents. The overwrite dialog would then say "They are sending IMPORT~1.DOC", the person
+        // would read a name they did not recognise, conclude it was junk, and press Replace — and
+        // their own document would be destroyed under a name that appeared nowhere on the screen.
+        // The session log would record the same fiction.
+        //
+        // This is the exact failure RemotePath already reasons about for a trailing dot: "a name
+        // that changes between being checked and being used is the shape of a bypass". It is refused
+        // rather than corrected, for the same reason given there. Found by an adversarial read.
+        string resolvedName = Path.GetFileName(full!);
+        if (!string.Equals(resolvedName, request.Name, StringComparison.Ordinal))
+        {
+            await SendReplyAsync(request.RequestId, FileStatus.NotAllowed,
+                "That file name means something different on that computer, so it was refused.", ct)
+                .ConfigureAwait(false);
+            return;
+        }
+
+        bool isProgram = RemotePath.LooksExecutable(resolvedName);
+
+        // 2. The person decides — BEFORE this program touches their disk in any way.
+        //
+        // ⚠ THE ORDER IS A PRIVACY BOUNDARY, not tidiness. The folder-exists and free-space checks
+        // used to run first, and they answered questions nobody had consented to: a refused operator
+        // could still tell NotFound from RefusedByPerson for any path they liked, unlimited and
+        // invisibly, which enumerates the account names under C:\Users and the software under
+        // C:\Program Files on a machine whose owner said no. Bisecting the declared size against
+        // NoRoom gave them the free space too. Nothing may be learned from the disk before the
+        // answer. Found by an adversarial read.
+        if (!await AllowedToWriteAsync(request, folder!, resolvedName, isProgram, ct).ConfigureAwait(false))
+        {
+            await SendReplyAsync(request.RequestId, FileStatus.RefusedByPerson,
+                "They said no to putting that file on their computer.", ct).ConfigureAwait(false);
+            return;
+        }
+
         if (!Directory.Exists(folder!))
         {
             await SendReplyAsync(request.RequestId, FileStatus.NotFound,
@@ -536,26 +612,18 @@ internal sealed class HostFileService : IDisposable
             return;
         }
 
-        bool isProgram = RemotePath.LooksExecutable(request.Name);
-
-        // 2. The person decides. Once per connection for files in general; EVERY time for a program,
-        //    by name — see IncomingFileDialog for why that is not the same question.
-        if (!await AllowedToWriteAsync(request, folder!, isProgram, ct).ConfigureAwait(false))
-        {
-            await SendReplyAsync(request.RequestId, FileStatus.RefusedByPerson,
-                "They said no to putting that file on their computer.", ct).ConfigureAwait(false);
-            return;
-        }
-
         // 3. Their file, their question. Never the operator's.
         string finalPath = full!;
-        string savedAs = request.Name;
+        // The RESOLVED leaf name everywhere from here on - never request.Name. The two are proved
+        // equal above, and this is belt and braces: if that check is ever weakened, the dialog and
+        // the log must still name the file that is actually at stake.
+        string savedAs = resolvedName;
         bool replacing = false;
 
         if (File.Exists(finalPath) || Directory.Exists(finalPath))
         {
             ReplaceChoice choice;
-            try { choice = _askReplace is null ? ReplaceChoice.Refuse : await _askReplace(_callerId, request.Name, folder!).ConfigureAwait(false); }
+            try { choice = _askReplace is null ? ReplaceChoice.Refuse : await _askReplace(_callerId, resolvedName, folder!).ConfigureAwait(false); }
             catch { choice = ReplaceChoice.Refuse; }
 
             switch (choice)
@@ -565,7 +633,7 @@ internal sealed class HostFileService : IDisposable
                     break;
 
                 case ReplaceChoice.KeepBoth:
-                    if (!TryFreeName(folder!, request.Name, out string? free, out string? why))
+                    if (!TryFreeName(folder!, resolvedName, out string? free, out string? why))
                     {
                         await SendReplyAsync(request.RequestId, FileStatus.NameTaken, why!, ct).ConfigureAwait(false);
                         return;
@@ -737,7 +805,14 @@ internal sealed class HostFileService : IDisposable
         await SendResultAsync(upload.RequestId, status, written, message, ct).ConfigureAwait(false);
     }
 
-    private async Task<bool> AllowedToWriteAsync(FileSendRequest request, string folder, bool isProgram, CancellationToken ct)
+    /// <summary>
+    /// The folder the person actually agreed to, or null if they have not been asked. The consent
+    /// is bound to THIS folder and no other — see below.
+    /// </summary>
+    private string? _uploadFolder;
+
+    private async Task<bool> AllowedToWriteAsync(
+        FileSendRequest request, string folder, string name, bool isProgram, CancellationToken ct)
     {
         await _uploadConsentGate.WaitAsync(ct).ConfigureAwait(false);
         try
@@ -745,12 +820,8 @@ internal sealed class HostFileService : IDisposable
             if (!_uploadAsked)
             {
                 _uploadAsked = true;
-                try
-                {
-                    _uploadAllowed = _askIncoming is not null
-                        && await _askIncoming(_callerId, request.Name, request.TotalBytes, folder, isProgram).ConfigureAwait(false);
-                }
-                catch { _uploadAllowed = false; }
+                _uploadAllowed = await AskAsync(request, folder, name, isProgram).ConfigureAwait(false);
+                if (_uploadAllowed) _uploadFolder = folder;
 
                 // That question already named this file, so a program asked about here is not asked
                 // about twice in a row.
@@ -759,20 +830,44 @@ internal sealed class HostFileService : IDisposable
 
             if (!_uploadAllowed) return false;
 
+            // ⚠ THE YES WAS FOR A FOLDER, AND THE DIALOG SAID SO. IncomingFileDialog shows "into
+            // C:\Users\Ann\Documents" and then "Nothing else on this computer is changed." Until
+            // 2026-08-06 that second sentence was not true: one yes for a readme in Downloads
+            // silently licensed writes anywhere the account could reach for the rest of the
+            // connection — a user.js into a browser profile, a template into %APPDATA%. A different
+            // folder is a different question, and asking it is not the repetition CLAUDE.md warns
+            // about; it is the question the person thought they were answering the first time.
+            // Found by an adversarial read.
+            if (!string.Equals(folder, _uploadFolder, StringComparison.OrdinalIgnoreCase))
+            {
+                bool allowedHere = await AskAsync(request, folder, name, isProgram).ConfigureAwait(false);
+                if (allowedHere) _uploadFolder = folder;
+                return allowedHere;
+            }
+
             // ⚠ A PROGRAM IS ASKED ABOUT EVERY TIME, by name. Without this, the first upload could
             // be a text file and every executable afterwards would arrive in silence — which is
-            // precisely the step a tech-support scam needs. Reversing it is one line, and it is the
-            // one place this goes beyond the written plan.
+            // precisely the step a tech-support scam needs. Approved by Conor 2026-08-06 as
+            // deliberate, with the reason: that silence is the exact shape of the scam.
             if (!isProgram) return true;
 
-            try
-            {
-                return _askIncoming is not null
-                    && await _askIncoming(_callerId, request.Name, request.TotalBytes, folder, true).ConfigureAwait(false);
-            }
-            catch { return false; }
+            return await AskAsync(request, folder, name, true).ConfigureAwait(false);
         }
         finally { _uploadConsentGate.Release(); }
+    }
+
+    /// <summary>
+    /// Puts the question on the client's screen. A missing callback means no — a wiring mistake must
+    /// fail closed. The NAME passed is the resolved one, never the one the request asked for.
+    /// </summary>
+    private async Task<bool> AskAsync(FileSendRequest request, string folder, string name, bool isProgram)
+    {
+        try
+        {
+            return _askIncoming is not null
+                && await _askIncoming(_callerId, name, request.TotalBytes, folder, isProgram).ConfigureAwait(false);
+        }
+        catch { return false; }
     }
 
     /// <summary>
