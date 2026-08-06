@@ -25,9 +25,9 @@
     <Description>FlashDesk — remote support. Shows your 9-digit number so someone you trust can see and control your screen while you watch.</Description>
     <Company>FlashDesk</Company>
     <Copyright>Copyright © 2026 FlashDesk</Copyright>
-    <Version>0.3.0</Version>
-    <FileVersion>0.3.0.0</FileVersion>
-    <AssemblyVersion>0.3.0.0</AssemblyVersion>
+    <Version>0.3.1</Version>
+    <FileVersion>0.3.1.0</FileVersion>
+    <AssemblyVersion>0.3.1.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>
