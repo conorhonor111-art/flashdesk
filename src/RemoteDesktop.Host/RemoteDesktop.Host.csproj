@@ -39,6 +39,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The file service and its two safety checks are internal on purpose — nothing outside this
+         project may reach a stranger's disk — but they are also the code in this program with the
+         worst failure mode, so the tests are let in. -->
+    <InternalsVisibleTo Include="RemoteDesktop.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\RemoteDesktop.Shared\RemoteDesktop.Shared.csproj" />
     <ProjectReference Include="..\RemoteDesktop.UI\RemoteDesktop.UI.csproj" />
     <!-- The operator half, merged in 2026-08-03: ONE FlashDesk.exe does both jobs, like AnyDesk.

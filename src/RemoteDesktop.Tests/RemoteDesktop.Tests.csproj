@@ -1,7 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <!-- net8.0-WINDOWS since 2026-08-06, and it is a deliberate change. The host's file service is
+         the first code in this project that opens a stranger's disk, and its safety checks
+         (LocalDrives, the OpenedPath handle re-check) can only exist in the Host project because
+         they need DriveInfo and Win32. A neutral test assembly could not reference them, which
+         would have left exactly the code with the worst failure mode as the only code with no
+         tests. RemoteDesktop.Shared itself is UNCHANGED and stays platform-neutral (architecture
+         rule 4) — the Linux relay still references it; only the tests moved. -->
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 
@@ -22,6 +30,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\RemoteDesktop.Shared\RemoteDesktop.Shared.csproj" />
+    <ProjectReference Include="..\RemoteDesktop.Host\RemoteDesktop.Host.csproj" />
   </ItemGroup>
 
 </Project>

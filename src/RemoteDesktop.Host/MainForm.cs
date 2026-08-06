@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using RemoteDesktop.Host.Capture;
 using RemoteDesktop.Host.Diagnostics;
+using RemoteDesktop.Host.Files;
 using RemoteDesktop.Host.Identity;
 using RemoteDesktop.Host.Net;
 using RemoteDesktop.Shared.Files;
@@ -193,6 +194,41 @@ public sealed class MainForm : Form
             }
             return done.Task;
         };
+
+        // The SECOND question — may they look at the files here. Asked once per connection, and on
+        // this machine's own screen, with FlashDesk's injected input blocked while it is up so the
+        // remote hand cannot answer it. Every outcome is written to the session log, including the
+        // asking, so the person can see afterwards that they were asked at all.
+        _server.FileAccessAsk = callerId =>
+        {
+            var done = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            try
+            {
+                BeginInvoke(() =>
+                {
+                    bool allowed = false;
+                    try
+                    {
+                        _sessionLog.FilesAsked(callerId);
+                        using var dialog = new FileConsentDialog(callerId);
+                        dialog.ShowDialog(this);
+                        allowed = dialog.Allowed;
+                        if (allowed) _sessionLog.FilesAllowed(callerId);
+                        else _sessionLog.FilesRefused(callerId);
+                    }
+                    catch { allowed = false; }
+                    done.TrySetResult(allowed);
+                });
+            }
+            catch
+            {
+                done.TrySetResult(false); // window gone: refuse
+            }
+            return done.Task;
+        };
+
+        _server.FileSentLogged = (callerId, name, bytes, folder) =>
+            _sessionLog.FileSent(callerId, name, bytes, folder);
 
         _server.SessionLogged = (callerId, starting) =>
         {

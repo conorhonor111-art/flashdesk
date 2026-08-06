@@ -4,6 +4,7 @@ using System.Text.Json;
 using RemoteDesktop.Host.Capture;
 using RemoteDesktop.Host.Diagnostics;
 using RemoteDesktop.Host.Encoding;
+using RemoteDesktop.Host.Files;
 using RemoteDesktop.Host.Input;
 using RemoteDesktop.Shared.Diagnostics;
 using RemoteDesktop.Shared.Identity;
@@ -62,6 +63,19 @@ public sealed class HostServer : IDisposable
     private static readonly TimeSpan ReconnectGrace = TimeSpan.FromSeconds(90);
     private string? _lastAcceptedId;
     private DateTimeOffset _lastAcceptedAt = DateTimeOffset.MinValue;
+
+    /// <summary>
+    /// Asked before the operator may look at ANY file on this machine — a separate question from
+    /// the one that started the session, asked once per connection. Null means refuse, so a wiring
+    /// mistake fails closed. It deliberately does NOT reuse the reconnect grace above: that grace
+    /// exists so a blinked link does not make two strangers repeat the code exchange, and applying
+    /// it to files would let an operator drop the link on purpose and come back with file access
+    /// they were never asked about again.
+    /// </summary>
+    public Func<string, Task<bool>>? FileAccessAsk;
+
+    /// <summary>A file finished leaving this machine: caller, file name, bytes, the folder it came from.</summary>
+    public Action<string, string, long, string>? FileSentLogged;
 
     /// <summary>Called with the caller's number when a session actually begins and when it ends.</summary>
     public Action<string, bool>? SessionLogged;
@@ -364,8 +378,13 @@ public sealed class HostServer : IDisposable
 
         ViewerConnected = true;
 
+        // One per connection, and it dies with the socket — which is what makes file consent
+        // per-connection rather than per-caller. See HostFileService.
+        using var files = new HostFileService(channel, Governor, _currentPeerId ?? string.Empty,
+            FileAccessAsk, FileSentLogged);
+
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        var inbound = InboundLoopAsync(channel, linked.Token);
+        var inbound = InboundLoopAsync(channel, files, linked.Token);
         try
         {
             await FrameLoopAsync(channel, linked.Token).ConfigureAwait(false);
@@ -380,12 +399,17 @@ public sealed class HostServer : IDisposable
     // Reads everything the viewer sends: echoes each Ping as a Pong, and injects each input event.
     // Runs alongside the frame loop; sends are serialised inside MessageChannel so a Pong and a frame
     // write never interleave.
-    private async Task InboundLoopAsync(MessageChannel channel, CancellationToken ct)
+    private async Task InboundLoopAsync(MessageChannel channel, HostFileService files, CancellationToken ct)
     {
         while (!ct.IsCancellationRequested)
         {
             var msg = await channel.ReceiveAsync(ct).ConfigureAwait(false);
             if (msg is null) break;
+
+            // File work goes onto its own task and this loop moves on. A directory walk or a disk
+            // read taking seconds on this thread would freeze the operator's mouse AND hold up the
+            // Pong below, which the governor would read as the link collapsing.
+            if (files.TryHandle(msg.Value.Type, msg.Value.Payload, ct)) continue;
 
             switch (msg.Value.Type)
             {

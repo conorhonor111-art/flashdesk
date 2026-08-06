@@ -28,6 +28,13 @@ public enum FileStatus : byte
 
     /// <summary>More entries than one listing may carry. Refused rather than silently truncated.</summary>
     TooMany = 9,
+
+    /// <summary>
+    /// The host is already doing one of these and will not start a second. Not an error the operator
+    /// caused: it bounds how much disk work one connection can set going at once, so a viewer that
+    /// is buggy or hostile cannot spawn an unbounded number of directory walks on someone's machine.
+    /// </summary>
+    Busy = 10,
 }
 
 /// <summary>
