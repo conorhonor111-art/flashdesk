@@ -109,6 +109,10 @@ public sealed class BandwidthGovernor
     /// measured against the session's baseline, never as an absolute: a genuinely distant machine has
     /// a high round trip with nothing wrong, and must not be throttled for being far away.
     /// </summary>
+    /// <remarks>⚠ <c>ProtocolConstants.MaxChunkSendHoldMs</c> is pinned UNDER this number: a file
+    /// chunk holds the same send lock the ping waits on, so a chunk allowed to hold it longer than
+    /// this would make every transfer look to the governor like a link backing up, and the picture
+    /// would drop for no reason. If this moves, that must move with it.</remarks>
     private const double QueueHeavyMs = 250;
     private const double QueueSevereMs = 750;
 
@@ -167,6 +171,36 @@ public sealed class BandwidthGovernor
 
     /// <summary>Measured link rate in bytes/s, or 0 while nothing has been slow enough to time.</summary>
     public double EstimatedBytesPerSecond => _rateEstimate;
+
+    /// <summary>
+    /// How big the next piece of a file should be, from what this link has been measured to carry.
+    /// The arithmetic and its reasoning live in <see cref="Shared.Files.FileChunkSize"/>; it is
+    /// surfaced here so the one caller does not have to know where the rate comes from.
+    /// </summary>
+    public int FileChunkBytes => Shared.Files.FileChunkSize.ForMeasuredRate(_rateEstimate);
+
+    /// <summary>
+    /// A file chunk just went out. Feeds the RATE ESTIMATE ONLY — it deliberately does not touch
+    /// the ladder.
+    ///
+    /// <para>Why it must feed the estimate: the rate is otherwise learned only from screen frames,
+    /// and a frame only measures anything when it blocked. During a download of a still screen the
+    /// frames are tiny and never block, so without this the link would stay "not yet measured" for
+    /// the whole transfer and every chunk would be the cautious unmeasured default. The chunks are
+    /// the biggest thing on the wire at that moment; they are the best measurement available.</para>
+    ///
+    /// <para>Why it must NOT move the ladder: a transfer legitimately fills the link, and being
+    /// full is not the same as being broken. If it genuinely delays the picture, the round-trip
+    /// signal sees that and steps down on evidence rather than on the mere fact that a file is
+    /// moving.</para>
+    /// </summary>
+    public void OnBulkSent(int bytes, double sendMs)
+    {
+        if (sendMs < MeasurableSendMs || bytes < MeasurableBytes) return;
+
+        double sample = bytes / (sendMs / 1000.0);
+        _rateEstimate = _rateEstimate <= 0 ? sample : (_rateEstimate * 0.7) + (sample * 0.3);
+    }
 
     public int Level => _level;
     public int LadderSize => Ladder.Length;

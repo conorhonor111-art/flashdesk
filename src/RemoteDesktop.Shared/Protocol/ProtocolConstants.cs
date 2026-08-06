@@ -23,19 +23,46 @@ public static class ProtocolConstants
     public const int MinJpegQuality = 60;
     public const int MaxJpegQuality = 95;
 
-    /// <summary>Identifies our protocol in the handshake, so a wrong program connecting is refused.</summary>
+    // ---- How much of a file travels in one message. See FileChunkSize for the arithmetic; these
+    // are the bounds it works between, and they are here because BOTH sides size chunks the same
+    // way — the host sending a file down, the viewer pushing one up.
+
     /// <summary>
-    /// How much of a file travels in one message. Deliberately far below the channel's own 16 MB
+    /// The most a chunk may ever be, whatever the link measures. Far below the channel's own 16 MB
     /// ceiling, so a transfer is bounded by the chunk rather than by the backstop.
-    ///
-    /// 256 KB is also small for a REASON THAT IS NOT MEMORY. Every send on a connection is
-    /// serialised behind one lock, so while a chunk is being written the latency ping waits behind
-    /// it — and the viewer measures that wait as round-trip time, which the bandwidth governor
-    /// reads as congestion and answers by lowering the picture quality. A big chunk would make
-    /// every download blur the screen. Small chunks keep that hold short.
     /// </summary>
     public const int MaxFileChunkBytes = 256 * 1024;
 
+    /// <summary>
+    /// The least a chunk may be. Below this the per-message overhead and the lock traffic start to
+    /// cost more than the bytes, and a large file would take all afternoon.
+    /// </summary>
+    public const int MinFileChunkBytes = 16 * 1024;
+
+    /// <summary>
+    /// What to send before the link has measured anything. Deliberately NOT the ceiling: the very
+    /// first chunks of a transfer are sent in ignorance, and they are exactly the ones that would
+    /// stall the picture on a slow uplink before anything had a chance to notice.
+    /// </summary>
+    public const int UnmeasuredFileChunkBytes = 64 * 1024;
+
+    /// <summary>
+    /// The longest one chunk should hold the connection's send lock.
+    ///
+    /// <para><b>THIS NUMBER IS NOT A ROUND GUESS — it is pinned under the bandwidth governor's
+    /// queue threshold.</b> Every send on a connection is serialised behind one lock, so while a
+    /// chunk is being written the latency ping waits behind it. The viewer measures that wait as
+    /// round-trip time, and the governor treats a round trip 250 ms above the session's own best as
+    /// a link backing up — and answers by dropping the picture. So a chunk that holds the lock
+    /// longer than that makes every file transfer blur the screen it is not actually competing
+    /// with. 200 ms leaves the margin.</para>
+    ///
+    /// <para>⚠ If <c>BandwidthGovernor.QueueHeavyMs</c> is ever changed, this must move with it.
+    /// The comment beside that constant says the same thing from the other end.</para>
+    /// </summary>
+    public const int MaxChunkSendHoldMs = 200;
+
+    /// <summary>Identifies our protocol in the handshake, so a wrong program connecting is refused.</summary>
     public const uint HandshakeMagic = 0x52444B31; // ASCII "RDK1"
 
     /// <summary>Wire-format version. Bump when the message layout changes.</summary>
