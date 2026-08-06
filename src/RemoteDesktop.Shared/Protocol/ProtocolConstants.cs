@@ -24,6 +24,18 @@ public static class ProtocolConstants
     public const int MaxJpegQuality = 95;
 
     /// <summary>Identifies our protocol in the handshake, so a wrong program connecting is refused.</summary>
+    /// <summary>
+    /// How much of a file travels in one message. Deliberately far below the channel's own 16 MB
+    /// ceiling, so a transfer is bounded by the chunk rather than by the backstop.
+    ///
+    /// 256 KB is also small for a REASON THAT IS NOT MEMORY. Every send on a connection is
+    /// serialised behind one lock, so while a chunk is being written the latency ping waits behind
+    /// it — and the viewer measures that wait as round-trip time, which the bandwidth governor
+    /// reads as congestion and answers by lowering the picture quality. A big chunk would make
+    /// every download blur the screen. Small chunks keep that hold short.
+    /// </summary>
+    public const int MaxFileChunkBytes = 256 * 1024;
+
     public const uint HandshakeMagic = 0x52444B31; // ASCII "RDK1"
 
     /// <summary>Wire-format version. Bump when the message layout changes.</summary>

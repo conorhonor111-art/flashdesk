@@ -29,4 +29,34 @@ public enum MessageType : byte
     /// truth. See <see cref="ScreenStatePayload"/>.
     /// </summary>
     ScreenState = 8,
+
+    // --- File browsing, added 2026-08-06. -------------------------------------------------------
+    // An older build that receives any of these IGNORES it: neither dispatch switch has a default
+    // case, so an unrecognised type is read off the wire, framed correctly, and dropped. That is
+    // why these could be added without a protocol version bump, which would have cut off every copy
+    // already downloaded. Whether a peer HAS them is announced in the handshake instead.
+
+    /// <summary>viewer -> host: ask the person whether the operator may look at their files.</summary>
+    FileAccessRequest = 9,
+
+    /// <summary>host -> viewer: what they answered.</summary>
+    FileAccessReply = 10,
+
+    /// <summary>viewer -> host: list a folder. An empty path means "list the drives".</summary>
+    DirListRequest = 11,
+
+    /// <summary>host -> viewer: the folder's contents, or why there are none.</summary>
+    DirListReply = 12,
+
+    /// <summary>viewer -> host: send me this file.</summary>
+    FileGetRequest = 13,
+
+    /// <summary>host -> viewer: a piece of it, bounded by ProtocolConstants.MaxFileChunkBytes.</summary>
+    FileChunk = 14,
+
+    /// <summary>host -> viewer: the transfer is over, and how it ended. Always sent.</summary>
+    FileGetEnd = 15,
+
+    /// <summary>viewer -> host: the operator pressed Cancel.</summary>
+    FileGetCancel = 16,
 }

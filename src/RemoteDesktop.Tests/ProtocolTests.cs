@@ -69,7 +69,7 @@ public class ProtocolTests
     [Fact]
     public void Handshake_with_wrong_magic_is_invalid()
     {
-        var bad = new Handshake(0xDEADBEEF, ProtocolConstants.ProtocolVersion, PeerRole.Host);
+        var bad = new Handshake(0xDEADBEEF, ProtocolConstants.ProtocolVersion, PeerRole.Host, PeerCapabilities.None);
         Assert.False(bad.IsValid);
     }
 
@@ -77,6 +77,51 @@ public class ProtocolTests
     public void Handshake_too_short_throws()
     {
         Assert.Throws<InvalidDataException>(() => Handshake.FromBytes(new byte[3]));
+    }
+
+    /// <summary>
+    /// The version-skew guarantee, asserted rather than assumed: a greeting from a build that
+    /// predates capabilities is exactly six bytes, and it must be read as a valid handshake that
+    /// simply cannot do the new things. If this ever threw, every copy of FlashDesk already
+    /// downloaded would stop connecting the day a new one shipped.
+    /// </summary>
+    [Fact]
+    public void A_six_byte_handshake_from_an_older_build_is_still_valid()
+    {
+        var old = new byte[6];
+        BinaryPrimitives.WriteUInt32LittleEndian(old.AsSpan(0), ProtocolConstants.HandshakeMagic);
+        old[4] = ProtocolConstants.ProtocolVersion;
+        old[5] = (byte)PeerRole.Host;
+
+        var read = Handshake.FromBytes(old);
+        Assert.True(read.IsValid);
+        Assert.Equal(PeerRole.Host, read.Role);
+        Assert.Equal(PeerCapabilities.None, read.Capabilities);
+        Assert.False(read.Can(PeerCapabilities.FileBrowsing));
+    }
+
+    /// <summary>
+    /// The other direction: the extra bytes a NEW build sends must sit after everything an old one
+    /// reads, so that an old peer parsing only the first six still gets the right role. If a future
+    /// field is ever inserted before them, this test is what should fail.
+    /// </summary>
+    [Fact]
+    public void A_new_handshake_still_reads_correctly_when_only_its_first_six_bytes_are_taken()
+    {
+        byte[] full = Handshake.Create(PeerRole.Viewer, PeerCapabilities.FileBrowsing).ToBytes();
+        Assert.Equal(10, full.Length);
+
+        var asOldPeerWouldSeeIt = Handshake.FromBytes(full.AsSpan(0, 6));
+        Assert.True(asOldPeerWouldSeeIt.IsValid);
+        Assert.Equal(PeerRole.Viewer, asOldPeerWouldSeeIt.Role);
+        Assert.Equal(PeerCapabilities.None, asOldPeerWouldSeeIt.Capabilities);
+    }
+
+    [Fact]
+    public void Handshake_carries_capabilities_when_both_ends_are_current()
+    {
+        var back = Handshake.FromBytes(Handshake.Create(PeerRole.Host, PeerCapabilities.FileBrowsing).ToBytes());
+        Assert.True(back.Can(PeerCapabilities.FileBrowsing));
     }
 
     // ---- ScreenInfo ----
