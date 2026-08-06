@@ -45,7 +45,7 @@ public class FileMessageTests
     [InlineData("")] // empty means "list the drives" - the root of the browser
     public void DirListRequest_round_trips_including_non_ascii(string path)
     {
-        var back = DirListRequest.FromBytes(new DirListRequest(11, path).ToBytes());
+        var back = DirListRequest.FromBytes(new DirListRequest(11, path, 0).ToBytes());
         Assert.Equal(11, back.RequestId);
         Assert.Equal(path, back.Path);
     }
@@ -59,7 +59,7 @@ public class FileMessageTests
             new("Invoice März.pdf", 2_411_724, false, 638_100_000_000_000_000L),
             new("empty.txt", 0, false, 0),
         };
-        var back = DirListReply.FromBytes(new DirListReply(5, FileStatus.Ok, "", entries).ToBytes());
+        var back = DirListReply.FromBytes(new DirListReply(5, FileStatus.Ok, "", 0, false, entries).ToBytes());
 
         Assert.Equal(5, back.RequestId);
         Assert.Equal(FileStatus.Ok, back.Status);
@@ -77,7 +77,7 @@ public class FileMessageTests
         // with no rows, and the operator is told the folder is empty rather than that something
         // went wrong.
         var back = DirListReply.FromBytes(
-            new DirListReply(1, FileStatus.Ok, "", Array.Empty<DirEntry>()).ToBytes());
+            new DirListReply(1, FileStatus.Ok, "", 0, false, Array.Empty<DirEntry>()).ToBytes());
         Assert.Equal(FileStatus.Ok, back.Status);
         Assert.Empty(back.Entries);
     }
@@ -86,7 +86,7 @@ public class FileMessageTests
     public void DirListReply_carries_a_refusal_with_its_sentence()
     {
         var back = DirListReply.FromBytes(new DirListReply(
-            2, FileStatus.RefusedByPerson, "They did not allow file access.", Array.Empty<DirEntry>()).ToBytes());
+            2, FileStatus.RefusedByPerson, "They did not allow file access.", 0, false, Array.Empty<DirEntry>()).ToBytes());
         Assert.Equal(FileStatus.RefusedByPerson, back.Status);
         Assert.Equal("They did not allow file access.", back.Message);
     }
@@ -121,13 +121,71 @@ public class FileMessageTests
     public void FileGetCancel_round_trips()
         => Assert.Equal(8, FileGetCancel.FromBytes(new FileGetCancel(8).ToBytes()).RequestId);
 
+    // ------------------------------------------------------------------ paging
+
+    /// <summary>
+    /// C:\Windows\WinSxS holds six figures of entries on an ordinary machine. One message for all
+    /// of them would build a payload of megabytes, hold the send lock long enough to delay the
+    /// latency ping behind it, and with long names could reach the 16 MB channel ceiling and drop
+    /// the connection outright. So a listing is a window, and the window position round-trips.
+    /// </summary>
+    [Fact]
+    public void A_listing_carries_its_position_and_whether_more_follows()
+    {
+        var page = new DirListReply(3, FileStatus.Ok, "", 2000, true,
+            new List<DirEntry> { new("a.txt", 1, false, 0) });
+        var back = DirListReply.FromBytes(page.ToBytes());
+
+        Assert.Equal(2000, back.Skip);
+        Assert.True(back.HasMore);
+    }
+
+    [Fact]
+    public void The_last_page_says_nothing_follows()
+    {
+        var back = DirListReply.FromBytes(
+            new DirListReply(3, FileStatus.Ok, "", 99_000, false, Array.Empty<DirEntry>()).ToBytes());
+        Assert.False(back.HasMore);
+    }
+
+    [Fact]
+    public void A_request_round_trips_its_page_position()
+    {
+        var back = DirListRequest.FromBytes(new DirListRequest(1, @"C:\Windows\WinSxS", 5000).ToBytes());
+        Assert.Equal(5000, back.Skip);
+    }
+
+    [Fact]
+    public void A_negative_page_position_throws()
+    {
+        // There is no legitimate sender that produces one, and a negative skip would mean an
+        // unbounded backward walk through the enumeration.
+        var bytes = new DirListRequest(1, @"C:\x", 0).ToBytes();
+        BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(bytes.Length - 4), -5);
+        Assert.Throws<InvalidDataException>(() => DirListRequest.FromBytes(bytes));
+    }
+
+    [Fact]
+    public void A_full_page_of_long_names_stays_far_under_the_channel_ceiling()
+    {
+        // The number that matters: the worst realistic page must not approach 16 MB, or a listing
+        // could drop the connection instead of showing a folder.
+        var entries = new List<DirEntry>();
+        for (int i = 0; i < DirListReply.PageSize; i++)
+            entries.Add(new DirEntry(new string('n', 200) + i, long.MaxValue, false, long.MaxValue));
+
+        byte[] bytes = new DirListReply(1, FileStatus.Ok, "", 0, true, entries).ToBytes();
+        Assert.True(bytes.Length < 1024 * 1024,
+            $"a full page came to {bytes.Length} bytes, which is too close to the channel limit");
+    }
+
     // ------------------------------------------------------------------ hostile input
 
     [Fact]
     public void A_string_claiming_more_bytes_than_are_present_throws()
     {
         // The shape of the original 32 GB bug: the number is plausible, the bytes are not there.
-        var bytes = new DirListRequest(1, @"C:\x").ToBytes();
+        var bytes = new DirListRequest(1, @"C:\x", 0).ToBytes();
         BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(4), 4000);
         Assert.Throws<InvalidDataException>(() => DirListRequest.FromBytes(bytes));
     }
@@ -135,7 +193,7 @@ public class FileMessageTests
     [Fact]
     public void A_negative_string_length_throws()
     {
-        var bytes = new DirListRequest(1, @"C:\x").ToBytes();
+        var bytes = new DirListRequest(1, @"C:\x", 0).ToBytes();
         BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(4), -1);
         Assert.Throws<InvalidDataException>(() => DirListRequest.FromBytes(bytes));
     }
@@ -156,7 +214,7 @@ public class FileMessageTests
     [Fact]
     public void An_entry_count_beyond_the_limit_throws()
     {
-        var bytes = new DirListReply(1, FileStatus.Ok, "", Array.Empty<DirEntry>()).ToBytes();
+        var bytes = new DirListReply(1, FileStatus.Ok, "", 0, false, Array.Empty<DirEntry>()).ToBytes();
         BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(bytes.Length - 4), 2_000_000);
         Assert.Throws<InvalidDataException>(() => DirListReply.FromBytes(bytes));
     }
@@ -167,7 +225,7 @@ public class FileMessageTests
         // Under the cap, so the count check passes — and then the bytes run out. This is the row
         // that proves the guard is the ACTUAL PRESENCE of bytes and not just a sensible-looking
         // number, which is the mistake that would leave a plausible count allocating for nothing.
-        var bytes = new DirListReply(1, FileStatus.Ok, "", Array.Empty<DirEntry>()).ToBytes();
+        var bytes = new DirListReply(1, FileStatus.Ok, "", 0, false, Array.Empty<DirEntry>()).ToBytes();
         BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(bytes.Length - 4), 500);
         Assert.Throws<InvalidDataException>(() => DirListReply.FromBytes(bytes));
     }

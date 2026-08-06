@@ -81,14 +81,22 @@ public readonly record struct FileAccessReply(int RequestId, bool Granted, strin
 /// <summary>
 /// Ask for a folder's contents. An EMPTY path means "list this machine's drives" — the root of the
 /// browser, which is not itself a folder.
+///
+/// <para><b>LISTINGS ARE PAGED, and that is not tidiness.</b> <c>C:\Windows\WinSxS</c> holds six
+/// figures of entries on an ordinary machine. Sending them in one message would build a payload of
+/// several megabytes, block the message loop that also answers the latency ping, and — with longer
+/// names — could reach the channel's 16 MB ceiling and drop the connection outright. So the viewer
+/// asks for a window of entries and asks again for the next.</para>
 /// </summary>
-public readonly record struct DirListRequest(int RequestId, string Path)
+/// <param name="Skip">How many entries to pass over. 0 for the first page.</param>
+public readonly record struct DirListRequest(int RequestId, string Path, int Skip)
 {
     public byte[] ToBytes()
     {
         var b = new List<byte>(64);
         FileWire.WriteInt32(b, RequestId);
         FileWire.WriteString(b, Path);
+        FileWire.WriteInt32(b, Skip);
         return b.ToArray();
     }
 
@@ -96,7 +104,14 @@ public readonly record struct DirListRequest(int RequestId, string Path)
     {
         int o = 0;
         int id = FileWire.ReadInt32(bytes, ref o);
-        return new DirListRequest(id, FileWire.ReadString(bytes, ref o));
+        string path = FileWire.ReadString(bytes, ref o);
+        int skip = FileWire.ReadInt32(bytes, ref o);
+
+        // A negative skip would mean an unbounded backward walk, and there is no legitimate sender
+        // that produces one.
+        if (skip < 0) throw new InvalidDataException($"Skip {skip} out of range.");
+
+        return new DirListRequest(id, path, skip);
     }
 }
 
@@ -104,17 +119,42 @@ public readonly record struct DirListRequest(int RequestId, string Path)
 public sealed record DirEntry(string Name, long Size, bool IsDirectory, long ModifiedUtcTicks);
 
 /// <summary>
-/// A folder's contents, or the reason there are none. <paramref name="Message"/> is the sentence
-/// shown to the operator when <paramref name="Status"/> is anything but Ok.
+/// One page of a folder's contents, or the reason there are none. <paramref name="Message"/> is the
+/// sentence shown to the operator when <paramref name="Status"/> is anything but Ok.
+///
+/// <para><b>There is no total count, on purpose.</b> Counting the entries in
+/// <c>C:\Windows\WinSxS</c> means walking every one of them before a single row can be shown, which
+/// on a slow disk is seconds of a frozen panel to produce a number nobody acts on. Instead the host
+/// reads one entry more than it needs and reports <paramref name="HasMore"/>. The operator is told
+/// "showing the first 1,000 — there are more", which is the truth and costs nothing.</para>
 /// </summary>
-public sealed record DirListReply(int RequestId, FileStatus Status, string Message, IReadOnlyList<DirEntry> Entries)
+/// <param name="Skip">How many entries were passed over to produce this page — echoed back so a
+/// reply that arrives after the operator has moved on can be recognised and dropped.</param>
+/// <param name="HasMore">True when at least one more entry exists past this page.</param>
+public sealed record DirListReply(
+    int RequestId,
+    FileStatus Status,
+    string Message,
+    int Skip,
+    bool HasMore,
+    IReadOnlyList<DirEntry> Entries)
 {
+    /// <summary>
+    /// Entries per page. 1,000 rows of ordinary names is roughly 55 KB, and even 1,000 rows at the
+    /// 255-character maximum stays near half a megabyte — comfortably clear of the channel's 16 MB
+    /// ceiling, and small enough that the send lock is never held long enough to delay the latency
+    /// ping behind it.
+    /// </summary>
+    public const int PageSize = 1000;
+
     public byte[] ToBytes()
     {
         var b = new List<byte>(256);
         FileWire.WriteInt32(b, RequestId);
         b.Add((byte)Status);
         FileWire.WriteString(b, Message);
+        FileWire.WriteInt32(b, Skip);
+        b.Add(HasMore ? (byte)1 : (byte)0);
         FileWire.WriteInt32(b, Entries.Count);
         foreach (var e in Entries)
         {
@@ -132,6 +172,9 @@ public sealed record DirListReply(int RequestId, FileStatus Status, string Messa
         int id = FileWire.ReadInt32(bytes, ref o);
         var status = (FileStatus)FileWire.ReadByte(bytes, ref o);
         string message = FileWire.ReadString(bytes, ref o);
+        int skip = FileWire.ReadInt32(bytes, ref o);
+        if (skip < 0) throw new InvalidDataException($"Skip {skip} out of range.");
+        bool hasMore = FileWire.ReadByte(bytes, ref o) != 0;
 
         int count = FileWire.ReadInt32(bytes, ref o);
         if (count < 0 || count > FileWire.MaxEntries)
@@ -149,7 +192,7 @@ public sealed record DirListReply(int RequestId, FileStatus Status, string Messa
             long modified = FileWire.ReadInt64(bytes, ref o);
             entries.Add(new DirEntry(name, size, isDir, modified));
         }
-        return new DirListReply(id, status, message, entries);
+        return new DirListReply(id, status, message, skip, hasMore, entries);
     }
 }
 
