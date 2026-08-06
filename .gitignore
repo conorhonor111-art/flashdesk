@@ -486,3 +486,11 @@ $RECYCLE.BIN/
 # Written fresh at the end of every reply so the summary can be copied without selecting text.
 # It is a scratch artefact of the conversation, not part of the project.
 last-summary.md
+
+# Scratch file: a summary of the assistant every reply, so long terminal output
+# can be copied out. Regenerated constantly, never part of the project.
+short.txt
+
+# Tooling scratch from the ruflo/claude-flow MCP server. Not part of the project.
+agentdb.rvf
+agentdb.rvf.lock

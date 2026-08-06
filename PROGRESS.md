@@ -1,3 +1,98 @@
+> # HANDOVER — 2026-08-06. READ THIS BEFORE ANYTHING ELSE.
+>
+> Written because a session was about to be cleared and everything not in a file would have been
+> lost. It lives here rather than in `short.txt` because that file is gitignored and rewritten on
+> every reply — a handover kept only there would be destroyed by the next message.
+>
+> **Two features are HALF BUILT. Neither is finished and neither is published.**
+>
+> ## Read these first, in this order
+> 1. **`CLAUDE.md`** — the charter. §4 rule 1 changed today; read it.
+> 2. **This handover**, then the rest of `PROGRESS.md`.
+> 3. **`C:\Users\PC\.claude\plans\file-transfer-both-directions.md`** — the approved file-transfer
+>    plan with every decision and its reasoning. The other plan file, `fluffy-petting-blossom.md`,
+>    is SUPERSEDED.
+> 4. `src\RemoteDesktop.Shared\Files\` — `RemotePath`, `FileWire`, `FileMessages`, `ExecutableContent`.
+> 5. `src\RemoteDesktop.Host\Files\OpenedPath.cs` — the handle re-check, and why a string cannot do it.
+> 6. `src\RemoteDesktop.Shared\Displays\DisplayLayout.cs` and `src\RemoteDesktop.Host\Capture\DisplayEnumerator.cs`.
+>
+> ## Committed today — HEAD is `0c85244`, `dotnet test` 162 passing
+>
+> | | |
+> |---|---|
+> | `b47f053` | Design pass: page, simple view, consent dialog, mark |
+> | `d0b180f` | Version 0.3.1 |
+> | `4cd127e` | Desktop layout, asset check in Check-LiveBuild, wording fix |
+> | `7776a2a` | Site: new contact address, warning moved and calmed, Windows screens corrected |
+> | `0bccac0` | **Injected input stamped** — the remote hand can no longer answer a consent prompt |
+> | `0298115` | Message cap 64 MB → 16 MB, both boundaries asserted |
+> | `461fec5` | `RemotePath` read-side rules + tests |
+> | `329974f` | File wire format; capability appended to the handshake, older builds unaffected |
+> | `ff701a6` | Multi-monitor coordinate translation + 20 tests |
+> | `5da0333` | **Charter fix**: consent dialog shows the verified number, never a name |
+> | `72fa7de` | Write-side path rules; session-log promise retired deliberately |
+> | `79d4218` | Arriving files judged by first bytes, not by name |
+> | `cd79bb6` | **Handle re-check**, proved against a real junction |
+> | `4040481` | Listings paged |
+> | `0c85244` | Multi-monitor capture switching + `VIRTUALDESK` — **UNVERIFIED** |
+>
+> ## Next, in order
+> 1. **Temp-file cleanup on start** — a hard drop leaves a partial upload on the client's disk.
+> 2. **Link-sized chunks** — 256 KB is fixed; size it from the measured rate so one chunk never
+>    holds the send lock longer than ~200 ms. On a slow uplink a fixed chunk freezes the picture
+>    rather than slowing it.
+> 3. **The host file service** — listing (paged, off the message-loop thread), chunked read, chunked
+>    write, the two consent prompts, the overwrite question, cancel from either side.
+> 4. **The viewer file panel** — must NOT take focus: any focusable control there releases every held
+>    key and suspends remote control.
+> 5. **The client indicator** — second line under the amber band, direction arrow, restore-without-focus.
+> 6. Per-monitor DPI, as its own stage.
+>
+> ## UNVERIFIED — most of multi-monitor. Do not describe any of it as working.
+> - that a second display is ever **enumerated**. Never seen one.
+> - that `SwitchTo` actually changes screens. On one screen it rebuilds the same output, so the
+>   branch that matters has never executed.
+> - that a click lands on the right screen. The arithmetic has 20 unit tests; that DXGI **feeds** it
+>   the right numbers is untested.
+> - that `VIRTUALDESK` behaves as documented. Set, never observed.
+> - that DXGI's output order matches what a person calls left and right.
+> - mixed DPI. Blocked on the deferred per-monitor decision.
+> - the fallback when the captured monitor is unplugged mid-session.
+>
+> Also unverified: the claim that a transfer slows the picture. Reasoned from the code, never
+> measured. Report the real number after a real transfer.
+>
+> ## Decisions Conor has already made. DO NOT ASK AGAIN.
+> - **Do NOT republish the exe.** `0.3.1` stays the public download until BOTH file transfer and
+>   multi-monitor are finished. `Check-LiveBuild` section 3 failing is EXPECTED. A half-built build
+>   is worse than an old one.
+> - **Per-monitor DPI is deferred** to its own stage. For now: detect mixed scaling and TELL the
+>   operator rather than misclick silently. The client window gets checked by eye at 100/150/200 %.
+> - **Sorting is disabled while a listing has more pages**, with the reason on screen. Folders before
+>   files always. A sorted window that looks like a sorted folder is a lie.
+> - **Transfer, never manipulation.** No delete, rename, move or new folders — the operator has mouse
+>   control for those, so a file API would only make them invisible. Transfer is the one thing screen
+>   control cannot do; that is the feature and its limit.
+> - **Consent identifies the caller by the verified 9-digit number, NEVER by a name.** A name is
+>   whatever the caller types, so a scammer would put "Microsoft Support" in it. Governs every
+>   consent surface, present and future.
+> - **Restore the window without taking keyboard focus** when file activity starts while minimised —
+>   someone may be typing a password. On a state CHANGE, not per file, not more than once every few
+>   seconds. Promise it on the download page.
+> - **The two-display rig is unreachable and may stay that way.** `.223` is itself a VMware guest;
+>   no VMware, no `vmrun`, no `.vmx`, no datastore share. Do NOT touch `TrustedHosts`; there is no
+>   password for `.222`. **STOP WAITING FOR IT.** The only real two-screen machine is the one
+>   belonging to the person Conor helped, and that is where multi-monitor gets verified.
+> - **FlashDesk must run in `.222`'s CONSOLE session, not over RDP,** to see two screens: an RDP
+>   session has its own virtual display with as many monitors as the RDP *client* offers.
+> - The session log now records file names, deliberately. The old "no file names" promise is retired
+>   with its reasoning written into `SessionLog.cs`.
+> - The `.bat`-renamed-to-`.pdf` gap is **accepted and closed as a question**: a file only runs by its
+>   extension, renaming it back happens on screen and lands in the log. Do not spend more on it.
+>
+> ## Outstanding for Conor, not for the next session
+> - Confirm `support@flashdesk.org` is a real mailbox. The page now sends wary strangers there.
+
 > ## WHERE THIS PROJECT IS — read this first (2026-08-05)
 >
 > **FlashDesk works, end to end, from the file a stranger actually downloads.** A full session was
