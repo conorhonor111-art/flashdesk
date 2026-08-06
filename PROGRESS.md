@@ -1353,3 +1353,55 @@ on page three.
 - **No human has used the panel.** It has never been clicked. The end-to-end tests drive the
   protocol, not the interface.
 - Everything listed as unverified in part one still is, including the mapped-network-drive refusal.
+
+## The adversarial read — six holes, all shut (2026-08-06, commit `98eb627`)
+
+The finished file service was read by an agent that did not write it, briefed to **refute three
+claims, not to review**. It refuted two, and found four more. **Every finding was real, and each was
+confirmed independently before anything was changed** — including the load-bearing one, that
+`Path.GetFullPath` expands an 8.3 short name, which was *measured* rather than believed. Nothing it
+proposed would have undone a settled decision, so nothing had to be discarded.
+
+`dotnet test` **277 → 293**.
+
+1. **The overwrite dialog could name a file that did not exist.** `Path.GetFullPath` expands
+   `IMPORT~1.DOC` to `important-document.docx`, so a request could name a file the person had never
+   seen, pass every rule, and resolve onto one of their real documents. The dialog said *"They are
+   sending IMPORT~1.DOC"*; they would read an unfamiliar name, conclude it was junk, press Replace,
+   and lose their own file **under a name that appeared nowhere on their screen**. The log recorded
+   the same fiction. Now refused: **the name checked must equal the name resolved.** This is the
+   exact failure `RemotePath` already reasons about for a trailing dot — *"a name that changes
+   between being checked and being used is the shape of a bypass"* — happening one screen later.
+2. **The listing path never ran the handle re-check.** Only the read-a-file path did. A directory
+   link is invisible in a string, so `C:\Projects` can BE `\\fileserver\finance` and every string
+   check agrees it is on drive C. Contents were never reachable, but every file name, size and date
+   on an employer's share was. `LocalDrives`' own comment claimed `OpenedPath` covered this case; on
+   that path it was never called.
+3. **The upload "yes" was not bound to the folder it named.** The dialog says *"into &lt;folder&gt;"*
+   and *"Nothing else on this computer is changed"*, and the second sentence was untrue: one yes for
+   a readme in Downloads licensed writes anywhere the account could reach. **A different folder is
+   now a different question** — which is the question the person thought they were answering, not
+   the repetition CLAUDE.md warns about.
+4. **A consent-free oracle.** Folder-exists and free-space ran *before* the person was asked, so a
+   refused operator could still tell `NotFound` from `RefusedByPerson` for any path, unlimited and
+   invisibly — enumerating account names and installed software on a machine whose owner said no —
+   and bisect the declared size to read free space. **Nothing is learned from the disk before the
+   answer.**
+5. **A name that reads backwards.** U+202E passed `IsSafeFileName`, so `Invoice<RLO>xcod.exe`
+   displays as `Invoiceexe.docx` on the one line whose job is to say what is arriving. Four ranges
+   of direction-control characters refused, with tests proving German, Georgian and Russian names
+   still pass.
+6. **Alternate data streams were readable.** The write side always refused a colon; the read side did
+   not — and reading is where the secrecy matters, since an ADS appears in no listing at all.
+
+**Claim 3 survived.** The reader could not make cleanup delete a file it did not create, nor leave a
+half file wearing the real name. Its one fair criticism is now printed inside the self-test: **it
+checks the ledger half only**, and would still say PASS if the rename or the failure exit were broken.
+
+**A cost that comes with fix 2, recorded as a decision rather than discovered later:** a folder
+reached *through* a junction can no longer be listed under that name. That is precisely what the
+check is for, and the operator can navigate to the real location — but it is a real behaviour change
+on machines that use junctions for redirected profile folders.
+
+**The three attack tests were confirmed live on this machine** — the junction was created, the 8.3
+alias `IMPORT~1.DOC` existed, the stream was written — so none of them silently skipped.
