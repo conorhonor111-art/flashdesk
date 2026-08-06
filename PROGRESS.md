@@ -1297,3 +1297,59 @@ references it (architecture rule 4 intact).
 4. The viewer file panel — must NOT take focus.
 5. The client indicator — second band line, direction arrow, restore-without-focus.
 6. Per-monitor DPI, as its own stage.
+
+## Files, part two — the operator's side, and the self-test (built + tested 2026-08-06)
+
+`dotnet test` **262 → 277**. A double-clickable build lives at
+`C:\Users\PC\Desktop\FlashDesk-test-build\FlashDesk.exe` — **not** the public download, which is
+still 0.3.1 at `b6734e0`-era and stays that way until this is finished.
+
+### The program proves its own housekeeping — `Host\Diagnostics\SelfTest.cs`
+
+Conor should not have to hand-craft a partial file and a ledger entry in PowerShell to find out
+whether cleanup works. Five checks against a real folder on the machine it is actually running on,
+answering PASS or FAIL. **Four of the five are rows where nothing should happen** — an ordinary file
+named by the ledger, an unrecorded partial, a completed transfer, a partial still being written.
+Three ways in, one piece of code so they cannot disagree: a **Run self-test button in the technical
+view**, the top of `--linktest`, and `--selftest` (exit 0 or 1). Deliberately **not** automatic at
+start-up: it writes files, and a stranger should not pay that cost every launch to prove something
+to somebody who is not them.
+
+### `Viewer\Files\ViewerFileClient.cs` — and the first test of both halves together
+
+It owns no socket and no window; it is handed a `MessageChannel` and fed what arrives. That is what
+makes `FileTransferEndToEndTests` possible: the real operator half driving the real client half over
+a real socket, both message pumps running as in the product. **Those eight tests are worth more than
+either side's own** — almost every way this feature can be wrong is a *disagreement* between the
+halves, and neither side's tests can see that alone.
+
+### `Viewer\Files\FilePanel.cs` — and two decisions worth keeping
+
+**NO KEYBOARD SHORTCUT INTO THE PANEL. Click-only.** Conor's correction, and it generalises: any
+combination FlashDesk keeps is a key the operator can never send to the person they are helping, and
+the hole is invisible — you press it and nothing happens over there. Ctrl+L was the obvious
+candidate and the worst one, because a browser is open on *their* machine too. **The rule this
+settles: while remote control is active, FlashDesk swallows nothing.**
+
+**The focus problem was never about typing.** Every useful control takes focus when clicked, and
+remote control has *always* stopped at that moment. What was missing is that nobody was told — an
+operator who types into a suspended session sees the letters go nowhere and concludes the other
+machine has frozen. The panel therefore does not avoid focus, it **announces** it: a band across the
+**picture**, not a discreet indicator. `InputCapture.Suspend` releases every held key **first**, then
+stops forwarding; `Suspended` is deliberately separate from `Enabled` so a suspension cannot silently
+turn the operator's own control choice off and leave it off.
+
+The panel appears only if the host advertised `FileBrowsing`, and the person at the other end is
+asked only when it is first opened — a session where the operator never opens it asks them nothing.
+The "not sorted while there are more pages" sentence is on screen with the count, because a page
+*looks* like a sorted folder and the operator would otherwise conclude a file is not there when it is
+on page three.
+
+### Still UNVERIFIED after part two
+
+- **The release ORDER inside `Suspend`** — that held keys reach the remote machine before forwarding
+  stops — needs a real focused window to reach from a test. Verified by reading, and stated as such
+  at the top of `InputSuspendTests`. It is a two-machine check.
+- **No human has used the panel.** It has never been clicked. The end-to-end tests drive the
+  protocol, not the interface.
+- Everything listed as unverified in part one still is, including the mapped-network-drive refusal.
