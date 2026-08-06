@@ -3,6 +3,7 @@ using RemoteDesktop.Host.Capture;
 using RemoteDesktop.Host.Diagnostics;
 using RemoteDesktop.Host.Identity;
 using RemoteDesktop.Host.Net;
+using RemoteDesktop.Shared.Files;
 using RemoteDesktop.Shared.Identity;
 using RemoteDesktop.Shared.Protocol;
 using RemoteDesktop.UI;
@@ -61,6 +62,7 @@ public sealed class MainForm : Form
     private readonly IdentityStore _identityStore = new();
     private readonly KnownCallers _knownCallers;
     private readonly SessionLog _sessionLog;
+    private readonly PartialFiles _partialFiles;
     private IdentityResult? _identity;
 
     private readonly RoundedTextBox _peerBox = new() { Font = Theme.Body, Width = Theme.MediumFieldWidth, PlaceholderText = "their number" };
@@ -101,6 +103,7 @@ public sealed class MainForm : Form
     {
         _knownCallers = new KnownCallers(_identityStore.Folder);
         _sessionLog = new SessionLog(_identityStore.Folder);
+        _partialFiles = new PartialFiles(_identityStore.Folder);
 
         Text = "FlashDesk";
         // The title-bar icon MUST stay: Windows feeds the taskbar button from the window icon,
@@ -211,7 +214,7 @@ public sealed class MainForm : Form
             if (!string.IsNullOrEmpty(report)) _sessionLog.Detail(report);
         };
 
-        Load += (_, _) => { ShowIdentityState(); StartSharing(); _ = RegisterIdentityAsync(); };
+        Load += (_, _) => { ShowIdentityState(); StartSharing(); _ = RegisterIdentityAsync(); SweepUnfinishedFiles(); };
 
         // ⚠ Nothing may hold focus when this window opens. WinForms otherwise focuses the first
         // control that will take it, which is the peer-number field — and a focused RoundedTextBox
@@ -537,6 +540,26 @@ public sealed class MainForm : Form
         _allAddresses.Text = "Local addresses (information only): " + (addresses.Count > 0 ? string.Join("   ", addresses) : "none found");
         _toggle.Text = "Stop sharing";
     }
+
+    /// <summary>
+    /// Removes anything left on this machine's disk by a transfer that was cut off — see
+    /// <see cref="PartialFiles"/> for what is removed and, more importantly, what never is.
+    ///
+    /// Off the UI thread on purpose. It touches the disk, and the one thing this window must do
+    /// above all else is appear with a number on it within a couple of seconds of a double-click;
+    /// a slow or sleeping drive must not be able to delay that. Nothing else waits on the result.
+    /// </summary>
+    private void SweepUnfinishedFiles() => _ = Task.Run(() =>
+    {
+        try
+        {
+            var sweep = _partialFiles.CleanUpOnStart();
+            // Only when something happened. A "removed 0 files" line on every start would bury the
+            // connection record in the one file the client is meant to be able to read.
+            if (sweep.Removed > 0) _sessionLog.UnfinishedRemoved(sweep.Removed);
+        }
+        catch { /* tidying up must never be the reason the program fails to open */ }
+    });
 
     /// <summary>
     /// Claims this installation's number with the relay, then shows it. The window shows a

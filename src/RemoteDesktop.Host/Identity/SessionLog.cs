@@ -66,6 +66,17 @@ public sealed class SessionLog
     public void ProgramReceived(string callerId, string name, long bytes, string folder) =>
         Write($"PROGRAM      {Pretty(callerId)} put the program \"{name}\" ({Size(bytes)}) into {folder}");
 
+    /// <summary>
+    /// Unfinished files from an interrupted transfer were removed at start-up. It has no caller
+    /// number because nobody was connected when it happened — this is the program tidying up after
+    /// a link that died, and the person is told rather than having it done silently on their disk.
+    /// Only written when there was something to remove; a line on every start would be noise in the
+    /// one file this person is meant to be able to read.
+    /// </summary>
+    public void UnfinishedRemoved(int count) =>
+        Write($"CLEANED      removed {count} unfinished {(count == 1 ? "file" : "files")} "
+            + "left behind by a transfer that was cut off");
+
     /// <summary>An existing file was replaced, after the person at this machine agreed to it.</summary>
     public void FileReplaced(string callerId, string name, string folder) =>
         Write($"REPLACED     {Pretty(callerId)} replaced \"{name}\" in {folder}");
