@@ -143,8 +143,8 @@
 
   /* A hairline above each section, so the page reads as built rather than typed. Depth from a
      1px rule and a tonal step, never from a shadow or a glow — those cost contrast, and contrast
-     is the only thing this page really sells. The first section after the safety panel does not
-     need a rule; the panel is its own edge. */
+     is the only thing this page really sells. The first section carries no rule because the figure
+     above it already ends the hero — a rule there would double an edge that exists. */
   section { margin-bottom: var(--s3); padding-top: var(--s3); border-top: 1px solid var(--line); }
   section:first-of-type { border-top: 0; padding-top: 0; }
   /* h2 was 1.25rem against a 1.2rem body, so headings read as bold body text rather than as
@@ -241,16 +241,31 @@
     padding: var(--s2);
   }
 
-  /* The safety warning is a FILLED panel, not an outlined one: a solid block reads louder,
-     and it lets green stay exclusive to the download button. */
+  /* The one line that stays beside the download button. Full-strength text, no panel: it has to be
+     read, but a person who has just arrived should not be met by an alarm before they know what the
+     page is. The complete warning is further down, in .safety. */
+  /* Left-aligned, not centred. It was centred to match the meta line above it, and that made the
+     one rule the page most wants obeyed read as a caption — the only centred body sentence in the
+     phone layout, wrapping ragged on both edges. It is an instruction, so it is set like one. */
+  .near-button {
+    margin-bottom: var(--s4);
+  }
+
+  /* The safety warning, restyled 2026-08-06 to read as information rather than as a threat. It was
+     a filled panel with a 4px bar and oversized type, which is the visual grammar of an alarm; it is
+     now the same neutral surface every other explanatory box on this page uses. Colours are
+     unchanged and no red was ever involved - only the weight of the drawing changed. */
   .scam {
-    font-size: 1.3rem;
     line-height: 1.5;
     background: var(--surface);
+    /* Keeps the 4px bar every other box on this page carries (.quote, .scam-inline). A 1px
+       all-round border was tried and was wrong: at #2E3440 on #17191E it is nearly invisible on a
+       wide screen, which left the canonical fixed-wording warning drawn MORE QUIETLY than its own
+       two paraphrases further up, and more quietly than a mock-up of a Chrome dialog. The alarm
+       came from the 1.3rem type and the s3 padding, not from the bar. */
     border-left: 4px solid var(--text);
     border-radius: var(--radius);
-    padding: var(--s3);
-    margin-bottom: var(--s4);
+    padding: var(--s2);
   }
 
   .who p { margin-bottom: var(--s1); }
@@ -306,8 +321,8 @@
       padding: var(--s2) var(--s5);
       margin-bottom: var(--s2);
     }
-    .download-meta { text-align: left; margin-bottom: var(--s3); }
-    .scam { font-size: 1.2rem; max-width: 32rem; margin-bottom: 0; }
+    .download-meta { text-align: left; margin-bottom: var(--s2); }
+    .near-button { text-align: left; max-width: 32rem; margin-bottom: 0; }
 
     /* Everything after the hero keeps a readable measure and stays on the hero's left edge, so the
        page reads as one column of prose under a full-width band rather than as text that forgot to
@@ -340,10 +355,10 @@
        plain block and everything inside it stacks exactly as it did before — the phone layout is
        the one that matters and it must not get worse. On a wide screen it becomes two columns with
        the screenshot beside the words instead of below them.
-       DOM ORDER IS LOAD-BEARING: the scam warning is inside .hero-main and the picture is its
-       sibling, so on a phone the warning is still read BEFORE the picture. Do not move the figure
-       above .hero-main to "fix" the desktop column order — use grid placement, which is what the
-       stylesheet does. -->
+       DOM ORDER IS LOAD-BEARING: everything a person must read before they download — headline,
+       what it runs on, the button, and the one safety line — is inside .hero-main, and the picture
+       is its sibling AFTER it. Do not move the figure above .hero-main to "fix" the desktop column
+       order; use grid placement, which is what the stylesheet does. -->
   <div class="hero">
    <div class="hero-main">
 
@@ -370,8 +385,12 @@
   Windows will warn you once when you open it &mdash;
   <a class="quiet-link" href="#warnings">here is exactly what you will see</a>.</p>
 
-  <p class="scam">If someone phoned you out of the blue and told you to come here,
-  <strong>hang up</strong>. Only download this if you contacted us yourself.</p>
+  <!-- The full warning used to sit here, directly under the button, as a filled panel. A first-time
+       visitor met it as an alarm before they had any idea what the page was. It now lives lower
+       down, next to "Who is behind this", and only its operative sentence stays here — same words,
+       no panel around them. The wording of the warning itself was NOT touched; only where it sits
+       and how loudly it is drawn. -->
+  <p class="near-button">Only download this if you contacted us yourself.</p>
 
    </div><!-- /.hero-main -->
 
@@ -434,7 +453,10 @@
        screen offers no way forward at all, only "Don't run"; the way through is a small text link. -->
   <section id="warnings">
     <div class="warnbox">
-      <h2>Windows will warn you when you open it. This is normal.</h2>
+      <!-- "This is normal." was dropped 2026-08-06. It is the page reassuring itself, and a person
+           being talked through a security warning is scanning for exactly that tone. The paragraphs
+           below do the work; the phrase only invited the worry it was trying to settle. -->
+      <h2>Windows will warn you when you open it</h2>
 
       <p>A blue box appears. It says:</p>
 
@@ -455,21 +477,35 @@
       <span class="btn-pale">Run anyway</span>
       <span class="btn-dark">Don&rsquo;t run</span></p>
 
-      <p>Now press <strong>Run&nbsp;anyway</strong>, on the <strong>left</strong>.</p>
+      <!-- A tester's screen read "FlashDesk (2).exe" because their browser had saved the file
+           before. The page must not promise a filename it does not control: a person checking the
+           page against their screen and finding a different name has just been given a reason to
+           stop. -->
+      <p>The name beside <strong>App:</strong> is whatever your browser saved the file as. If you
+      have downloaded it before it may read <em>FlashDesk&nbsp;(1).exe</em> or
+      <em>FlashDesk&nbsp;(2).exe</em>. It is the same file.</p>
+
+      <!-- The position cue was briefly dropped here and kept in the Chrome section below, which is
+           backwards: this warning always appears, that one may not. Both screenshots taken of this
+           dialog list Run anyway first, so the cue stands. -->
+      <p>This screen has two buttons. Press <strong>Run&nbsp;anyway</strong>, on the
+      <strong>left</strong>.</p>
 
       <p class="scam-inline">If nobody you telephoned yourself asked you to do this,
       <strong>press Don&rsquo;t run</strong> and close this page. Somebody who phoned you out of the
       blue and talked you as far as a security warning is not helping you.</p>
 
-      <p><strong>&ldquo;Unknown publisher&rdquo; is the honest part.</strong> It does not mean the
-      file is unsafe. It means nobody has paid a certificate authority to attach a verified name to
-      it. If I had, that line would read <em>Publisher: Conor Honor</em> instead of
-      <em>Unknown publisher</em> &mdash; the file would be exactly the same file.</p>
+      <!-- Was: "'Unknown publisher' is the honest part." That is the author defending himself, and
+           defensiveness is what a wary reader is scanning for. The information is kept; the
+           self-congratulation is not. -->
+      <p><strong>What &ldquo;Unknown publisher&rdquo; means.</strong> A publisher is the name of
+      whoever made the file. Mine is not shown because I have not paid a company to attach a
+      verified name to it. If I had, that line would read <em>Publisher: Conor Honor</em>. It would
+      be the same file either way.</p>
 
-      <p><strong>Why it happens at all.</strong> Windows trusts software it has seen many people run
-      before, and counts everything else as unrecognised. FlashDesk is new, so it is unrecognised.
-      That is the entire reason, and it is also why the wording is as strong as it is: your computer
-      genuinely cannot tell the difference between new software and bad software, so it warns about
+      <p><strong>Why the warning appears.</strong> Windows trusts software it has seen many people
+      run before, and treats everything else as unrecognised. FlashDesk is new, so it is
+      unrecognised. Your computer cannot tell new software from bad software, so it warns about
       both.</p>
 
       <h2 class="sub">If your browser blocks the download</h2>
@@ -526,12 +562,28 @@
     easier route, but if that one fails for any reason this one will still work.</p>
   </section>
 
+  <!-- ⚠ THE WORDING OF THIS WARNING IS FIXED. It is the reason this tool cannot easily be used
+       against the person reading it, and it is quoted verbatim in CLAUDE.md. Move it, restyle it,
+       but do not rewrite it. It sits here, immediately before "Who is behind this", because that
+       pairing is the one a wary person actually wants: what to be careful of, then who I am. -->
+  <section class="safety">
+    <h2>Before you let anyone in</h2>
+    <p class="scam">If someone phoned you out of the blue and told you to come here,
+    <strong>hang up</strong>. Only download this if you contacted us yourself.</p>
+  </section>
+
   <section class="who">
     <h2>Who is behind this</h2>
     <p>FlashDesk is made and run by Conor Honor, an independent computer specialist in Kyiv.</p>
-    <p>If you want to check who you are talking to, reach me directly —
-    not through this website:
-    <a href="mailto:conor.honor111@gmail.com">conor.honor111@gmail.com</a></p>
+    <!-- ⚠ THE PROMISE IN THIS SENTENCE CHANGED WHEN THE ADDRESS DID, so the sentence changed too.
+         It used to read "reach me directly — not through this website", which was true of a
+         personal address on another provider: if this site were a fake, that address still was not.
+         support@flashdesk.org is ON this domain, so that claim no longer holds and keeping it would
+         have been the page telling a wary stranger something untrue at the exact moment they were
+         checking. The out-of-band channel this sentence used to offer is now GONE; a telephone
+         number is what would restore it. -->
+    <p>If you want to check who you are talking to, write to me at
+    <a href="mailto:support@flashdesk.org">support@flashdesk.org</a></p>
   </section>
 
 </main>

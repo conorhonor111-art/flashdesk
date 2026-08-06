@@ -39,6 +39,6 @@ kind of software is exactly what telephone scammers ask people to install.
 ### Who is behind it
 
 FlashDesk is made and run by Conor Honor, an independent computer specialist in Kyiv.
-Contact: conor.honor111@gmail.com
+Contact: support@flashdesk.org
 
 To check who you are talking to, reach me directly rather than through this page.

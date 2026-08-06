@@ -499,11 +499,11 @@ Ukrainian). Deploys alongside the relay at Stage 3 step 1.
 ## Site approved + committed; Stage 3 step 1 begins (2026-07-30)
 
 Conor approved the page; details filled (name "Michael", line "Billionaire Club CEO", contact
-conor.honor111@gmail.com, language English — one language per page, a second language would be a
+a personal email address, language English — one language per page, a second language would be a
 separate URL later). The scam warning moved ABOVE the fold, directly under the download button,
 with more presence (his call: it outranks the SmartScreen box; kept calm, no red). Committed as
 `8af8d98`. **Flag raised to Conor before deploy (charter §8 duty): the "Billionaire Club CEO"
-line and the Michael-vs-conor.honor111 mismatch work against the page's own trust spec — the
+line and the Michael-vs-real-name mismatch work against the page's own trust spec — the
 deploy is gated behind the holding page anyway, and the line is a 30-second swap when he supplies
 a real one.** Latency RE-measured before purchase, 20 pings: Vultr Warsaw 14.0 avg (14/14, 20/20
 replies, zero jitter) vs Vultr Frankfurt 27.0 and Hetzner Falkenstein 27.0 — Warsaw stands.
