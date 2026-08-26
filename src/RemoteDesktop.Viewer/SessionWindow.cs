@@ -326,6 +326,23 @@ public sealed class SessionWindow : Form
             fresh.ScreenStateChanged += OnScreenState;
             fresh.FrameReceived += OnFrame;
             fresh.Disconnected += OnDisconnected;
+
+            // The file panel, if one exists, is bound to OLD's ViewerFileClient (captured once, at
+            // construction, in ToggleFilePanel) — old.Dispose() below tears that client down, so a
+            // panel left standing would silently answer every list/download/upload against a dead
+            // connection for the rest of the session. Consent is per-connection by design (see
+            // HostFileService: "discarded with the socket"), so a fresh connection needs a fresh
+            // panel anyway — dropping it and, if it was open, rebuilding it through the same path
+            // used the first time asks the person again rather than pretending nothing happened.
+            if (_filePanel is not null)
+            {
+                bool wasVisible = _filePanel.Visible;
+                _canvasHost.Controls.Remove(_filePanel);
+                _filePanel.Dispose();
+                _filePanel = null;
+                if (wasVisible) ToggleFilePanel(true);
+            }
+
             old.Dispose();
 
             _reconnecting = false;

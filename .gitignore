@@ -499,3 +499,20 @@ agentdb.rvf.lock
 # Not written by us, not project content. Conor, 2026-08-26.
 .claude/agents/
 .claude/commands/
+
+# The rest of RuFlo's own tooling and generated state (Conor confirmed 2026-08-26). Checked each
+# one's content before adding it here: .claude/settings.json is RuFlo's generated hook/swarm
+# config (not this project's), .claude/proven-config.json and .proven-config-version are its own
+# scoring artifacts, helpers/ and skills/ are its bundled scripts. Deliberately NOT included:
+# .claude/settings.local.json — that one is this project's own, hard-won permission allowlist
+# (real curl/dotnet/git/screenshot commands from real FlashDesk work), not RuFlo's.
+.claude/settings.json
+.claude/proven-config.json
+.claude/.proven-config-version
+.claude/helpers/
+.claude/skills/
+.claude-flow/
+.swarm/
+.agents/
+.mcp.json
+ruvector.db

@@ -1431,3 +1431,92 @@ pre-existing tests were found flaky on this machine while checking that** —
 confirmed to fail at the same rate on the unmodified `dbc481c` checkout, so this is a pre-existing
 timing issue, not something this change introduced. Left unfixed here as out of scope; flagged so it
 is not mistaken for a new regression.
+
+### ⚠ KNOWN FLAKY, PRE-EXISTING — do not chase these as new bugs
+
+`HostFileServiceTests.A_PROGRAM_is_asked_about_by_name_every_single_time` and
+`FileTransferEndToEndTests.A_reply_for_a_request_the_operator_has_moved_on_from_is_dropped`
+intermittently fail (roughly every other `dotnet test` run, not every time). **Confirmed
+2026-08-26 by running the unmodified `dbc481c` checkout four times in a row and seeing the same
+two tests fail at the same rate** — this predates every change in this and the following section.
+Left deliberately unfixed (Conor's instruction: leave them, just write it down). If `dotnet test`
+shows one of these two failing, that is this known issue, not a new regression — check the test
+name against this list before spending time on it.
+
+## Second adversarial read (FilePanel/InputCapture): 4 claims survived, 2 real bugs fixed (2026-08-26)
+
+Before the first hands-on, two-person test of the file panel, the same adversarial-refutation
+brief that found the file service's six holes was pointed at `SessionWindow.cs`'s focus-suspend
+wiring and `InputCapture.cs`. **First attempt returned a corrupted, worthless result — a forked
+agent's "findings" were a verbatim copy of the parent session's own previous reply, with zero
+tool calls made, meaning neither file had actually been opened.** Discarded rather than reported;
+see CLAUDE.md §10, written directly because of this — an agent's result is a claim, not a fact,
+and zero tool calls on a review task means no review happened. Relaunched as a fresh
+(non-forked) agent, which returned a real result with file:line citations; the two most
+consequential claims from it were independently re-verified against the actual source (not
+re-read on faith) before being acted on.
+
+**4 of 5 claims investigated SURVIVED** (the code already does what earlier sessions believed):
+key-release-before-suspend ordering in `InputCapture.Suspend`; `Suspended` staying independent of
+`Enabled` with no bad state possible at session end; no keyboard shortcut into the file panel
+(and the actual mechanism is stronger than "no accelerator defined" — `ScreenCanvas.IsInputKey`
+returns `true` unconditionally, so Tab/Escape/arrows never reach WinForms navigation at all while
+the canvas holds focus, they go out as remote input); and the "paused" band being driven by the
+exact same call (`SetControlPaused`) that actually suspends input, so the two can never disagree.
+
+**2 NEW bugs found and fixed, both in the class this project treats as worst — something stops
+and nobody is told:**
+
+1. **The file panel silently outlives the connection it was built against.** `ToggleFilePanel`
+   captures `_client.Files` into the panel once, the first time it is opened, and never again.
+   `ReconnectAsync` swaps in a whole new `_client` and correctly rewires every event handler onto
+   it — but never touched `_filePanel`, which stayed bound to the disposed old connection's file
+   client for the rest of the session. Every list/download/upload after any reconnect would have
+   run against dead state. **Fixed:** on reconnect, a `_filePanel` that exists is torn down and,
+   if it was visible, rebuilt through the exact same path `ToggleFilePanel` already uses the first
+   time it opens — which correctly asks the person again, matching the existing per-connection
+   consent design (`HostFileService`: "discarded with the socket").
+2. **A download in progress hung forever, with no error, if the connection dropped.**
+   `ViewerFileClient.Dispose()` completed the download's chunk channel but never failed or
+   cancelled `download.Finished`, the `TaskCompletionSource` `DownloadAsync` awaits next — and
+   nothing else was ever going to complete it once the link was gone. `UploadAsync`'s equivalent
+   waiter WAS one of the four `Dispose()` already failed, so upload correctly showed an error in
+   the identical situation; download did not. **Fixed:** `Dispose()` now also fails
+   `download.Finished` with the same "The connection ended." used everywhere else, which
+   `DownloadAsync`'s existing catch-all turns into a proper `FileGetEnd` with an error status.
+
+**Swept the rest of the Viewer project for the same shape of bug** (something captured from the
+connection at one point in time, never refreshed after a reconnect) rather than treating the file
+panel as the only instance, per Conor's instruction. Checked every use of `_client` in
+`SessionWindow.cs` and every file in the Viewer project referencing `ViewerClient`: input
+forwarding, the status line, and the FPS/latency readout all read the `_client` FIELD at call
+time so they pick up a reconnect automatically; the four picture/connection events ARE correctly
+rewired in `ReconnectAsync`; nothing outside `SessionWindow.cs` holds a `ViewerClient` reference
+at all. The file panel's captured `files` was the only stale reference found. One minor,
+lower-severity item noted but not changed: `_showFiles.Visible` is set once from
+`_client.HostCapabilities` at construction and would not update if capabilities genuinely
+differed after a reconnect — a cosmetic checkbox-visibility question, not a functional break, and
+not touched without being asked.
+
+**New regression test, proven both ways, not just added:** `FileTransferEndToEndTests
+.Disposing_mid_download_fails_it_instead_of_hanging_forever`. First version disposed
+`ViewerFileClient` alone and passed even against the un-fixed code — a false negative, because
+the pump and socket were still alive and the real `FileGetEnd` from the host arrived and resolved
+the download normally regardless of `Dispose()`, racing past the bug. Corrected to also cancel
+the pump and close the socket, which actually simulates the connection being gone. Confirmed
+**fails with `TimeoutException` at 10s against the pre-fix code, four consecutive times**, and
+**passes in ~230ms with the fix** — both checked by hand before trusting the test.
+
+`dotnet test`: 293 → 294 (the one new test). No change to the two known-flaky tests' behaviour.
+
+Also this pass: added the missing `.gitignore` rules for RuFlo's own generated state
+(`.claude/agents/`, `.claude/commands/`, `.claude/settings.json`, `.claude/proven-config*`,
+`.claude/helpers/`, `.claude/skills/`, `.claude-flow/`, `.swarm/`, `.agents/`, `.mcp.json`,
+`ruvector.db`) — none of it is this project's content. Deliberately left OUT:
+`.claude/settings.local.json`, which turned out to be this project's own accumulated Bash/
+PowerShell permission allowlist from real FlashDesk work, not RuFlo's — and it is already covered
+by Conor's global git ignore for that filename anyway, confirmed with `git check-ignore -v`.
+Deleted four confirmed-empty (0 bytes), untracked files at the repo root
+(`0),+`, `126`, `SetControlPaused(false)`, `b.Length)`) whose names are fragments of shell/C#
+text — almost certainly the accidental output of an unescaped multi-line command in an earlier
+session, not project content.

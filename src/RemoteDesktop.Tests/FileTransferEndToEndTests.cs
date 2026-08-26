@@ -301,6 +301,43 @@ public class FileTransferEndToEndTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Disposing_mid_download_fails_it_instead_of_hanging_forever()
+    {
+        // The bug this guards against: ViewerFileClient.Dispose() completed the chunk channel but
+        // never failed download.Finished, so DownloadAsync hung on that TaskCompletionSource forever
+        // - no error, no timeout, just a progress bar that silently stopped. Found by an adversarial
+        // read (2026-08-26), asymmetric with UploadAsync, whose result waiter WAS one of the four
+        // failed on Dispose. WaitAsync below is the actual regression check: it throws instead of
+        // the test hanging if the fix ever regresses.
+        File.WriteAllBytes(Path.Combine(_clientFolder, "huge.bin"), new byte[60 * 1024 * 1024]);
+
+        await AllowAsync();
+
+        var started = new TaskCompletionSource();
+
+        var download = _client!.DownloadAsync(
+            Path.Combine(_clientFolder, "huge.bin"), _operatorFolder, "huge.bin",
+            new Progress<long>(_ => started.TrySetResult()), CancellationToken.None);
+
+        // Dispose only once bytes are provably moving - mid-transfer is the case that matters, not
+        // "disposed before it ever started".
+        await started.Task.WaitAsync(TimeSpan.FromSeconds(30));
+
+        // Disposing _client alone is not enough to reproduce this: the pump keeps pumping and the
+        // host keeps streaming over a socket that still works, so the real FileGetEnd eventually
+        // arrives and resolves the download normally regardless of Dispose() - that raced past the
+        // bug the first time this test was written. The socket has to actually be gone, which is
+        // what happens in production immediately before ViewerClient.Dispose() calls Files?.Dispose().
+        _pumps!.Cancel();
+        _viewerSide!.Close();
+        _client.Dispose();
+
+        var end = await download.WaitAsync(TimeSpan.FromSeconds(10));
+
+        Assert.NotEqual(FileStatus.Ok, end.Status);
+    }
+
+    [Fact]
     public async Task A_reply_for_a_request_the_operator_has_moved_on_from_is_dropped()
     {
         // Two listings asked for in a row. Each answer must find its OWN request - this is what the

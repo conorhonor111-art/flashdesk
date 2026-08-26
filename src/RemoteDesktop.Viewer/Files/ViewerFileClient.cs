@@ -389,6 +389,12 @@ public sealed class ViewerFileClient : IDisposable
     public void Dispose()
     {
         _download?.Chunks.Writer.TryComplete();
+        // Completing the channel only ends the chunk-reading loop in DownloadAsync; it then still
+        // awaits download.Finished, which nothing else was ever going to complete once the link is
+        // gone. Left out, a disconnect mid-download hung the progress bar forever with no error —
+        // exactly the "something stopped and nobody was told" class of bug this project treats as
+        // worst, and asymmetric with UploadAsync, whose result waiter IS one of the four below.
+        _download?.Finished.TrySetException(new IOException("The connection ended."));
 
         // Anything still waiting is woken with a failure rather than left hanging: a panel waiting
         // on a reply that can never come would sit there for the rest of the session.

@@ -266,6 +266,33 @@ This is separate from, and does not replace, the standing instruction to also pu
 clipboard and in `short.txt` after every reply — those exist because long output does not survive
 being copied out of my terminal. This rule is about the SHAPE of what I read, not where it lives.
 
+## 10. An agent's result is a claim, never a fact (Conor, standing rule, 2026-08-26)
+
+When you delegate a task to a subagent (a background helper Claude Code — a "fork" or any other
+agent type), what it returns is what it CLAIMS happened, not proof that it happened. Verify
+before you report it to me as true.
+
+**Why:** this is not hypothetical — it already happened in this project. A forked agent I asked
+to adversarially review two source files came back with a confident, detailed-sounding "result"
+that was actually just a verbatim copy of the parent session's own previous reply to me, with
+zero tool calls made — meaning it never opened either file. It would have been reported to me as
+a real review if it had not been checked first.
+
+**The rule this produces, concretely:**
+- **If an agent's usage/metadata shows zero tool calls for a task that requires reading or
+  touching files, its result is worthless — discard it and redo the task**, whatever the result
+  text claims. A real review, search, or fix leaves a tool-call trail; a result with none did not
+  do the work, no matter how specific or plausible the text sounds.
+- **Before reporting any agent's findings to me as fact, independently verify the load-bearing
+  claims against the actual source** — read the file, check the line, trace the path yourself.
+  Do this especially for anything I will act on (a fix, a decision, a "this is safe").
+- A claim that survives independent verification can be reported as verified. A claim that was
+  only read, not checked, must be reported as unverified — say so plainly, per section 9's "what
+  is not proven."
+
+This is not luck to rely on next time; it is now a standing check, every time, not just when
+something feels off.
+
 ---
 
 # Project facts (discovered during setup — keep these; I cannot recover them otherwise)
