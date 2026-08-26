@@ -1520,3 +1520,82 @@ Deleted four confirmed-empty (0 bytes), untracked files at the repo root
 (`0),+`, `126`, `SetControlPaused(false)`, `b.Length)`) whose names are fragments of shell/C#
 text — almost certainly the accidental output of an unescaped multi-line command in an earlier
 session, not project content.
+
+## Two copies, one machine, safely — and two bugs the first real click found (2026-08-26)
+
+**The manual two-VM setup (`.222`/`.223`) was defeating Conor** — not a developer, RDP-only, and
+the setup itself had become the obstacle to the first hands-on test. His own catch: the 9-digit
+number is read from `%APPDATA%\FlashDesk\identity.json` (see `IdentityStore`/`FlashDeskFolder`),
+which is why two copies on one machine share a number — and `FLASHDESK_CONFIG_DIR` already existed
+to override that folder (`FlashDeskFolder.cs`, comment: "so two copies can run side by side on one
+machine ... which is how relay pairing is tested without a second computer") but nothing had ever
+turned it into something a non-developer could actually run.
+
+**Built `scripts/Start-Second-FlashDesk-Copy.cmd`** (also placed on the Desktop as
+`Start SECOND FlashDesk copy (safe test).cmd`) — one double-click starts a second, independent
+`FlashDesk.exe` with its own identity. Three environment variables, all new except the first:
+
+- `FLASHDESK_CONFIG_DIR` (already existed) — its own data folder, its own 9-digit number.
+- `FLASHDESK_DISABLE_CONTROL` (new — `FlashDeskTestMode.ControlDisabled`) — makes this copy
+  physically unable to send OR act on a "control mouse and keyboard" request, in either direction.
+  **Why both directions matter:** with two copies on the SAME real desktop, whichever one ends up
+  playing HOST in the pairing would inject input into Conor's actual machine, not a separate one —
+  and either copy could end up playing either role, since he chooses which window connects to
+  which. Disabling only one direction on only one copy leaves the other direction open depending
+  on which way he connects. The viewer-side checkbox is disabled and relabelled
+  (`SessionWindow._control`); the host-side injection call is skipped even if a request somehow
+  arrives anyway (`HostServer.InboundLoopAsync`, `MessageType.Input` case) — checked, not just
+  trusted to the checkbox. **Consent is untouched**: the Accept dialog still requires a real
+  click, on both copies, always.
+- `FLASHDESK_FORCE_GDI` (new) — see below.
+
+**Verified, not assumed** (sandbox disabled for this one check, since it needed a real GUI
+process): launched a real second copy with these three variables and a real normal copy side by
+side. Title bars read exactly `FlashDesk` and `FlashDesk — TEST COPY (remote control disabled)`;
+`%APPDATA%\FlashDesk\identity.json` and `%LOCALAPPDATA%\FlashDesk-SecondCopy\identity.json` both
+exist with **different** 9-digit numbers (`163035814` vs `175503444`). Both processes stopped
+afterward so Conor starts from a clean state. The Accept-dialog and host-side injection paths were
+checked by reading the code, not exercised through a live paired session — that is what the actual
+test now proves.
+
+### Bug: "Capture failures: 1" in red, GDI instead of DXGI — explained, not a regression
+
+Traced to the real `FlashDesk-capture-log.txt` on the Desktop, not guessed:
+```
+07:09:06  INTERRUPTED   capture=Dxgi  reason=DXGI access lost (UAC prompt, lock, or resolution/monitor change)
+07:09:37  DID NOT RECOVER  Dxgi gave up after 30538 ms; fell back to Gdi   (failures=1)
+```
+Windows will not let two processes both hold a DXGI Desktop Duplication session on the same
+output at once. This never happened before because every previous test used two separate VMs
+(`.222`/`.223`), each with its own adapter — Conor manually running two copies on one real machine
+today, for the first time, is what surfaced it. `DxgiScreenCapture.GiveUpAfterMs` = 30 s matches
+the 30538 ms in the log exactly. **Not a bug — DXGI genuinely cannot be shared** — but the new
+launcher's `FLASHDESK_FORCE_GDI` flag (`HostServer.Start`, `ScreenCaptureFactory.Create`) skips
+the second copy straight to GDI, so it reaches the same end state without 30 seconds of a red
+failure counter along the way, every single time it is used.
+
+### Bug: file panel rows nearly invisible — found because Conor clicked it himself
+
+`FilePanel`'s `ListView` never had `BackColor` set, so it used WinForms' plain light default while
+every row's `ForeColor` was set to `Theme.OperatorHeaderText` — a colour meant for the DARK
+operator theme. Light text on a light background read as "the listing is empty" when it was not;
+Conor saw a barely-visible `C:\` row and nearly missed it. Fixed by setting `_list.BackColor` /
+`_list.ForeColor` to the exact pairing already used elsewhere in this same panel
+(`Theme.OperatorHeader` / `Theme.OperatorHeaderText`) — no new colour introduced. Also removed a
+`row.ForeColor = entry.IsDirectory ? Theme.OperatorHeaderText : Theme.OperatorHeaderText` — a
+ternary whose two branches were identical, which reads as an intentional file/folder distinction
+that was never actually there.
+
+Two status messages improved to say **how**, not just what's required: the initial message no
+longer says "choose a folder" (their drives actually appear automatically once access is granted,
+nothing to choose) — it now describes what is actually happening; "This folder is empty." now
+also says to type another path and press Go, or press Up.
+
+### What was confirmed working, and left untouched
+
+Conor's own words: the connection, the panel, and the pause band all worked — the band read
+correctly and appeared the instant the panel was clicked. Nothing about the connection, panel
+opening, or `SetControlPaused`/focus-announcement mechanism was touched this pass.
+
+`dotnet build`: 0 warnings, 0 errors. `dotnet test`: 294 total, 293 passed — the one failure each
+run is one of the two already-documented pre-existing flaky tests, confirmed by name each time.
