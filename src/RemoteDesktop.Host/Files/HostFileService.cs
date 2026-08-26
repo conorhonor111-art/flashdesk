@@ -52,6 +52,14 @@ internal sealed class HostFileService : IDisposable
     /// <summary>Told when a file actually left this machine: name, bytes, the folder it came from.</summary>
     private readonly Action<string, string, long, string>? _fileSent;
 
+    /// <summary>
+    /// Told the instant a transfer actually starts moving bytes, and again when it stops — done,
+    /// refused, or cut off. Lets the session record answer "did a transfer slow the picture?" from
+    /// what it already measured, instead of asking a tester to watch two windows at once.
+    /// </summary>
+    private readonly Action? _transferStarted;
+    private readonly Action? _transferEnded;
+
     /// <summary>The three things the WRITE side needs. All null-safe: a missing ask means refuse.</summary>
     private readonly AskIncomingFile? _askIncoming;
     private readonly AskReplaceFile? _askReplace;
@@ -79,7 +87,9 @@ internal sealed class HostFileService : IDisposable
         Action<string, string, long, string>? fileSent,
         AskIncomingFile? askIncoming = null,
         AskReplaceFile? askReplace = null,
-        FileArrived? fileArrived = null)
+        FileArrived? fileArrived = null,
+        Action? transferStarted = null,
+        Action? transferEnded = null)
     {
         _channel = channel;
         _governor = governor;
@@ -90,6 +100,8 @@ internal sealed class HostFileService : IDisposable
         _askIncoming = askIncoming;
         _askReplace = askReplace;
         _fileArrived = fileArrived;
+        _transferStarted = transferStarted;
+        _transferEnded = transferEnded;
     }
 
     /// <summary>
@@ -356,8 +368,9 @@ internal sealed class HostFileService : IDisposable
             return;
         }
 
+        _transferStarted?.Invoke();
         try { await StreamFileAsync(request, ct).ConfigureAwait(false); }
-        finally { Interlocked.Exchange(ref _transferBusy, 0); }
+        finally { Interlocked.Exchange(ref _transferBusy, 0); _transferEnded?.Invoke(); }
     }
 
     private async Task StreamFileAsync(FileGetRequest request, CancellationToken ct)
@@ -541,8 +554,9 @@ internal sealed class HostFileService : IDisposable
             return;
         }
 
+        _transferStarted?.Invoke();
         try { await ReceiveFileAsync(request, ct).ConfigureAwait(false); }
-        finally { Interlocked.Exchange(ref _transferBusy, 0); }
+        finally { Interlocked.Exchange(ref _transferBusy, 0); _transferEnded?.Invoke(); }
     }
 
     private async Task ReceiveFileAsync(FileSendRequest request, CancellationToken ct)

@@ -404,7 +404,8 @@ public sealed class HostServer : IDisposable
         // One per connection, and it dies with the socket — which is what makes file consent
         // per-connection rather than per-caller. See HostFileService.
         using var files = new HostFileService(channel, Governor, _currentPeerId ?? string.Empty,
-            Partials, FileAccessAsk, FileSentLogged, IncomingFileAsk, ReplaceFileAsk, FileArrivedLogged);
+            Partials, FileAccessAsk, FileSentLogged, IncomingFileAsk, ReplaceFileAsk, FileArrivedLogged,
+            transferStarted: () => _recorder?.BeginTransfer(), transferEnded: () => _recorder?.EndTransfer());
 
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct);
         var inbound = InboundLoopAsync(channel, files, linked.Token);
@@ -641,7 +642,7 @@ public sealed class HostServer : IDisposable
             // gets written into the client's own session log when the session ends.
             const double ToMs = 1000.0;
             double tickMs = ToMs / System.Diagnostics.Stopwatch.Frequency;
-            _recorder?.RecordFrame(bytes.Length, Governor.Level,
+            _recorder?.RecordFrame(bytes.Length, Governor.Level, Governor.Quality,
                 captureTicks * tickMs, diffTicks * tickMs, encodeTicks * tickMs,
                 sendTimer.ElapsedTicks * tickMs);
 

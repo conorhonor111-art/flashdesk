@@ -1405,3 +1405,29 @@ on machines that use junctions for redirected profile folders.
 
 **The three attack tests were confirmed live on this machine** — the junction was created, the 8.3
 alias `IMPORT~1.DOC` existed, the stream was written — so none of them silently skipped.
+
+## The transfer-slows-the-picture claim is now measured, not reasoned (2026-08-26)
+
+Before the first two-person, hands-on test of the file panel, one gap: `PROGRESS.md` had twice
+recorded "the claim that a transfer slows the picture is still reasoned, never measured." Fixing
+that needed to happen before the test, not after, so the run itself would answer the question
+instead of leaving it for another round of reasoning.
+
+`SessionRecorder` now keeps a plain history — one entry per completed second, frames and average
+JPEG quality — for the whole session, cheap to keep because a session is at most a few thousand of
+them. `HostFileService` tells it the instant a transfer actually starts moving bytes and the instant
+it stops (done, refused, or cut off) — the same two points that already claim and release
+`_transferBusy`, so "during" always means bytes were genuinely in flight, never the moment the
+operator merely asked. The session report gains one new block per transfer: average fps and quality
+for the five seconds before it started, for its whole duration, and for the five seconds after it
+ended. `dotnet build` and `RecordFrame`'s new `quality` parameter (the real JPEG quality the governor
+was using, not just the ladder step) are the only signature changes; everything else is additive.
+
+`dotnet test` **293 → 293** (unchanged) — this is instrumentation, not behaviour, so no new test was
+added for it; it will be exercised, and its output judged, by the two-person test itself. **Two
+pre-existing tests were found flaky on this machine while checking that** —
+`HostFileServiceTests.A_PROGRAM_is_asked_about_by_name_every_single_time` and
+`FileTransferEndToEndTests.A_reply_for_a_request_the_operator_has_moved_on_from_is_dropped` — both
+confirmed to fail at the same rate on the unmodified `dbc481c` checkout, so this is a pre-existing
+timing issue, not something this change introduced. Left unfixed here as out of scope; flagged so it
+is not mistaken for a new regression.
