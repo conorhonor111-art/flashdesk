@@ -494,3 +494,8 @@ short.txt
 # Tooling scratch from the ruflo/claude-flow MCP server. Not part of the project.
 agentdb.rvf
 agentdb.rvf.lock
+
+# RuFlo's own bundled agents/commands, dropped into .claude/ by its own tooling.
+# Not written by us, not project content. Conor, 2026-08-26.
+.claude/agents/
+.claude/commands/

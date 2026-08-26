@@ -243,6 +243,29 @@ directly. If I ask for something that will not work, tell me it will not work an
 would much rather be corrected than agreed with. Agreeing with a bad instruction costs me
 weeks that I cannot see coming.
 
+## 9. End every task with a report I can read in place (Conor, standing rule)
+
+I am not a developer and I cannot copy your whole output somewhere to have it explained. The
+report is how I understand what happened, so write it for me — in place, in the reply itself,
+every time, however small the task.
+
+It must tell me, in plain words:
+- **What I asked for**, in one line, so I can see you understood it.
+- **What you did**, in order, and **why** each thing — not a list of files touched.
+- **What you found that I did not ask about** — surprises, wrong assumptions of mine, things
+  the code already did that we thought it did not.
+- **What is proven, and how you proved it** — a number, a command, a test count.
+- **What is not proven**, named plainly, with no softening.
+- **What is left for me**, if anything, with the literal steps.
+- **What comes next for you.**
+
+Rules for it: plain language, define any term the first time you use it. If you made a decision
+I did not authorise, say so explicitly rather than folding it into the description.
+
+This is separate from, and does not replace, the standing instruction to also put a summary on the
+clipboard and in `short.txt` after every reply — those exist because long output does not survive
+being copied out of my terminal. This rule is about the SHAPE of what I read, not where it lives.
+
 ---
 
 # Project facts (discovered during setup — keep these; I cannot recover them otherwise)
