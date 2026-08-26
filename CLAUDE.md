@@ -293,6 +293,31 @@ a real review if it had not been checked first.
 This is not luck to rely on next time; it is now a standing check, every time, not just when
 something feels off.
 
+## 11. A test that cannot fail proves nothing (Conor, standing rule, 2026-08-26)
+
+**Any new regression test — a test written specifically to prove one bug is fixed and stays
+fixed — must be RUN against the unfixed code, and must FAIL there, before it is trusted or
+committed.** A test that passes whether the bug is present or absent is not testing anything; it
+is decoration that looks like proof.
+
+**Why:** this already happened in this project, in the same turn section 10 was written for. The
+first version of the regression test for the download-hangs-forever bug (see PROGRESS.md,
+"Second adversarial read") disposed the file client but left the underlying pump and socket
+alive, so the real completion message still arrived and resolved the download normally — the
+test PASSED even run against the broken code, proving nothing. It was only caught because it got
+run against the unfixed code on purpose, as a check. Conor's own comparison: this is the same
+shape of failure as a status check that reports READY against a page that is actually broken —
+a gate that cannot say no is not a gate.
+
+**The rule this produces, concretely:**
+- Before trusting a new regression test, temporarily undo the fix (or write the test before the
+  fix exists) and run the test. It must fail, with a failure that demonstrates the actual bug —
+  not an unrelated error, not a false failure from a mistake in the test itself.
+- Then restore the fix and run the test again. It must pass.
+- Only report a regression test as real, or commit it, once both runs have actually happened.
+  "I wrote a test for it" is not "I proved the test catches it" — the second is what this rule
+  requires.
+
 ---
 
 # Project facts (discovered during setup — keep these; I cannot recover them otherwise)
