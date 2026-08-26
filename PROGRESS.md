@@ -1599,3 +1599,79 @@ opening, or `SetControlPaused`/focus-announcement mechanism was touched this pas
 
 `dotnet build`: 0 warnings, 0 errors. `dotnet test`: 294 total, 293 passed — the one failure each
 run is one of the two already-documented pre-existing flaky tests, confirmed by name each time.
+
+## Clipboard copy-paste, and three smaller decisions cut from the same list (2026-08-26)
+
+Conor's framing: fetching a file was find-it, select-it, press-a-button, choose-a-folder — three
+decisions for something that should be one. Two directions: Ctrl+C on their screen, Ctrl+V on his
+(their file arrives), and the reverse.
+
+**Simple (eager fetch-to-temp-then-real-clipboard-file), not virtual (delay-rendered), decided
+with numbers, before writing code, per Conor's own condition:** a real local file on the clipboard
+(`CF_HDROP`) is read correctly by essentially every Windows application — it is the exact format
+an ordinary Explorer copy already uses. A delay-rendered/virtual entry (`CFSTR_FILECONTENTS`) is
+inconsistently supported across paste targets — many either fail outright or silently produce a
+0-byte file — which is precisely the "silent wrong result" class of bug this project spends most
+of its effort refusing to ship. It would also need to trigger network I/O, consent, and logging
+from inside a COM `IDataObject.GetData` call arriving synchronously on some OTHER process's UI
+thread (Explorer's, Outlook's, whatever the paste target is) — a well-known way to hang that
+foreign application. The simple version instead reuses `DownloadAsync`/`UploadAsync` exactly as
+written, on this process's own thread, so consent and `sessions.txt` logging are inherited for
+free rather than re-implemented.
+
+**Size threshold: 100 MB, Ctrl+C only.** Below it, an ordinary document, photo or spreadsheet
+copies with no prompt at all — the actual point of the feature. Above it, on the slow home
+uplink already measured elsewhere in this project (~0.6–2 MB/s), a silent fetch could run 50–170
+seconds before the clipboard even has anything on it; that is exactly the moment worth one extra
+click; a `MessageBox` asks first, Cancel defaulted. Double-click and the button are NOT gated by
+this — a click on a specific row is a deliberate act, not the accidental-keypress risk Ctrl+C is.
+
+**What was built:**
+- `FilePanel.CopySelectedToClipboardAsync` (Ctrl+C, list focused) — downloads the selected file to
+  a fresh `%TEMP%\FlashDesk-clipboard\<guid>\` folder (a new folder per copy, so copying the same
+  name twice in a row can never collide with a leftover from the first copy) and calls
+  `Clipboard.SetFileDropList`.
+- `FilePanel.PasteFilesAsync` (Ctrl+V, list focused) — reads real local paths off the clipboard
+  (`Clipboard.GetFileDropList`, filtered to `File.Exists` so a copied folder is silently skipped
+  rather than erroring), uploads each one in turn through the SAME `UploadFileAsync` the "Send a
+  file…" button now also calls — same per-file consent, same PROGRAM-by-name question, same log
+  lines, because it is the same call.
+- Both bound to `_list.KeyDown` specifically, not the panel generally, so Ctrl+V still pastes TEXT
+  normally in the path textbox — this does not compete with that.
+- **Clipboard TEXT is deliberately untouched.** Only `FileDropList` is read or written; nothing
+  syncs the text clipboard in either direction — a different feature (people paste passwords into
+  clipboards) with a different decision that was not made here.
+
+**The three "either way" items, one cut and explained rather than silently dropped:**
+- **Double-click a file now fetches it immediately, no dialog** (`OpenSelected`, extended — it
+  already handled folders, files fell through to nothing before).
+- **The last download folder is remembered** (`OperatorSettings`, new — same load/save shape as
+  `KnownCallers`, one field). First download still asks once (there is nothing to remember yet);
+  every one after uses the same folder silently. Applies to BOTH the button and double-click, since
+  both call the same new `DownloadEntryAsync`. Deliberately DOWNLOAD-only — Decision E: an upload's
+  destination is the remote folder just navigated to, which has no local-folder equivalent.
+  Direct cost, stated rather than hidden: removing the per-download dialog also removes the
+  per-download rename that `SaveFileDialog` used to offer.
+- **Cut this pass: dragging a file out of the panel onto the real desktop.** Same simple-vs-virtual
+  question as the clipboard (native OLE drag needs either the same eager-fetch-first approach or
+  the same risky COM layer) — but Ctrl+C→Ctrl+V already delivers the same outcome with one
+  keyboard gesture instead of a mouse gesture, so the incremental value is lower than the
+  implementation risk this pass. Not forgotten — next, if wanted.
+
+New tests: `OperatorSettingsTests` (4 tests — a fresh folder remembers nothing, what is set
+survives a new instance exactly like a real restart, setting it again overwrites rather than
+merges, a corrupted file is treated as nothing-remembered rather than a crash). `FilePanel`
+itself stays outside the automated suite, same as before — no human has driven THIS part of it
+either yet.
+
+`dotnet build`: 0 warnings, 0 errors. `dotnet test`: 298 total (294 → 298, four new), 296–297
+passed depending on the run — still only the same two pre-existing flaky tests, never a new name.
+
+### Live two-copy test, launched by Conor's own request
+
+Both copies started for the actual hands-on test (not just verification this time) and left
+running: normal copy `163035814`, TEST COPY `175503444` (title-bar confirmed, same as the prior
+verification — the identity is permanent per data folder, so the same two numbers reappear on
+every launch, which is correct, not a stale cache). Walkthrough given: which number goes in
+which window, panel contrast, the control checkbox disabled on the TEST COPY, one large download,
+one ordinary upload, one `.exe` upload — `sessions.txt` to follow from Conor after.

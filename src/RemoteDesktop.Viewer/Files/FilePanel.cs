@@ -1,4 +1,7 @@
+using System.Collections.Specialized;
+using System.Linq;
 using RemoteDesktop.Shared.Files;
+using RemoteDesktop.Shared.Identity;
 using RemoteDesktop.UI;
 
 namespace RemoteDesktop.Viewer.Files;
@@ -25,11 +28,24 @@ namespace RemoteDesktop.Viewer.Files;
 /// their machine too. The rule this settles: <b>while remote control is active, FlashDesk swallows
 /// nothing.</b></para>
 ///
+/// <para><b>Ctrl+C and Ctrl+V inside the list are NOT the shortcut the rule above forbids.</b> That
+/// rule is about a key stolen from the remote machine — one the operator needed to send forward and
+/// FlashDesk kept instead. Copy/paste here only ever fires while the LIST already has focus, which
+/// means remote control is already suspended and nothing is being forwarded anyway (same as Enter,
+/// already handled the same way). Nothing reaches into the panel from outside; it is local
+/// navigation once the operator is already inside, exactly like a double-click.</para>
+///
 /// <para>Operator chrome, so it can never be mistaken for the client's window in a screenshot.</para>
 /// </summary>
 public sealed class FilePanel : UserControl
 {
+    /// <summary>Above this, Ctrl+C asks before fetching rather than starting silently — a stray
+    /// keypress must not be able to start a multi-gigabyte transfer. Below it, ordinary documents,
+    /// photos and spreadsheets pass through with no prompt at all, which is the whole point.</summary>
+    private const long ClipboardAskAboveBytes = 100L * 1024 * 1024;
+
     private readonly ViewerFileClient _files;
+    private readonly OperatorSettings _settings = new(FlashDeskFolder.Current);
 
     private readonly RoundedTextBox _path = new() { Font = Theme.Body, PlaceholderText = "C:\\Users" };
     private readonly Button _go = Theme.MakeButton("Go", ButtonKind.Neutral);
@@ -85,13 +101,18 @@ public sealed class FilePanel : UserControl
         _list.Columns.Add("Size", 80, HorizontalAlignment.Right);
         _list.Columns.Add("Changed", 100);
         _list.DoubleClick += (_, _) => OpenSelected();
-        _list.KeyDown += (_, e) => { if (e.KeyCode == Keys.Enter) { OpenSelected(); e.Handled = true; } };
+        _list.KeyDown += (_, e) =>
+        {
+            if (e.KeyCode == Keys.Enter) { OpenSelected(); e.Handled = true; }
+            else if (e.Control && e.KeyCode == Keys.C) { _ = CopySelectedToClipboardAsync(); e.Handled = true; }
+            else if (e.Control && e.KeyCode == Keys.V) { _ = PasteFilesAsync(); e.Handled = true; }
+        };
 
         _go.Click += (_, _) => _ = ShowFolderAsync(_path.Text.Trim(), 0);
         _up.Click += (_, _) => GoUp();
         _refresh.Click += (_, _) => _ = ShowFolderAsync(_folder, 0);
         _more.Click += (_, _) => _ = ShowFolderAsync(_folder, _shown);
-        _get.Click += (_, _) => _ = DownloadSelectedAsync();
+        _get.Click += (_, _) => { if (Selected is { } entry) _ = DownloadEntryAsync(entry); else _status.Text = "Choose a file first."; };
         _send.Click += (_, _) => _ = UploadAsync();
         _stop.Click += (_, _) => _transfer?.Cancel();
 
@@ -266,12 +287,19 @@ public sealed class FilePanel : UserControl
     private void OpenSelected()
     {
         var entry = Selected;
-        if (entry is null || !entry.IsDirectory) return;
+        if (entry is null) return;
 
-        // At the root the NAME IS THE PATH (the drives), so it is used as-is rather than joined to
-        // an empty folder — see LocalDrives.Roots.
-        string next = _folder.Length == 0 ? entry.Name : Path.Combine(_folder, entry.Name);
-        _ = ShowFolderAsync(next, 0);
+        if (entry.IsDirectory)
+        {
+            // At the root the NAME IS THE PATH (the drives), so it is used as-is rather than joined
+            // to an empty folder — see LocalDrives.Roots.
+            string next = _folder.Length == 0 ? entry.Name : Path.Combine(_folder, entry.Name);
+            _ = ShowFolderAsync(next, 0);
+            return;
+        }
+
+        // A file: double-click fetches it, no dialog — see DownloadEntryAsync.
+        _ = DownloadEntryAsync(entry);
     }
 
     private void GoUp()
@@ -285,25 +313,37 @@ public sealed class FilePanel : UserControl
 
     // ---------------------------------------------------------------- moving files
 
-    private async Task DownloadSelectedAsync()
+    /// <summary>
+    /// Fetches one file to the LAST folder a download was saved to, asking only the first time
+    /// there is nothing to remember yet. Shared by the "Copy to my computer" button and
+    /// double-click, so both behave the same way and remember the same folder. Deliberately no
+    /// per-download rename — that convenience is the direct cost of removing the per-download
+    /// dialog, which is the whole point of this being asked for.
+    /// </summary>
+    private async Task DownloadEntryAsync(DirEntry entry)
     {
-        var entry = Selected;
-        if (entry is null || entry.IsDirectory || _folder.Length == 0)
+        // Not previously guarded because there was only ever one entry point (the button, which
+        // SetBusy already disables). Double-click is a second entry point now, and a fast second
+        // click while a transfer is running would overwrite _transfer out from under the first one
+        // — the Stop button would then cancel the wrong transfer, and both finally-blocks would
+        // race to clear the same field.
+        if (_busy) return;
+        if (entry.IsDirectory || _folder.Length == 0)
         {
             _status.Text = "Choose a file first.";
             return;
         }
 
-        using var save = new SaveFileDialog
+        string? destination = _settings.LastDownloadFolder;
+        if (destination is null || !Directory.Exists(destination))
         {
-            FileName = entry.Name,
-            Title = "Where should this be saved on your computer?",
-            OverwritePrompt = true,
-        };
-        if (save.ShowDialog(this) != DialogResult.OK) return;
-
-        string destination = Path.GetDirectoryName(save.FileName) ?? "";
-        if (destination.Length == 0) { _status.Text = "That is not a folder."; return; }
+            using var pick = new FolderBrowserDialog
+            {
+                Description = "Where should downloads from this computer be saved? (Remembered for next time.)",
+            };
+            if (pick.ShowDialog(this) != DialogResult.OK) return;
+            destination = pick.SelectedPath;
+        }
 
         _transfer = new CancellationTokenSource();
         SetBusy(true);
@@ -312,12 +352,18 @@ public sealed class FilePanel : UserControl
         try
         {
             var end = await _files.DownloadAsync(
-                Path.Combine(_folder, entry.Name), destination, Path.GetFileName(save.FileName),
+                Path.Combine(_folder, entry.Name), destination, entry.Name,
                 Progress(entry.Size), _transfer.Token);
 
-            _status.Text = end.Status == FileStatus.Ok
-                ? $"Copied {entry.Name} ({Readable(end.TotalBytes)}) to {destination}."
-                : end.Message.Length > 0 ? end.Message : "It did not finish.";
+            if (end.Status == FileStatus.Ok)
+            {
+                _settings.LastDownloadFolder = destination; // only remembered once it actually worked
+                _status.Text = $"Copied {entry.Name} ({Readable(end.TotalBytes)}) to {destination}.";
+            }
+            else
+            {
+                _status.Text = end.Message.Length > 0 ? end.Message : "It did not finish.";
+            }
         }
         catch (Exception ex) { _status.Text = ex.Message; }
         finally
@@ -326,6 +372,102 @@ public sealed class FilePanel : UserControl
             _transfer?.Dispose();
             _transfer = null;
             SetBusy(false);
+        }
+    }
+
+    /// <summary>
+    /// Ctrl+C on a selected file: fetches it to a fresh temp folder and puts the real local file on
+    /// the operator's Windows clipboard, so Ctrl+V works in any application — Explorer, an email,
+    /// anywhere — with no special handling on their end, because it IS an ordinary local file by the
+    /// time it lands there. Deliberately not a virtual/delay-rendered clipboard entry: those are
+    /// unreliable across paste targets and would have to trigger consent and logging from inside a
+    /// foreign process's UI thread, which is exactly the shape of bug this project spends most of
+    /// its effort refusing to ship.
+    /// </summary>
+    private async Task CopySelectedToClipboardAsync()
+    {
+        if (_busy) return;
+        var entry = Selected;
+        if (entry is null || entry.IsDirectory || _folder.Length == 0)
+        {
+            _status.Text = "Choose a file first.";
+            return;
+        }
+
+        if (entry.Size > ClipboardAskAboveBytes)
+        {
+            var confirm = MessageBox.Show(this,
+                $"{entry.Name} is {Readable(entry.Size)}. Copying it now could take a while on a "
+                + "slow connection.\n\nCopy it anyway?",
+                "FlashDesk", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
+            if (confirm != DialogResult.Yes) return;
+        }
+
+        string tempFolder = Path.Combine(Path.GetTempPath(), "FlashDesk-clipboard", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+
+        _transfer = new CancellationTokenSource();
+        SetBusy(true);
+        _progress.Value = 0;
+        _status.Text = "Copying…";
+
+        try
+        {
+            var end = await _files.DownloadAsync(
+                Path.Combine(_folder, entry.Name), tempFolder, entry.Name,
+                Progress(entry.Size), _transfer.Token);
+
+            if (end.Status != FileStatus.Ok)
+            {
+                _status.Text = end.Message.Length > 0 ? end.Message : "It did not finish.";
+                return;
+            }
+
+            var files = new StringCollection { Path.Combine(tempFolder, entry.Name) };
+            Clipboard.SetFileDropList(files);
+            _status.Text = $"Copied {entry.Name} ({Readable(end.TotalBytes)}) — paste it anywhere with Ctrl+V.";
+        }
+        catch (Exception ex) { _status.Text = ex.Message; }
+        finally
+        {
+            _progress.Value = 0;
+            _transfer?.Dispose();
+            _transfer = null;
+            SetBusy(false);
+        }
+    }
+
+    /// <summary>
+    /// Ctrl+V with real local files on the clipboard (from Explorer, or from another FlashDesk
+    /// copy/paste): sends each one to the folder currently open here, exactly as "Send a file…"
+    /// would — same consent, same per-program question, same log lines, one file at a time because
+    /// only one transfer runs at once. Text on the clipboard is left alone entirely; see the type
+    /// doc for why syncing clipboard TEXT is a different, unmade decision.
+    /// </summary>
+    private async Task PasteFilesAsync()
+    {
+        if (_busy) return;
+        if (!Clipboard.ContainsFileDropList())
+        {
+            _status.Text = "There is no file on your clipboard to send.";
+            return;
+        }
+
+        var paths = Clipboard.GetFileDropList().Cast<string>().Where(File.Exists).ToList();
+        if (paths.Count == 0)
+        {
+            _status.Text = "There is no file on your clipboard to send.";
+            return;
+        }
+
+        foreach (string path in paths)
+        {
+            if (_folder.Length == 0)
+            {
+                _status.Text = "Open a folder on their computer first — that is where it will go.";
+                return;
+            }
+            await UploadFileAsync(path);
         }
     }
 
@@ -340,8 +482,18 @@ public sealed class FilePanel : UserControl
         using var open = new OpenFileDialog { Title = "Which file should be sent?", CheckFileExists = true };
         if (open.ShowDialog(this) != DialogResult.OK) return;
 
+        await UploadFileAsync(open.FileName);
+    }
+
+    /// <summary>
+    /// The actual send, wherever the local path came from — the "Send a file…" dialog, or a real
+    /// local file pasted from the clipboard. Same consent, same per-program question, same log
+    /// lines either way, because it is the exact same call underneath.
+    /// </summary>
+    private async Task UploadFileAsync(string localPath)
+    {
         long size;
-        try { size = new FileInfo(open.FileName).Length; }
+        try { size = new FileInfo(localPath).Length; }
         catch (Exception ex) { _status.Text = ex.Message; return; }
 
         _transfer = new CancellationTokenSource();
@@ -351,7 +503,7 @@ public sealed class FilePanel : UserControl
 
         try
         {
-            var (reply, result) = await _files.UploadAsync(open.FileName, _folder, Progress(size), _transfer.Token);
+            var (reply, result) = await _files.UploadAsync(localPath, _folder, Progress(size), _transfer.Token);
 
             if (reply.Status != FileStatus.Ok)
             {
@@ -361,7 +513,7 @@ public sealed class FilePanel : UserControl
 
             // The name they agreed to may not be the name that was sent — they may have chosen
             // "keep both". Saying so is the whole reason that choice is worth offering.
-            string landed = reply.SavedAs.Length > 0 ? reply.SavedAs : Path.GetFileName(open.FileName);
+            string landed = reply.SavedAs.Length > 0 ? reply.SavedAs : Path.GetFileName(localPath);
             _status.Text = result?.Status == FileStatus.Ok
                 ? $"Sent. It was saved on their computer as {landed}, in {_folder}."
                 : result?.Message.Length > 0 ? result.Value.Message : "It did not finish.";
