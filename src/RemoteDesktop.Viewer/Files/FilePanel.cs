@@ -77,6 +77,16 @@ public sealed class FilePanel : UserControl
     /// remote control and say so on the picture. True = the operator is in here, not out there.</summary>
     public event Action<bool>? FocusHere;
 
+    /// <summary>
+    /// Raised when Escape is pressed anywhere in this panel. Found missing 2026-08-26, on the first
+    /// real two-machine test — three people believed it already worked, and it never had. The
+    /// session window handles this by focusing the picture, exactly as a click on it already does;
+    /// this event only reports that Escape happened, on purpose, so the ACT of leaving stays defined
+    /// in exactly one place (SessionWindow) rather than this panel reaching for a canvas it does not
+    /// own.
+    /// </summary>
+    public event Action? EscapePressed;
+
     public FilePanel(ViewerFileClient files)
     {
         _files = files;
@@ -553,6 +563,30 @@ public sealed class FilePanel : UserControl
         < 1024L * 1024 * 1024 => $"{bytes / 1024.0 / 1024.0:0.#} MB",
         _ => $"{bytes / 1024.0 / 1024.0 / 1024.0:0.##} GB",
     };
+
+    /// <summary>
+    /// Catches Escape regardless of which child control currently holds focus (the list, the path
+    /// box, a button) — a plain KeyDown handler on one control would miss the others. This is the
+    /// standard WinForms way to intercept a key across a whole composite control before its children
+    /// see it.
+    /// </summary>
+    protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+    {
+        if (keyData == Keys.Escape)
+        {
+            RaiseEscapePressed();
+            return true;
+        }
+        return base.ProcessCmdKey(ref msg, keyData);
+    }
+
+    /// <summary>
+    /// The logic half of the fix, split out so it is testable without a real window handle — see
+    /// InputSuspendTests for the same reasoning applied to focus-dependent behaviour. ProcessCmdKey
+    /// itself is not exercised by a test; it is the standard WinForms pattern and is verified by hand
+    /// and by the two-machine test, same as the release order in InputCapture.Suspend.
+    /// </summary>
+    internal void RaiseEscapePressed() => EscapePressed?.Invoke();
 
     protected override void Dispose(bool disposing)
     {

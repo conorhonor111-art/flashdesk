@@ -441,6 +441,11 @@ public sealed class SessionWindow : Form
             // ONE place decides that focus in the panel means control is paused - see FilePanel,
             // where Enter and Leave cover every child, including any control added later.
             _filePanel.FocusHere += inPanel => SafeBeginInvoke(() => SetControlPaused(inPanel));
+            // Escape was believed to already do this — found missing 2026-08-06, on the first real
+            // two-machine test. Focusing the canvas is the exit path already used everywhere else
+            // (a click on the picture does the same thing via _canvas.GotFocus below), so this stays
+            // a one-line reuse rather than a second way to leave the panel.
+            _filePanel.EscapePressed += () => SafeBeginInvoke(() => _canvas.Focus());
             _canvasHost.Controls.Add(_filePanel);
             _filePanel.BringToFront();
             _ = _filePanel.StartAsync();

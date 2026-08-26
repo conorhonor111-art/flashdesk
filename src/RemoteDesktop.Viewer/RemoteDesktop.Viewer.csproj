@@ -10,6 +10,13 @@
     <EmbeddedResource Include="..\..\assets\FlashDesk.ico" LogicalName="FlashDesk.AppIcon" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- So a test can call an internal method directly instead of needing a real window handle
+         and message pump to prove a WinForms key-handling override fired. See FilePanel's
+         RaiseEscapePressed and InputSuspendTests' own note on the same limitation. -->
+    <InternalsVisibleTo Include="RemoteDesktop.Tests" />
+  </ItemGroup>
+
   <PropertyGroup>
     <!-- LIBRARY, not an executable (2026-08-03). FlashDesk ships as ONE file: the same program
          shows your own number and lets you type someone else's, exactly like AnyDesk. Two files
