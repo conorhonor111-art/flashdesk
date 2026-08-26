@@ -1,3 +1,4 @@
+using RemoteDesktop.Shared.Identity;
 using RemoteDesktop.Shared.Protocol;
 using RemoteDesktop.UI;
 using RemoteDesktop.Viewer.Files;
@@ -22,7 +23,14 @@ namespace RemoteDesktop.Viewer;
 public sealed class SessionWindow : Form
 {
     private readonly ThemedCheckBox _actualSize = new() { Text = "Actual size (1:1)", Checked = true, Margin = new Padding(0, Theme.S2, 0, 0) };
-    private readonly ThemedCheckBox _control = new() { Text = "Control their mouse and keyboard", Margin = new Padding(Theme.S3, Theme.S2, 0, 0) };
+    private readonly ThemedCheckBox _control = new()
+    {
+        Text = FlashDeskTestMode.ControlDisabled
+            ? "Control their mouse and keyboard (disabled — safe test copy)"
+            : "Control their mouse and keyboard",
+        Enabled = !FlashDeskTestMode.ControlDisabled,
+        Margin = new Padding(Theme.S3, Theme.S2, 0, 0),
+    };
     private readonly Button _disconnect = Theme.MakeButton("Disconnect", ButtonKind.Destructive);
     private readonly Panel _canvasHost = new() { Dock = DockStyle.Fill, AutoScroll = true, BackColor = Theme.CanvasBackdrop };
     private readonly ScreenCanvas _canvas = new();
@@ -106,7 +114,9 @@ public sealed class SessionWindow : Form
         _ownId = ownId;
         _ownSecret = ownSecret;
 
-        Text = $"FlashDesk — connected to {peerLabel}";
+        Text = FlashDeskTestMode.ControlDisabled
+            ? $"FlashDesk — connected to {peerLabel} (TEST COPY — remote control disabled)"
+            : $"FlashDesk — connected to {peerLabel}";
         StartPosition = FormStartPosition.CenterScreen;
         ClientSize = Theme.ViewerWindowSize;
         MinimumSize = Theme.ViewerWindowMinimum;

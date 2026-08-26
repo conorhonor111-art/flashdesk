@@ -174,7 +174,10 @@ public sealed class HostServer : IDisposable
     {
         if (_healthLoop != null) return;
 
-        _capture = ScreenCaptureFactory.Create(out var reason, health: Health);
+        // FlashDeskTestMode.ForceGdi: for a second copy running on the same physical machine as a
+        // first — DXGI Desktop Duplication cannot be shared, so a second copy would otherwise spend
+        // 30 s failing to get it before falling back anyway. See the type for the confirmed log trace.
+        _capture = ScreenCaptureFactory.Create(out var reason, forceGdi: FlashDeskTestMode.ForceGdi, health: Health);
         DxgiFallbackReason = reason;
         _injector = new InputInjector(_capture.Width, _capture.Height);
         _injector.ReleaseAll(); // clear any modifier a previous crashed run left stuck down on this machine
@@ -450,7 +453,12 @@ public sealed class HostServer : IDisposable
                     // end. On the GDI path — which polls and cannot be woken by a change — this is
                     // what stops the first click after a quiet moment feeling late.
                     Governor.OnInputReceived();
-                    _injector?.Apply(InputEvent.FromBytes(msg.Value.Payload));
+                    // FlashDeskTestMode.ControlDisabled: this copy must never move a real cursor —
+                    // see the type for why. The viewer-side checkbox is already disabled so a normal
+                    // FlashDesk copy should never send this while paired with one running this flag,
+                    // but the message is still refused here rather than trusted to that alone.
+                    if (!FlashDeskTestMode.ControlDisabled)
+                        _injector?.Apply(InputEvent.FromBytes(msg.Value.Payload));
                     break;
             }
         }

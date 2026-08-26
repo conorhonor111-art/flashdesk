@@ -75,6 +75,12 @@ public sealed class FilePanel : UserControl
         _list.HideSelection = false;
         _list.Dock = DockStyle.Fill;
         _list.Font = Theme.Body;
+        // BackColor was never set, so this defaulted to WinForms' plain white/system list
+        // background — with every row's text set to OperatorHeaderText (a LIGHT colour meant for
+        // the dark operator theme), rows were nearly invisible. Same pairing already used for
+        // _status against this panel's own background, just never applied to the list itself.
+        _list.BackColor = Theme.OperatorHeader;
+        _list.ForeColor = Theme.OperatorHeaderText;
         _list.Columns.Add("Name", 220);
         _list.Columns.Add("Size", 80, HorizontalAlignment.Right);
         _list.Columns.Add("Changed", 100);
@@ -110,7 +116,7 @@ public sealed class FilePanel : UserControl
         Leave += (_, _) => FocusHere?.Invoke(false);
 
         SetBusy(false);
-        _status.Text = "Ask them first, then choose a folder.";
+        _status.Text = "Asking them for permission — their drives will appear here once they agree.";
     }
 
     private Control BuildPathRow()
@@ -232,7 +238,9 @@ public sealed class FilePanel : UserControl
             // and the operator would conclude a file is not there when it is on page three.
             _status.Text = _hasMore
                 ? $"Showing the first {_shown:N0} — there are more. Not sorted while there are more pages."
-                : _shown == 0 ? "This folder is empty." : $"{_shown:N0} items. Folders first.";
+                : _shown == 0
+                    ? "This folder is empty. Type another path above and press Go, or press Up to go back."
+                    : $"{_shown:N0} items. Folders first.";
         }
         catch (Exception ex)
         {
@@ -248,7 +256,7 @@ public sealed class FilePanel : UserControl
         row.SubItems.Add(entry.ModifiedUtcTicks > 0
             ? new DateTime(entry.ModifiedUtcTicks, DateTimeKind.Utc).ToLocalTime().ToString("yyyy-MM-dd")
             : "");
-        row.ForeColor = entry.IsDirectory ? Theme.OperatorHeaderText : Theme.OperatorHeaderText;
+        row.ForeColor = Theme.OperatorHeaderText;
         _list.Items.Add(row);
     }
 

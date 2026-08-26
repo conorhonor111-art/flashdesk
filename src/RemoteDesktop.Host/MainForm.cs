@@ -110,7 +110,9 @@ public sealed class MainForm : Form
         _sessionLog = new SessionLog(_identityStore.Folder);
         _partialFiles = new PartialFiles(_identityStore.Folder);
 
-        Text = "FlashDesk";
+        Text = FlashDeskTestMode.ControlDisabled
+            ? "FlashDesk — TEST COPY (remote control disabled)"
+            : "FlashDesk";
         // The title-bar icon MUST stay: Windows feeds the taskbar button from the window icon,
         // and with ShowIcon=false the taskbar falls back to the exe's static icon — which kills
         // the amber LIVE badge (verified 2026-07-30). The brand therefore appears exactly once,
