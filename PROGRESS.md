@@ -1675,3 +1675,99 @@ verification — the identity is permanent per data folder, so the same two numb
 every launch, which is correct, not a stale cache). Walkthrough given: which number goes in
 which window, panel contrast, the control checkbox disabled on the TEST COPY, one large download,
 one ordinary upload, one `.exe` upload — `sessions.txt` to follow from Conor after.
+
+## The first real two-machine test — Escape fixed and proven live, one belief corrected, the real cost of a transfer finally measured (2026-08-26)
+
+Driven end to end on the actual `.222`/`.223` rig, Conor at the machine granting every consent,
+Claude driving the session window via its own local UI (screenshots + UI Automation on `.223`'s
+windows, never guessing at coordinates inside the remote picture except the few keyboard/click
+exits this section proves). Each item run and verified alone, not chained — chaining is what made
+the first `.exe` test upload the wrong file two sessions ago.
+
+**1. Escape clears the pause band — confirmed on the real rig, not just in the test project.**
+Screenshot before and after: band showing, Escape pressed, band gone, no other state change.
+
+**2. Clicking the picture clears the band — confirmed.** A single click on a verified-empty
+desktop point cleared it with no side effects.
+
+**3. ⚠ CORRECTED BELIEF, not a bug: Enter in the path box does NOT clear the pause band, and
+was never designed to.** Three people (Conor included) believed it did; it doesn't, and the code
+was never written to make it. `FilePanel._path`'s Enter handler is a pure "go there" navigation
+convenience — it calls `ShowFolderAsync`, nothing else — and was correctly documented as such at
+the time it was written ("the one keyboard convenience that costs the remote machine nothing,
+because forwarding has already stopped"). Confirmed live: typed a path, pressed Enter, the
+folder changed and the band stayed exactly as it was. **Nothing needs fixing here** — recorded so
+this does not resurface as a phantom regression in a future session that half-remembers today.
+
+**4. The `.exe` upload — redone properly, and the log (not memory) answered the safety question.**
+Uploaded `notepad.exe` into `.222`'s scratch folder (`C:\Users\Administrator\Desktop\test`,
+created by Conor specifically so test files never land in a real folder again — the earlier round
+had accidentally re-sent `ibdata1` into `C:\xampp\mysql\data`, a real database's data directory).
+Claude lost track of the exact consent moment during the click sequence and could not itself
+confirm whether a person clicked anything — so rather than guess, Conor sent `.222`'s own
+`sessions.txt`, and the answer came from there, not from anyone's memory:
+```
+2026-08-26 10:24:35  PROGRAM  163 035 814  put the program "notepad.exe" (196 KB) into C:\Users\Administrator\Desktop\test
+```
+Traced against `HostFileService.AllowedToWriteAsync` (not just the log line alone): this was the
+first upload of that connection, so the ask is unconditional regardless of `isProgram`
+(`if (!_uploadAsked) { ... _uploadAllowed = await AskAsync(...) }`) — and even on a later upload
+in the same folder, `isProgram` forces `AskAsync` again every time (`if (!isProgram) return true;`
+— the negative case is the only early-return). There is no path from a received `PROGRAM` file to
+that log line without `AskAsync` having returned true first. **The program-consent gate is intact
+on the real rig, code-confirmed, not merely log-confirmed.** One asymmetry worth knowing, not a
+bug: uploads log only the outcome ("put the program..."), unlike file *access*, which logs both
+"asked" and "was allowed" as two separate lines — so an upload's own consent moment leaves no
+separate "asked" line to point to, only its result.
+
+**5. The stray second `notepad.exe`, explained from the log rather than guessed at.** 65 seconds
+after the PROGRAM line above:
+```
+2026-08-26 10:25:40  SENT  163 035 814  copied "notepad.exe" (196 KB) from C:\Users\Administrator\Desktop\test
+```
+`SENT` is the download verb — the operator side asked for a copy of the file it had just
+uploaded, 65 seconds later, matching Conor's own diagnosis exactly: the just-uploaded file
+appeared in the refreshed listing, and Claude's own automation (most likely a stray Enter or a
+mis-targeted click while checking status) triggered `DownloadEntryAsync` against it, landing it
+in the remembered download folder on `.223`. Both stray copies removed — the one on `.223`
+directly (`C:\Users\PC\Documents\notepad.exe`, deleted); the one inside `.222`'s own scratch
+folder is left for Conor, since the file panel has no delete capability by design ("LOOK and COPY
+OFF" only — see `HostFileService`'s own doc comment) and reaching it any other way means touching
+the remote picture for a cleanup task that does not need that risk.
+
+**6. The real number this whole test was for: 76 MB in under a second told us nothing, because
+that rig is a LAN.** Turned on "Pretend the connection is slow (testing only)" → **600 Kbit/s**
+(the slowest option), downloaded `ibtmp1` (12 MB) from `C:\xampp\mysql\data`, read the technical
+panel's live numbers directly, before/during/after, on the real rig:
+
+| | fps | latency | throughput | quality |
+|---|---|---|---|---|
+| Before | 17 | 3 ms | — | 95 |
+| During (two samples, ~2 min apart, stable) | 2 | 353–354 ms | ~27 KB/s | 60 |
+| After | 7 (climbing) | 3 ms | — | recovering |
+
+Adaptive level hit 9/9 (its floor) during the transfer; send-stage time alone went from 0.1 ms to
+**330–360 ms**; queueing built to 150–300 ms over budget. The transfer itself only achieved
+**~27 KB/s of the nominal 75 KB/s link** — the video stream and the file are both drawing from the
+same `LinkLimiter`-capped pipe with no priority between them, so neither wins: the picture
+degrades to worse than useless (353 ms latency, 2 fps) AND the file still takes 7 minutes for
+12 MB instead of the ~2.9 minutes the link could carry if it weren't sharing with video. Confirmed
+on disk: the file landed at exactly 12,582,912 bytes in `C:\Users\PC\Documents`.
+
+**Conor's read of this, recorded because it reframes the fix:** this is not "a transfer slows the
+picture," which was already assumed. It is that **both lose at once** — remote control is already
+unusable during a transfer (proven, not estimated), so there is nothing left to protect by
+splitting bandwidth evenly, and doing so anyway costs the file real time for no benefit to an
+operator who cannot use the screen either way.
+
+**Proposed fix (numbers given to Conor, not yet built — his instruction: answer the log question
+first, propose the fix with numbers, do not write code yet):** while a file transfer is active
+(the same `_transferBusy`/`SessionRecorder.BeginTransfer` signal already wired for the
+before/during/after measurement above), deliberately cut the video down to an occasional
+keepalive rather than letting the adaptive ladder keep fighting for a fair share — reserve roughly
+90% of the link for the file, ~10% for a still-alive frame every few seconds — and say so plainly
+in the technical view: "Screen paused while the file transfers — about N minutes left," N
+estimated from remaining bytes over the transfer's own just-measured rate. Projected from today's
+numbers: ~90% of 75 KB/s ≈ 67 KB/s for the file, cutting the 12 MB / 7-minute transfer to roughly
+**~3 minutes** — about **2.3× faster** — on the exact link just measured, for a picture that was
+already unusable and is now honestly described instead of silently starved. Not yet built.
