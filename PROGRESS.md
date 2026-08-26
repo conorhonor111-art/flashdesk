@@ -1771,3 +1771,47 @@ estimated from remaining bytes over the transfer's own just-measured rate. Proje
 numbers: ~90% of 75 KB/s ≈ 67 KB/s for the file, cutting the 12 MB / 7-minute transfer to roughly
 **~3 minutes** — about **2.3× faster** — on the exact link just measured, for a picture that was
 already unusable and is now honestly described instead of silently starved. Not yet built.
+
+## The 2.3× prediction, investigated before being trusted — the algorithmic layer is NOT the cause (2026-08-26)
+
+Conor's instruction: find where the missing ~48 KB/s (75 KB/s cap, file only got ~27) actually went
+before promising a fix's size — "or you will ship a prediction instead of a fix." Three real,
+throwaway tests (not kept — the finding is recorded here instead), each against the ACTUAL
+production classes, nothing reimplemented:
+
+1. **File chunk-sending alone** (`HostFileService`'s real loop logic, real `BandwidthGovernor`, real
+   `LinkLimiter` at 600 Kbit/s, `Stream.Null` as the wire) — a 10-second run measured 124 KB/s,
+   ABOVE the 75 KB/s cap. Explained, not ignored: `LinkLimiter`'s 512 KB buffer absorbs ~6.8 s as a
+   free burst, and 10 s never leaves that burst. Extended to 60 s, measuring only the last 40 s
+   (genuine steady state): **73.2 KB/s — 97.6% of the 75 KB/s cap.** The chunk-sizing/rate-estimate
+   mechanism is not the problem in isolation.
+2. **File + a simulated 2 fps video** contending for the same `MessageChannel` (same shared send
+   lock the file chunks use) — steady state: **file 64.8 KB/s + video 8.6 KB/s = 73.4 KB/s
+   combined**, file keeping the large majority of the link. Contention with video, modelled this
+   way, is not the problem either.
+3. **Same scenario over a REAL TCP loopback socket**, with a real receive loop draining the other
+   end (ruling out "the OS socket buffer alone absorbed it") — steady state: **file 64.4 KB/s +
+   video 8.6 KB/s = 73.0 KB/s combined**, bytes sent matching bytes received exactly. Same result.
+
+**None of the three reproduce the real rig's ~27 KB/s.** This rules out the three most obvious
+suspects — `FileChunkSize`'s rate-estimate correction, the shared send-lock serialising file
+against video, and anything socket-buffer-specific — with real measurements, not by reading the
+code and trusting it. What none of these three tests model is real DXGI capture cost: the actual
+host loop spends real wall-clock time inside `AcquireNextFrame`'s blocking wait every cycle, which
+these tests replace with a fixed 3000-byte dummy frame and nothing else. **This lines up with
+Conor's own PART 3 finding below** — the logged "capture" stage reads 39–231 ms on the same
+machine in one day, when the project measured the true figure at 0.16 ms long ago — which is
+exactly the shape of a REAL, variable, thread-consuming wait, not simulated work. The most likely
+remaining suspect is that this blocking wait, competing for a small thread pool with the file
+loop's own send/read continuations, is where the missing capacity actually goes — untested here,
+because reproducing real DXGI timing outside the live rig is not cheap, and the live rig is what
+Conor is already about to remeasure.
+
+**Consequence for the fix:** the DIRECTION (prioritise the file, cut video back hard during a
+transfer, tell the operator plainly) is unaffected by any of this — it still directly targets the
+one real, already-confirmed contention point (the shared channel), and cutting video's own share
+of that contention can only help, whichever exact mechanism is eating the rest. But **the 2.3×
+number is retracted as a promise.** It was arithmetic on an assumption ("90% of 75 KB/s") that
+three real tests now show does not describe what's actually happening on the rig. The real number
+will come from remeasuring after the fix, on the same 600 Kbit/s setting, before/during/after —
+exactly as Conor asked, and not before.
