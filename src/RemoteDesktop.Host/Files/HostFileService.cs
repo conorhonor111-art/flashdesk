@@ -377,7 +377,11 @@ internal sealed class HostFileService : IDisposable
             return;
         }
 
-        _transferStarted?.Invoke();
+        // _transferStarted no longer fires here — see steppedDownForThisTransfer inside
+        // StreamFileAsync. Claim time can sit up to 30 s before a person answers a consent dialog,
+        // and the session log's start time (and everything derived from it: duration, KB/s) must not
+        // include that wait any more than the ladder's own step-down should. Same fix, one line
+        // further along. See PROGRESS.md, 2026-08-27.
         try { await StreamFileAsync(request, ct).ConfigureAwait(false); }
         finally { Interlocked.Exchange(ref _transferBusy, 0); _transferEnded?.Invoke(); }
     }
@@ -437,7 +441,13 @@ internal sealed class HostFileService : IDisposable
             // 2026-08-27 — this is a different transfer (SEND), and the download path never showed
             // this symptom because an ordinary download has no per-file consent gate, but the same
             // fix belongs here too for the transfers that do have one.
-            bool steppedDownForThisTransfer = false;
+            //
+            // Extended 2026-08-27 to also gate _transferStarted itself: the session log's start
+            // time (SessionRecorder.BeginTransfer, HostServer.LastTransferStartedUtc) and every rate
+            // derived from it must agree with the ladder on what "started" means, or the log times a
+            // real transfer from the wrong instant and every KB/s read from it is wrong by however
+            // long consent took to answer.
+            bool startedThisTransfer = false;
 
             while (true)
             {
@@ -472,7 +482,7 @@ internal sealed class HostFileService : IDisposable
                 var chunk = new FileChunk(request.RequestId, offset, buffer.AsSpan(0, read).ToArray());
                 var bytes = chunk.ToBytes();
 
-                if (!steppedDownForThisTransfer) { _governor.OnBulkTransferStarted(); steppedDownForThisTransfer = true; }
+                if (!startedThisTransfer) { _governor.OnBulkTransferStarted(); _transferStarted?.Invoke(); startedThisTransfer = true; }
 
                 sendTimer.Restart();
                 await SendAsync(MessageType.FileChunk, bytes, ct).ConfigureAwait(false);
@@ -574,7 +584,8 @@ internal sealed class HostFileService : IDisposable
             return;
         }
 
-        _transferStarted?.Invoke();
+        // _transferStarted no longer fires here — see steppedDownForThisTransfer inside
+        // WriteChunksAsync. Same reasoning as StreamFileAsync's own copy of this comment.
         try { await ReceiveFileAsync(request, ct).ConfigureAwait(false); }
         finally { Interlocked.Exchange(ref _transferBusy, 0); _transferEnded?.Invoke(); }
     }
@@ -745,9 +756,9 @@ internal sealed class HostFileService : IDisposable
         long written = 0;
         FileStatus status;
         string message;
-        // Same reasoning and same fix as the send path's steppedDownForThisTransfer: fires on the
+        // Same reasoning and same fix as the send path's startedThisTransfer: fires on the
         // first real byte, not when the request was merely claimed — see PROGRESS.md, 2026-08-27.
-        bool steppedDownForThisTransfer = false;
+        bool startedThisTransfer = false;
 
         try
         {
@@ -785,7 +796,7 @@ internal sealed class HostFileService : IDisposable
                     }
 
                     Interlocked.Add(ref upload.Buffered, -chunk.Length);
-                    if (!steppedDownForThisTransfer) { _governor.OnBulkTransferStarted(); steppedDownForThisTransfer = true; }
+                    if (!startedThisTransfer) { _governor.OnBulkTransferStarted(); _transferStarted?.Invoke(); startedThisTransfer = true; }
 
                     // More bytes than were declared. Refused rather than written: the size was the
                     // basis for the free-space check and for what the person was shown.
