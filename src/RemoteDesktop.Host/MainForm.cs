@@ -303,13 +303,29 @@ public sealed class MainForm : Form
         // session, which is noise for the one person the file exists to help.
         _server.SessionSummaryReady = (_, report) =>
         {
-            if (!string.IsNullOrEmpty(report)) _sessionLog.Detail(report);
+            // Link 5/7 reached: this line only runs if HostServer's event actually reached this
+            // subscriber — see HostServer.FinishSessionReport for why that is not the same thing as
+            // the event merely being invoked. See PROGRESS.md, 2026-08-27.
+            _server.Health.Note("CLOSE-TRACE  5/7  MainForm's SessionSummaryReady handler ran");
+            if (!string.IsNullOrEmpty(report))
+            {
+                _server.Health.Note("CLOSE-TRACE  6/7  calling SessionLog.Detail()");
+                _sessionLog.Detail(report);
+                // Link 7/7: Detail() always calls Append() internally, so "reached" is not in
+                // question — what matters is whether that write actually SUCCEEDED. LastWriteError is
+                // set synchronously inside Append(), so it is already current by the time we get here.
+                _server.Health.Note(_sessionLog.LastWriteError is null
+                    ? "CLOSE-TRACE  7/7  Append() succeeded — sessions.txt has the final block"
+                    : $"CLOSE-TRACE  7/7  Append() FAILED — {_sessionLog.LastWriteError}");
+            }
         };
 
-        // The same block, but WHILE the session is still running — see HostServer.EmitCheckpoint
-        // and SessionLog.Checkpoint. Exists because the block above only ever gets written on a
-        // clean close, and a real session that ended by any other path once left nothing at all.
-        _server.SessionCheckpoint = report => _sessionLog.Checkpoint(report);
+        // Two checkpoint kinds, both WHILE the session is still running — see
+        // HostServer.EmitPeriodicCheckpoint/EmitTransferCheckpoint and SessionLog.Checkpoint/
+        // TransferCheckpoint. Exist because SessionSummaryReady above only ever fires on a clean
+        // close, and a real session that ended by any other path once left nothing at all.
+        _server.SessionCheckpointLine = line => _sessionLog.Checkpoint(line);
+        _server.SessionCheckpointBlock = block => _sessionLog.TransferCheckpoint(block);
 
         // A failure to write the session log used to vanish silently — "must never take the session
         // down" was implemented as "say nothing", and a failure that says nothing is indistinguishable
@@ -331,14 +347,22 @@ public sealed class MainForm : Form
         // read as a form demanding to be filled in before anything would work.
         // Set on Shown, not Load: WinForms re-selects a control between the two.
         Shown += (_, _) => ActiveControl = null;
-        FormClosing += (_, _) => { _server.Dispose(); _timer.Dispose(); };
+        FormClosing += (_, _) =>
+        {
+            // Link 1/7 in the close-chain trace — see HostServer.Stop() for the rest of the chain
+            // and why this exists. Logged before Dispose() so it survives even if Dispose() itself
+            // throws.
+            _server.Health.Note("CLOSE-TRACE  1/7  MainForm.FormClosing reached");
+            _server.Dispose();
+            _timer.Dispose();
+        };
         _timer.Tick += (_, _) =>
         {
             UpdateStatus();
             if (++_checkpointTicks >= CheckpointEveryTicks)
             {
                 _checkpointTicks = 0;
-                _server.EmitCheckpoint();
+                _server.EmitPeriodicCheckpoint();
             }
         };
         _timer.Start();

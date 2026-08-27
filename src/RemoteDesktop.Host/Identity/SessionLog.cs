@@ -109,19 +109,33 @@ public sealed class SessionLog
     public void Detail(string block) => Append(block + Environment.NewLine);
 
     /// <summary>
-    /// The same "how it went" block as <see cref="Detail"/>, written WHILE the session is still
-    /// running, not only once it ends cleanly. Added 2026-08-27: <see cref="Detail"/> alone means a
-    /// session that never gets a clean close — the X button on a machine with something else wrong,
-    /// Task Manager, a crash, a plain kill — leaves nothing on disk at all, which is exactly the
-    /// scenario the file exists for (a nervous stranger closes the way they close everything, and
-    /// sends whatever is there). Each checkpoint is its own block rather than replacing the last
-    /// one: this file is append-only everywhere else, and rewriting a live line risks losing MORE on
-    /// a crash mid-write than leaving the redundancy would. If the session ends cleanly, the real
-    /// "how it went" block after the DISCONNECTED line is the one that matters and checkpoints
-    /// before it are superseded; if it does not, the last checkpoint IS the record.
+    /// ONE short line, written periodically WHILE the session is still running. Added 2026-08-27,
+    /// same reasoning as <see cref="TransferCheckpoint"/> below — but deliberately NOT the full "how
+    /// it went" block: written every few minutes for a long session, the full block repeated each
+    /// time reproduces the exact "fourteen near-identical blocks" problem <see cref="Detail"/>'s own
+    /// comment already describes, in slow motion. Conor's own instinct, 2026-08-27: only the true end
+    /// gets the full report; everything before it earns its place on disk by staying small. Uses
+    /// <see cref="Write"/> (timestamped, single line), not <see cref="Append"/> directly, so it reads
+    /// exactly like every other line in this file rather than standing out as a different kind of
+    /// entry.
     /// </summary>
-    public void Checkpoint(string block) =>
-        Append($"  -- snapshot at {DateTime.Now:HH:mm:ss}, session still running --{Environment.NewLine}"
+    public void Checkpoint(string line) => Write($"…still running — {line}");
+
+    /// <summary>
+    /// One transfer's own before/during/after/recovery lines, written the instant that transfer ends
+    /// — not the whole report, and not every transfer that came before it. Added 2026-08-27: a
+    /// session that never gets a clean close (the X button on a machine with something else wrong,
+    /// Task Manager, a crash, a plain kill) used to leave nothing on disk at all, which is exactly the
+    /// scenario this file exists for — a nervous stranger closes the way they close everything, and
+    /// sends whatever is there. Each one is its own block rather than replacing the last: this file is
+    /// append-only everywhere else, and rewriting a live line risks losing MORE on a crash mid-write
+    /// than the redundancy would. If the session ends cleanly, the real "how it went" block after the
+    /// DISCONNECTED line is the one that matters, and these are superseded by it; if it does not, the
+    /// last one of these IS the record.
+    /// </summary>
+    public void TransferCheckpoint(string block) =>
+        // block already carries AppendOneTransfer's own indentation on every line — no extra prefix.
+        Append($"  -- transfer finished at {DateTime.Now:HH:mm:ss}, session still running --{Environment.NewLine}"
              + block + Environment.NewLine);
 
     /// <summary>

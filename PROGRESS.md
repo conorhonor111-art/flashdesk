@@ -2415,3 +2415,74 @@ forensic evidence. Built to Conor's exact order, so it cannot happen invisibly a
    suite itself, not a defect in this fix. Not investigated further; out of scope for what was asked.
 
 Recovery (the three-consecutive-quiet-windows finding) is untouched and waits, per instruction.
+
+## Close-chain trace, checkpoint readability, and a live proof (2026-08-27, same day)
+
+Conor's follow-up: fixing the silent catch answers "did the write fail" but not "did every link in
+the chain even get reached" — a break upstream of `Append` would look identical from outside. Asked
+for both a trace through the chain and a live X-close demonstration, in one pass, kept small.
+
+**Trace added, one `Health.Note` line per link, all seven:** `MainForm.FormClosing` (1) →
+`HostServer.Dispose` (2) → `Stop` (3) → `FinishSessionReport` (4, and explicitly distinguishes "no
+recorder — nothing to report" from a break, since those look identical without the note) →
+`SessionSummaryReady` reaching MainForm's own subscriber (5, logged from INSIDE the subscriber, not
+the publisher — invoking a null-checked event proves nothing about whether anyone was listening) →
+`SessionLog.Detail` being called (6) → `Append` actually succeeding (7, read from `LastWriteError`
+immediately after, since it is set synchronously inside `Append`).
+
+**Live proof, run for real, today:** built Release, launched `FlashDesk.exe`, waited 4s (no viewer —
+none was needed for this half of the question), closed via `CloseMainWindow()` (the exact WM_CLOSE a
+person's X click sends), confirmed the process exited within 8s. The capture log shows:
+```
+CLOSE-TRACE  1/7  MainForm.FormClosing reached
+CLOSE-TRACE  2/7  Dispose() reached
+CLOSE-TRACE  3/7  Stop() reached
+CLOSE-TRACE  4/7  FinishSessionReport() reached
+CLOSE-TRACE  4/7  no recorder — nothing to report, stopping here on purpose
+```
+All four links that fire on EVERY close (session or not) are proven reached, live, today — this was
+previously untested territory; nothing before this touched the close path at all. `sessions.txt` was
+correctly untouched (nothing to report), confirmed by its unchanged timestamp. Links 5–7 need an
+actual connected session to exercise for real, which needs a human to answer the consent dialog —
+covered instead by `SessionLogTests` (below), which drives the exact same
+`SessionSummaryReady → Detail → Append` sequence MainForm wires, deterministically, without a peer.
+One false alarm on the way: the capture log briefly appeared to mangle its own em dash
+(`nothing to report, stopping here on purpose` read as `â€”` in a PowerShell console) — checked with
+Read against the raw bytes, the file itself is correct UTF-8; the mangling was only `Get-Content`'s
+own console rendering. Recorded so nobody chases a phantom encoding bug here later.
+
+**`SessionLogTests.cs` — new, 3 tests, all real failures (not mocks):**
+- A NUL byte in the folder path forces `Append` down its catch branch — confirms `WriteFailed` fires
+  and `LastWriteError` is set, on a genuinely broken path, not a simulated one.
+- A file sitting where `Directory.CreateDirectory` needs a folder forces the same failure on one
+  `SessionLog` instance, then the obstruction is removed and the SAME instance writes again —
+  confirms `LastWriteError` self-clears on the next success, which is what the technical view's live
+  line depends on.
+- An ordinary session (`Started`/`Checkpoint`/`TransferCheckpoint`/`Ended`) never raises `WriteFailed`
+  at all, and the checkpoint text actually lands on disk.
+
+Rule 11 note: these test NEW capability that did not exist before today (`WriteFailed`), so there is
+no "unfixed" build to run them against in the literal sense the rule describes — the closest
+equivalent already happened this session, unplanned: the real vanished-session failure, checked
+against the OLD code by `git stash` comparison, produced zero trace anywhere, which is what the old
+code being "wrong" actually looks like. `dotnet build -c Release`: 0/0. `dotnet test -c Release`:
+301/303 — the same 2 pre-existing, unrelated failures as before, now alongside 3 new passing tests.
+
+**Checkpoint readability, per Conor's own instinct — only the final block stays the full report:**
+`SessionRecorder` gained `ShortStatusLine()` (one line: elapsed, avg fps, avg KB/s, current and worst
+ladder level, transfer count) and `LastTransferLine()` (just the ONE transfer that just finished,
+factored out of `AppendTransfers` via a shared `AppendOneTransfer` helper so the full report and the
+checkpoint can never drift apart in format). `HostServer.EmitPeriodicCheckpoint` (every 3 minutes)
+now writes the short line; `EmitTransferCheckpoint` (after each transfer) writes just that transfer's
+own few lines — not the whole cumulative report repeated, which is what the first version of this did
+and would have compounded every later transfer with every earlier one's text, reproducing the
+"fourteen near-identical blocks" problem this whole feature exists to avoid, just slower. A two-hour
+session with occasional transfers now costs roughly one short line every 3 minutes plus a few lines
+per transfer, not forty near-duplicate multi-paragraph blocks.
+
+**Rule 12 addendum — drafted, not yet added to CLAUDE.md.** Conor asked for the wording and to see it
+before it is committed; see the reply for the exact text proposed.
+
+**Recovery — proposal only, not built, per instruction.** See the reply for the one-line fix proposed
+(decay `_quietWindows` in `OnFrameSent`'s dead-zone branch instead of zeroing it) and the reasoning
+for why it does not reopen the oscillation the 3-window design was built to prevent.

@@ -105,12 +105,18 @@ public sealed class HostServer : IDisposable
     public Action<string, string>? SessionSummaryReady;
 
     /// <summary>
-    /// Raised WHILE a session is still running, with the same block <see cref="SessionSummaryReady"/>
-    /// carries at the true end. Added 2026-08-27 so a session that never gets a clean close (a crash,
-    /// Task Manager, a plain kill) still leaves what was known up to the last checkpoint — see
-    /// <see cref="EmitCheckpoint"/> and PROGRESS.md, "a three-hour session vanished with no record".
+    /// Raised periodically WHILE a session is still running — one short status line, not the full
+    /// report. See <see cref="EmitPeriodicCheckpoint"/>.
     /// </summary>
-    public Action<string>? SessionCheckpoint;
+    public Action<string>? SessionCheckpointLine;
+
+    /// <summary>
+    /// Raised the instant a file transfer ends, with just that transfer's own before/during/after/
+    /// recovery lines. See <see cref="EmitTransferCheckpoint"/>. Both of these exist so a session that
+    /// never gets a clean close (a crash, Task Manager, a plain kill) still leaves what was known up
+    /// to the last checkpoint — see PROGRESS.md, 2026-08-27, "a three-hour session vanished".
+    /// </summary>
+    public Action<string>? SessionCheckpointBlock;
     private readonly object _captureLock = new();
     private IScreenCapture? _capture;
     private InputInjector? _injector;
@@ -224,6 +230,12 @@ public sealed class HostServer : IDisposable
 
     public void Stop()
     {
+        // Trace link 3 of 7 in the close chain Conor asked to see proven, not assumed:
+        // FormClosing -> Dispose -> Stop -> FinishSessionReport -> SessionSummaryReady -> Detail ->
+        // Append. Added 2026-08-27 after a real session vanished with no way to tell which link, if
+        // any, had stopped reaching the next one. See PROGRESS.md.
+        Health.Note("CLOSE-TRACE  3/7  Stop() reached");
+
         // Sharing is ending, so any session still being recorded is now genuinely over. Written here
         // as well as at the start of the next session, because most sessions end by the person
         // closing the window rather than by another one beginning.
@@ -389,23 +401,29 @@ public sealed class HostServer : IDisposable
     }
 
     /// <summary>
-    /// The same block <see cref="FinishSessionReport"/> would produce if the session ended right
-    /// now, without ending it — <c>SessionRecorder.Report</c> only reads and rolls its per-second
-    /// history forward, it does not consume anything, so this is safe to call as often as wanted.
-    /// Used to checkpoint sessions.txt DURING a session; see <see cref="EmitCheckpoint"/>.
+    /// Called periodically (the UI timer, every few minutes) as a plain dead-man's switch for a
+    /// session with no file transfers at all — one short line, not the full report, so a long session
+    /// does not turn sessions.txt back into the "fourteen near-identical blocks" problem the full
+    /// block was already once rewritten to avoid. See <see cref="SessionRecorder.ShortStatusLine"/>.
+    /// No-op while nothing is being recorded.
     /// </summary>
-    public string? SnapshotReport() => _recorder?.Report(Governor.LadderSize);
+    public void EmitPeriodicCheckpoint()
+    {
+        if (_recorder is null) return;
+        SessionCheckpointLine?.Invoke(_recorder.ShortStatusLine());
+    }
 
     /// <summary>
-    /// Writes a checkpoint of "how it went so far" — called after every file transfer ends (the
-    /// moment its before/during/after and recovery reading become worth having on disk even if
-    /// nothing else ever gets written) and periodically from the UI timer as a plain dead-man's
-    /// switch for a session with no transfers at all. No-op while nothing is being recorded.
+    /// Called the instant a file transfer ends — the moment its own before/during/after and recovery
+    /// reading become worth having on disk even if nothing else ever is. Writes just that ONE
+    /// transfer's lines, not the whole report repeated (which is what the first version of this did,
+    /// compounding every later transfer with every earlier one's text). See
+    /// <see cref="SessionRecorder.LastTransferLine"/>.
     /// </summary>
-    public void EmitCheckpoint()
+    public void EmitTransferCheckpoint()
     {
-        var snapshot = SnapshotReport();
-        if (!string.IsNullOrEmpty(snapshot)) SessionCheckpoint?.Invoke(snapshot);
+        var line = _recorder?.LastTransferLine(Governor.LadderSize - 1);
+        if (!string.IsNullOrEmpty(line)) SessionCheckpointBlock?.Invoke(line);
     }
 
     /// <summary>
@@ -416,13 +434,33 @@ public sealed class HostServer : IDisposable
     /// </summary>
     private void FinishSessionReport()
     {
+        Health.Note("CLOSE-TRACE  4/7  FinishSessionReport() reached"); // see Stop() for the full chain
+
         var recorder = _recorder;
-        if (recorder is null) return;
+        if (recorder is null)
+        {
+            // Correct, ordinary outcome — not a broken link — when sharing stops with nobody ever
+            // having connected. Noted anyway so a reader of the trace does not mistake "nothing to
+            // report" for "the chain stopped here silently"; those look identical without this line.
+            Health.Note("CLOSE-TRACE  4/7  no recorder — nothing to report, stopping here on purpose");
+            return;
+        }
         _recorder = null;
 
         LastSessionReport = recorder.Report(Governor.LadderSize);
         if (_currentPeerId is not null && LastSessionReport is not null)
+        {
+            // Logs that the invoke was ATTEMPTED and whether anyone was listening — not proof the
+            // subscriber ran. That proof is link 5's own job, from inside MainForm's handler, which
+            // is the only place that can tell the difference between "invoked, subscriber ran" and
+            // "invoked, but nothing was subscribed" (a null delegate no-ops silently either way here).
+            Health.Note($"CLOSE-TRACE  5/7  SessionSummaryReady invoked, subscriber present: {SessionSummaryReady is not null}");
             SessionSummaryReady?.Invoke(_currentPeerId, LastSessionReport);
+        }
+        else
+        {
+            Health.Note($"CLOSE-TRACE  5/7  NOT invoked — peerId null: {_currentPeerId is null}, report null: {LastSessionReport is null}");
+        }
     }
 
     private async Task ServeViewerAsync(Stream stream, CancellationToken ct)
@@ -465,8 +503,8 @@ public sealed class HostServer : IDisposable
                 LastTransferEndedUtc = DateTimeOffset.UtcNow;
                 Governor.OnBulkTransferEnded();
                 // A transfer just ended is exactly when the before/during figures become worth
-                // having on disk even if nothing else ever is — see EmitCheckpoint.
-                EmitCheckpoint();
+                // having on disk even if nothing else ever is — see EmitTransferCheckpoint.
+                EmitTransferCheckpoint();
             },
             fileBytesTransferred: n => { FileMeter.Record(1, n); _recorder?.RecordFileBytes(n); });
 
@@ -766,5 +804,9 @@ public sealed class HostServer : IDisposable
         return JsonSerializer.Deserialize<T>(System.Text.Encoding.UTF8.GetString(buffer, 0, result.Count));
     }
 
-    public void Dispose() => Stop();
+    public void Dispose()
+    {
+        Health.Note("CLOSE-TRACE  2/7  Dispose() reached"); // see Stop() for the full chain
+        Stop();
+    }
 }

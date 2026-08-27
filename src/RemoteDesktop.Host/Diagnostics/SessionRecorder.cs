@@ -231,6 +231,48 @@ public sealed class SessionRecorder
 
     private double _unavailableSeconds;
 
+    /// <summary>
+    /// One short line — enough to know the session is alive and roughly how it is going. For a
+    /// periodic checkpoint (see <c>HostServer.EmitPeriodicCheckpoint</c>) that must not turn into the
+    /// "fourteen near-identical blocks" problem <see cref="Report"/>'s own full text would create if
+    /// written every few minutes for hours. Added 2026-08-27, per Conor's own instinct: the full
+    /// report stays reserved for the one block that matters — the true end.
+    /// </summary>
+    public string ShortStatusLine()
+    {
+        lock (_gate)
+        {
+            if (_currentSecond >= 0) RollSecondsTo(_clock.ElapsedMilliseconds / 1000);
+            double seconds = Math.Max(0.001, _clock.Elapsed.TotalSeconds);
+            double sendingSeconds = Math.Max(0.001, seconds - _unavailableSeconds);
+            double avgFps = _frames / sendingSeconds;
+            double avgKbPerSec = _totalBytes / 1024.0 / sendingSeconds;
+            return $"{Duration(_clock.Elapsed)} so far, {avgFps:0.0} fps avg, {avgKbPerSec:0.0} KB/s avg, "
+                 + $"level {_lastLevel} now (reached {_highestLevel} at worst), {_transfers.Count} file transfer(s)";
+        }
+    }
+
+    /// <summary>
+    /// Just the most recently completed transfer's own before/during/after/recovery lines — not the
+    /// whole report repeated. For a checkpoint written the moment a transfer ends (see
+    /// <c>HostServer.EmitTransferCheckpoint</c>), which is exactly when that data becomes worth
+    /// having on disk even if nothing else ever is. Null if no transfer has finished yet.
+    /// </summary>
+    public string? LastTransferLine(int ladderTop)
+    {
+        lock (_gate)
+        {
+            int i = _transfers.Count - 1;
+            while (i >= 0 && _transfers[i].EndSecond is null) i--; // skip one still in progress
+            if (i < 0) return null;
+
+            RollSecondsTo(_clock.ElapsedMilliseconds / 1000);
+            var b = new StringBuilder();
+            AppendOneTransfer(b, i, ladderTop);
+            return b.ToString().TrimEnd('\r', '\n');
+        }
+    }
+
     public string Report(int ladderSize)
     {
         lock (_gate)
@@ -303,34 +345,43 @@ public sealed class SessionRecorder
 
         b.AppendLine($"    File transfers : {_transfers.Count}, effect on the picture measured, not assumed");
         for (int i = 0; i < _transfers.Count; i++)
-        {
-            var t = _transfers[i];
-            var beforeSeconds = _seconds.Where(s => s.Second >= t.StartSecond - TransferWindowSeconds && s.Second < t.StartSecond).ToList();
-            string before = SummarizeWindow(beforeSeconds);
-            long duringEnd = t.EndSecond ?? _currentSecond;
-            var duringSeconds = _seconds.Where(s => s.Second >= t.StartSecond && s.Second < duringEnd).ToList();
-            string during = SummarizeWindow(duringSeconds);
-            string after;
-            if (t.EndSecond is long endSecond)
-            {
-                var afterSeconds = _seconds.Where(s => s.Second >= endSecond && s.Second < endSecond + TransferWindowSeconds).ToList();
-                after = SummarizeWindow(afterSeconds);
-                after += " — " + RecoveryLine(endSecond, ladderTop);
-            }
-            else
-            {
-                after = "n/a — still moving when the session ended";
-            }
+            AppendOneTransfer(b, i, ladderTop);
+    }
 
-            string span = t.EndedAtUtc is { } endedAt
-                ? $"{t.StartedAtUtc.ToLocalTime():HH:mm:ss.fff} to {endedAt.ToLocalTime():HH:mm:ss.fff} ({(endedAt - t.StartedAtUtc).TotalSeconds:0.0}s)"
-                : $"started {t.StartedAtUtc.ToLocalTime():HH:mm:ss.fff}, still moving";
-            b.AppendLine($"                     #{i + 1}  {span}");
-            b.AppendLine($"                          before: {before}");
-            b.AppendLine($"                          during: {during}" +
-                         (t.EndSecond is null ? " (still in progress when the session ended)" : ""));
-            b.AppendLine($"                          after : {after}");
+    /// <summary>
+    /// One transfer's before/during/after/recovery lines — the body <see cref="AppendTransfers"/>
+    /// loops over. Pulled out on its own so a CHECKPOINT (see <see cref="LastTransferLine"/>) can
+    /// write just the one transfer that just happened, not the whole report repeated. Must be called
+    /// with _gate already held.
+    /// </summary>
+    private void AppendOneTransfer(StringBuilder b, int i, int ladderTop)
+    {
+        var t = _transfers[i];
+        var beforeSeconds = _seconds.Where(s => s.Second >= t.StartSecond - TransferWindowSeconds && s.Second < t.StartSecond).ToList();
+        string before = SummarizeWindow(beforeSeconds);
+        long duringEnd = t.EndSecond ?? _currentSecond;
+        var duringSeconds = _seconds.Where(s => s.Second >= t.StartSecond && s.Second < duringEnd).ToList();
+        string during = SummarizeWindow(duringSeconds);
+        string after;
+        if (t.EndSecond is long endSecond)
+        {
+            var afterSeconds = _seconds.Where(s => s.Second >= endSecond && s.Second < endSecond + TransferWindowSeconds).ToList();
+            after = SummarizeWindow(afterSeconds);
+            after += " — " + RecoveryLine(endSecond, ladderTop);
         }
+        else
+        {
+            after = "n/a — still moving when the session ended";
+        }
+
+        string span = t.EndedAtUtc is { } endedAt
+            ? $"{t.StartedAtUtc.ToLocalTime():HH:mm:ss.fff} to {endedAt.ToLocalTime():HH:mm:ss.fff} ({(endedAt - t.StartedAtUtc).TotalSeconds:0.0}s)"
+            : $"started {t.StartedAtUtc.ToLocalTime():HH:mm:ss.fff}, still moving";
+        b.AppendLine($"                     #{i + 1}  {span}");
+        b.AppendLine($"                          before: {before}");
+        b.AppendLine($"                          during: {during}" +
+                     (t.EndSecond is null ? " (still in progress when the session ended)" : ""));
+        b.AppendLine($"                          after : {after}");
     }
 
     /// <summary>
