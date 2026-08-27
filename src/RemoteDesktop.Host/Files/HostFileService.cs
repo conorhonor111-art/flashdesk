@@ -430,6 +430,14 @@ internal sealed class HostFileService : IDisposable
 
             long sent = 0;
             var sendTimer = new Stopwatch();
+            // Fires once, on the first real byte — not up in the caller at the moment the request
+            // was merely CLAIMED, which could be up to IncomingFileDialog/ReplaceFileDialog's own
+            // 30 s before a person even answers. Stepping the picture down while nothing has been
+            // sent yet punished the client for taking their time to decide. See PROGRESS.md,
+            // 2026-08-27 — this is a different transfer (SEND), and the download path never showed
+            // this symptom because an ordinary download has no per-file consent gate, but the same
+            // fix belongs here too for the transfers that do have one.
+            bool steppedDownForThisTransfer = false;
 
             while (true)
             {
@@ -463,6 +471,8 @@ internal sealed class HostFileService : IDisposable
 
                 var chunk = new FileChunk(request.RequestId, offset, buffer.AsSpan(0, read).ToArray());
                 var bytes = chunk.ToBytes();
+
+                if (!steppedDownForThisTransfer) { _governor.OnBulkTransferStarted(); steppedDownForThisTransfer = true; }
 
                 sendTimer.Restart();
                 await SendAsync(MessageType.FileChunk, bytes, ct).ConfigureAwait(false);
@@ -735,6 +745,9 @@ internal sealed class HostFileService : IDisposable
         long written = 0;
         FileStatus status;
         string message;
+        // Same reasoning and same fix as the send path's steppedDownForThisTransfer: fires on the
+        // first real byte, not when the request was merely claimed — see PROGRESS.md, 2026-08-27.
+        bool steppedDownForThisTransfer = false;
 
         try
         {
@@ -772,6 +785,7 @@ internal sealed class HostFileService : IDisposable
                     }
 
                     Interlocked.Add(ref upload.Buffered, -chunk.Length);
+                    if (!steppedDownForThisTransfer) { _governor.OnBulkTransferStarted(); steppedDownForThisTransfer = true; }
 
                     // More bytes than were declared. Refused rather than written: the size was the
                     // basis for the free-space check and for what the person was shown.

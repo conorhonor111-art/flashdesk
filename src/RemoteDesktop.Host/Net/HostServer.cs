@@ -424,7 +424,13 @@ public sealed class HostServer : IDisposable
         // per-connection rather than per-caller. See HostFileService.
         using var files = new HostFileService(channel, Governor, _currentPeerId ?? string.Empty,
             Partials, FileAccessAsk, FileSentLogged, IncomingFileAsk, ReplaceFileAsk, FileArrivedLogged,
-            transferStarted: () => { _recorder?.BeginTransfer(); LastTransferStartedUtc = DateTimeOffset.UtcNow; LastTransferEndedUtc = null; Governor.OnBulkTransferStarted(); },
+            // Governor.OnBulkTransferStarted() deliberately does NOT fire from here any more — this
+            // callback runs the moment a request is CLAIMED, which can be up to 30 s before a person
+            // answers IncomingFileDialog/ReplaceFileDialog, and stepping the picture down for a
+            // transfer that has not sent a single byte yet punishes the client for taking their time
+            // to decide (see PROGRESS.md, 2026-08-27). It now fires from inside HostFileService, on
+            // the first real chunk sent or received.
+            transferStarted: () => { _recorder?.BeginTransfer(); LastTransferStartedUtc = DateTimeOffset.UtcNow; LastTransferEndedUtc = null; },
             transferEnded: () => { _recorder?.EndTransfer(); LastTransferEndedUtc = DateTimeOffset.UtcNow; Governor.OnBulkTransferEnded(); },
             fileBytesTransferred: n => { FileMeter.Record(1, n); _recorder?.RecordFileBytes(n); });
 
