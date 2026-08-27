@@ -318,6 +318,38 @@ a gate that cannot say no is not a gate.
   "I wrote a test for it" is not "I proved the test catches it" — the second is what this rule
   requires.
 
+## 12. A measurement or an observed success is a claim about something — say what, before
+    trusting it (Conor, standing rule, 2026-08-27)
+
+**Why:** five real instances in a single day, each caught only by directly checking the code, not
+by anything "feeling off": the logged "capture" stage measured DXGI's blocking wait, not the work
+(true cost 0.16 ms); the session log's "Sent" total counted video bytes only, silently missing
+files; frames-per-second was reported the same whether anything was moving, answering "is it
+running" rather than "is it useful"; `HostServer.OutgoingMeter` is labelled "Outgoing" but is fed
+only from the video frame loop, so a reported "27 KB/s" during a file transfer was the video rate
+— the file itself had never once been measured; and a file pasted from `.222` to `.223` looked
+like proof the clipboard bridge worked, when no such bridge exists anywhere in the code — grepped,
+zero matches outside the viewer's own local file-panel Ctrl+C/Ctrl+V — so what actually happened
+was the remote-access layer's own clipboard sharing, one level below FlashDesk entirely. Every
+single time, the number or the behaviour was real and reproducible. It was just answering a
+different question than the one it was taken to answer.
+
+**The rule this produces, concretely:**
+- Before reporting any measured number or any observed "it worked" as evidence for a claim, state
+  in one sentence what it actually counts — which code path feeds it, exactly — and one sentence
+  naming at least one other real mechanism that could produce the identical reading or the
+  identical result.
+- If that second sentence turns up a live candidate — a shared meter, a redundant remote-access
+  layer, a cache, a default the test never disabled — the claim is not settled until that
+  candidate is ruled out or accounted for. Naming it is not the same as clearing it.
+- This applies to instrumentation and code I write myself exactly as much as to anything
+  pre-existing. A counter is not exempt from this just because I am the one who added it.
+
+**How to apply:** every time, before quoting a number to Conor or reporting a feature as
+confirmed working — not only when something feels off. None of today's five were caught by a
+feeling; each was caught by naming the counter's actual source or grepping for the feature that
+was assumed to exist.
+
 ---
 
 # Project facts (discovered during setup — keep these; I cannot recover them otherwise)
