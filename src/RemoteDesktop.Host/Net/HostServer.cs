@@ -424,7 +424,7 @@ public sealed class HostServer : IDisposable
         // per-connection rather than per-caller. See HostFileService.
         using var files = new HostFileService(channel, Governor, _currentPeerId ?? string.Empty,
             Partials, FileAccessAsk, FileSentLogged, IncomingFileAsk, ReplaceFileAsk, FileArrivedLogged,
-            transferStarted: () => { _recorder?.BeginTransfer(); LastTransferStartedUtc = DateTimeOffset.UtcNow; LastTransferEndedUtc = null; },
+            transferStarted: () => { _recorder?.BeginTransfer(); LastTransferStartedUtc = DateTimeOffset.UtcNow; LastTransferEndedUtc = null; Governor.OnBulkTransferStarted(); },
             transferEnded: () => { _recorder?.EndTransfer(); LastTransferEndedUtc = DateTimeOffset.UtcNow; },
             fileBytesTransferred: n => FileMeter.Record(1, n));
 

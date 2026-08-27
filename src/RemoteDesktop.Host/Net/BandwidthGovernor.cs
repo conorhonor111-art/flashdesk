@@ -202,6 +202,37 @@ public sealed class BandwidthGovernor
         _rateEstimate = _rateEstimate <= 0 ? sample : (_rateEstimate * 0.7) + (sample * 0.3);
     }
 
+    /// <summary>
+    /// Below this, a link is already known to be nowhere near what a transfer could contend for —
+    /// stepping down for one would degrade a session that never needed it. Well above ordinary
+    /// full-motion cost (~2 MB/s, CLAUDE.md), so this only ever holds on genuinely fast links.
+    /// </summary>
+    private const double KnownFastBytesPerSecond = 3 * 1024 * 1024;
+
+    /// <summary>
+    /// A file transfer just started sharing the channel (see HostFileService's transfer-start
+    /// callback, wired via HostServer). Steps down AT ONCE when the link is not already known to be
+    /// fast, rather than waiting for <see cref="OnRoundTripReported"/> to notice.
+    ///
+    /// <para><b>Why the round trip cannot be trusted to react in time here.</b> The viewer's Ping
+    /// carries its LAST measured round trip — one full ping-pong cycle old — and the Host's own Pong
+    /// reply is queued behind the very file chunks it would be reporting on, through the same send
+    /// lock. Measured consequence (PROGRESS.md, 2026-08-27): a real transfer left quality unchanged
+    /// for its entire length and only stepped down once the transfer — and the reason for stepping
+    /// down — was already over. This call exists to react to the cause directly instead of to a
+    /// signal that structurally cannot arrive before the cause has passed.</para>
+    ///
+    /// <para>Skipped on a known-fast link, so this never touches a session that does not need it —
+    /// the same evidence-first principle <see cref="OnBulkSent"/> already applies to the rate
+    /// estimate, just checked a moment earlier than the round trip can manage.</para>
+    /// </summary>
+    public void OnBulkTransferStarted()
+    {
+        if (_rateEstimate > 0 && _rateEstimate >= KnownFastBytesPerSecond) return;
+        StepDown(2);
+        OpenWindow(Environment.TickCount64);
+    }
+
     public int Level => _level;
     public int LadderSize => Ladder.Length;
 

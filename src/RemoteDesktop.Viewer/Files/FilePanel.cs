@@ -57,6 +57,22 @@ public sealed class FilePanel : UserControl
     private readonly Button _more = Theme.MakeButton("Show more", ButtonKind.Neutral);
     private readonly Button _stop = Theme.MakeButton("Stop", ButtonKind.Destructive);
     private readonly ProgressBar _progress = new() { Style = ProgressBarStyle.Continuous, Height = 6, Maximum = 1000 };
+
+    // Feeds SessionWindow's status line — see "Screen is slowed while the file transfers" there.
+    // The operator was never told WHY the picture goes soft during a transfer; now measured
+    // nothing is being starved (PROGRESS.md, 2026-08-27), but 2 fps and 350 ms latency is still
+    // genuinely unusable, and unexplained is what read as broken. Tracked here, not in
+    // SessionWindow, because only this class knows a transfer is even happening.
+    private long _transferStartedAtMs;
+
+    /// <summary>Whether a download or upload is moving bytes right now.</summary>
+    public bool IsTransferActive { get; private set; }
+
+    /// <summary>
+    /// Time left in the CURRENT transfer, from its own average rate so far — null until at least
+    /// one progress sample has arrived, which is when a rate first exists to divide by.
+    /// </summary>
+    public TimeSpan? TransferTimeRemaining { get; private set; }
     private readonly Label _status = new()
     {
         Font = Theme.Body,
@@ -379,6 +395,7 @@ public sealed class FilePanel : UserControl
         finally
         {
             _progress.Value = 0;
+            EndTransferTracking();
             _transfer?.Dispose();
             _transfer = null;
             SetBusy(false);
@@ -441,6 +458,7 @@ public sealed class FilePanel : UserControl
         finally
         {
             _progress.Value = 0;
+            EndTransferTracking();
             _transfer?.Dispose();
             _transfer = null;
             SetBusy(false);
@@ -532,6 +550,7 @@ public sealed class FilePanel : UserControl
         finally
         {
             _progress.Value = 0;
+            EndTransferTracking();
             _transfer?.Dispose();
             _transfer = null;
             SetBusy(false);
@@ -540,9 +559,33 @@ public sealed class FilePanel : UserControl
 
     private IProgress<long> Progress(long total) => new Progress<long>(done =>
     {
+        // Marked active on the FIRST real progress callback, not when the call is made — an upload
+        // waits for the other side to accept first ("Waiting for them to answer"), and nothing is
+        // slowing the picture while that wait has nothing to do with bytes moving. A download has
+        // no such wait, so for a download this fires on the very first sample.
+        if (!IsTransferActive) { IsTransferActive = true; _transferStartedAtMs = Environment.TickCount64; }
+
         if (total <= 0) return;
         _progress.Value = (int)Math.Clamp(done * 1000 / total, 0, 1000);
+
+        // Average rate from the transfer's OWN start, not an instantaneous reading — a single slow
+        // or fast sample right after a burst would swing the estimate wildly. Needs at least a
+        // second of real elapsed time before the rate means anything, same reasoning as the
+        // MeasurableSendMs floor elsewhere in this project.
+        long elapsedMs = Environment.TickCount64 - _transferStartedAtMs;
+        if (elapsedMs < 1000 || done <= 0) { TransferTimeRemaining = null; return; }
+        double bytesPerMs = done / (double)elapsedMs;
+        long remainingBytes = total - done;
+        TransferTimeRemaining = bytesPerMs > 0
+            ? TimeSpan.FromMilliseconds(remainingBytes / bytesPerMs)
+            : null;
     });
+
+    private void EndTransferTracking()
+    {
+        IsTransferActive = false;
+        TransferTimeRemaining = null;
+    }
 
     // ---------------------------------------------------------------- plumbing
 

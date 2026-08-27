@@ -479,8 +479,28 @@ public sealed class SessionWindow : Form
         // The connection being fine is not the same as the picture being live, and saying "Connected"
         // over a frozen image is what made people think it had crashed.
         if (_screenNoticeWords.Length > 0) return "Connected  |  their screen is not available right now";
+
+        // The picture genuinely goes soft while a file moves — measured, not starved, but a few
+        // fps at several hundred ms latency reads as broken if nobody says why. "Paused" would be
+        // a lie (the picture keeps updating, just slowly); this says what is actually true. See
+        // PROGRESS.md, 2026-08-27, for the measurement that this replaces a bandwidth-split fix.
+        if (_filePanel is { IsTransferActive: true })
+        {
+            string left = _filePanel.TransferTimeRemaining is { } remaining
+                ? FormatMinutesLeft(remaining)
+                : "estimating time left…";
+            return $"Screen is slowed while the file transfers — {left}";
+        }
+
         var (fps, bytesPerSecond) = _client.IncomingMeter.Read();
         return $"Connected    |    {fps:0} fps    |    latency {_client.LastLatencyMs:0} ms    |    {(bytesPerSecond / 1024.0):0.0} KB/s";
+    }
+
+    private static string FormatMinutesLeft(TimeSpan remaining)
+    {
+        if (remaining.TotalSeconds < 30) return "less than a minute left";
+        int minutes = (int)Math.Ceiling(remaining.TotalMinutes);
+        return minutes <= 1 ? "about a minute left" : $"about {minutes} minutes left";
     }
 
     protected override void OnFormClosing(FormClosingEventArgs e)
