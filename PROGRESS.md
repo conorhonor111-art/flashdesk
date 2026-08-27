@@ -2186,3 +2186,93 @@ unmeasured-but-actually-fast link) is acceptable as is.
   line in the client's own log now states file KB/s, video KB/s, and total, the precise UTC start/end
   timestamps, and a computed "recovered after Ns" line — all read from history already recorded,
   the same principle `AppendTransfers` already used for fps/quality.
+
+## Live run on `ffe7b73` — the step-down fix confirmed, and a real gap in the test tooling found (2026-08-27)
+
+Driven end-to-end on `.222`↔`.223`, both on `ffe7b73401e7e95acacdbafab8e4855ea9ed16a7`. `.223`
+confirmed exact (the running process's own file, matched to `git rev-parse HEAD` directly). **`.222`
+could not be confirmed to the same standard — recorded honestly, not glossed over:** the file panel
+has no byte-exact size, hash, or version string anywhere in its UI, only a rounded-to-one-decimal MB
+figure and a date. What was visible (`68.5 MB`, `2026-08-27`) is consistent with the correct build —
+the local build rounds to the identical figure — but this is corroboration, not proof. Proceeded on
+that plus Conor's own just-completed copy, per his call once told plainly. A real download+hash
+compare would be the only way to close this gap completely; not done, would have cost the run's own
+bandwidth budget for a check that circumstantial evidence already answered well enough.
+
+**Quality drops DURING the transfer, not after — confirmed directly, this is the whole point of the
+fix.** Downloaded `AnyDesk.exe` (3.8 MB) at 600 Kbit/s, hands-off. At 38.1 s into the transfer, the
+technical view read `Adaptive: level 9/9 - 2 fps cap, quality 60` while `File transfer: ACTIVE` —
+the floor, reached DURING, not after. Transfer ran `05:18:59.373` to `05:20:07.313` (67.9 s per the
+now-first-byte-timed log line).
+
+**Recovery: reached level 5/9 quickly, then stalled there — not full, and the likely cause is
+already on record.** Sampled after transfer end (`05:20:07.313`): level 5/9 at +34.5 s, level 4/9 at
++56.5 s, level 5/9 again at +91.6 s, level 5/9 still at +137.3 s. Climbed from the floor to roughly
+half the ladder within well under a minute, then never reached level 0 across the ~137 s observed —
+consistent with, and most likely caused by, the same self-referential technical-view repaint cost
+already documented (2026-08-27, "measurement hygiene" note): the window had to stay open to be read
+at all, and its own live-updating labels are enough ongoing "activity" to keep tripping the
+overrun/quiet-window check just short of full recovery. Not a new defect in `OnBulkTransferEnded`
+itself — that fix does what it says (clears the stale reading so recovery isn't blocked by the
+transfer's own tail) — this is the ceiling the OBSERVATION method itself imposes, the same limit
+named honestly in the first live run.
+
+**The message: appears, reads exactly as written, ETA order-of-magnitude right from one early
+sample — not fully validated.** The viewer's status bar showed
+`Screen is slowed while the file transfers — less than a minute left` within ~3 s of the transfer
+starting. The transfer's real total was 67.9 s — a little over a minute, so that specific early
+estimate was a mild underestimate at the moment it was shown. Only one ETA sample was taken, early;
+whether the estimate corrected itself as more of the transfer's own average rate accumulated (the
+design already accounts for this — see `FilePanel.Progress`) was not observed. Not wildly wrong, not
+proven right either — said plainly rather than rounded up to a clean "confirmed."
+
+**Session log: the wiring is confirmed by reading the code, the actual file was not read.**
+`SessionRecorder.Report()` → `HostServer.SessionSummaryReady` → `MainForm` calls
+`_sessionLog.Detail(report)` → appended to `sessions.txt` — but only once a session actually ends
+(disconnects). The session stayed connected for the rest of the run at Conor's own direction, so
+`sessions.txt` was not opened. What is claimed here is that the code path exists and was not touched
+beyond the fields added this session — not that the file was read and checked.
+
+### The input-queue test — the finding Conor cares most about, and a real testing gap found alongside it
+
+**Major, unplanned discovery: `LinkLimiter` does not throttle uploads AT ALL.** Its own doc comment
+says exactly this — "Reads pass straight through — only sends are held back" — and an upload is the
+HOST *receiving*, not sending. "Pretend the connection is slow" only ever throttles the Host's own
+outgoing traffic (video, Pong, downloads). Proven, not just read: a 200 MB upload finished in
+21.8 s (~9.4 MB/s) and a 1 GB upload in 116.8 s (~9.4 MB/s) with 600 Kbit/s selected on `.222` the
+entire time — no throttling effect whatsoever. **Consequence: there is currently no way to simulate
+a slow uplink to test upload-side input contention.** Conor's worst-case scenario — a real client's
+genuinely slow home upload, contended for minutes — could not be reproduced or measured today. What
+was measured is real, but it is a lower bound, not the worst case.
+
+**What WAS measured, at full unthrottled speed (~9.4 MB/s):** five distinct clicks sent in rapid
+succession (`05:33:03.624`–`05:33:04.726`, all landing while a 1 GB upload was actively sending,
+which ran until `05:33:30.952`) were confirmed delivered — cursor visibly at the last click's target
+position — by `05:33:14.768`, roughly 10 s after the last of the five was sent, and well before the
+upload itself finished. Real, non-instant delay, confirmed directly rather than only read in code —
+but recovered in single-digit-to-low-double-digit seconds at this speed, nowhere near "stuck for the
+length of a seven-minute transfer." That scenario needs a genuinely slow, contended channel to
+reproduce, which today's tooling cannot provide for uploads.
+
+**"Do the queued actions replay?" — confirmed by code, not by a captured frame sequence.**
+`ViewerClient._inputQueue` is an unbounded `Channel`, drained strictly in order, nothing in the path
+drops or reorders an event — so every one of the five clicks WOULD have been delivered in the order
+sent. The final observation (cursor at the fifth/last click's position after all five had time to
+arrive) is consistent with that. A second attempt at denser sampling (40 rapid moves) was mistimed —
+sent 23 s after that particular upload had already finished — so it measured ordinary unthrottled
+responsiveness, not in-transfer contention, and is not used as evidence here.
+
+**One more thing found along the way, unrelated to the input-queue question:** the upload status
+text (`"Waiting for them to answer — the question is on their screen now."`) never updates once the
+transfer is actually moving bytes — it sits there, unchanged, for the whole upload, even though the
+technical view's own `File transfer: ACTIVE` line confirms real progress underneath it. Minor, and a
+different defect from the input-queue finding — an unattended status label, not a control-delivery
+problem — but worth fixing whenever this screen is next touched.
+
+**What this means for the stale-input design already agreed:** none of it changes the design Conor
+already decided (mouse-move newest-only; clicks/keys pause-and-warn at a 1 s threshold). It does mean
+that decision was made, correctly, on the STRUCTURAL evidence (the shared `MessageChannel` lock,
+confirmed by reading the constructor wiring) rather than on a measured worst case — because the
+worst case cannot be measured yet. If a real client's slow-uplink severity ever needs to be
+quantified precisely, `LinkLimiter` (or a viewer-side equivalent) would need to start throttling
+sends on the VIEWER's own outbound side, which does not exist today.
