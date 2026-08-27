@@ -1859,3 +1859,75 @@ means any single file transfer under roughly half a megabyte is never throttled 
 completes entirely inside the free burst. Harmless, and probably a reasonable real-world default,
 but it means small-file transfers will always look instant in testing and can never be used to
 reproduce a slow-link problem; any future slow-link test must use a file safely larger than 512 KB.
+
+## The clean 600 Kbit/s run — the pipe was full, the file was never starved to the extent believed (2026-08-27)
+
+Driven end-to-end on the live rig (`.222` = Host, `.223` = Viewer, both consents already given),
+using the new instrumentation from commit `e1f558c`. `.222`'s own "Pretend the connection is slow"
+control was set to 600 Kbit/s, then `AnyDesk.exe` (4,021,320 bytes — comfortably over the 512 KB
+burst floor) was downloaded from Host to Viewer with nothing else touching either machine during
+the transfer.
+
+**Numbers, read straight from `HostServer`'s new instrumentation, not the old video-only meter:**
+- Code-level start/end: `03:10:42.760` to `03:11:55.022` — **72.262 s**, timestamped at
+  `HostFileService`'s own transfer callbacks, not from any click or dialog.
+- Sample at 17.4 s: **file 48.0 KB/s · video 13.8 KB/s · total 61.9 KB/s**.
+- Sample at 61.8 s: **file 48.0 KB/s · video 37.6 KB/s · total 85.6 KB/s**.
+- Full-transfer average file rate: 3,927 KB / 72.262 s ≈ **54.3 KB/s**.
+- The 600 Kbit/s cap is ≈73–75 KB/s.
+
+**Verdict — neither of the two worlds Conor posed, a real third case in between:** total (62–86
+KB/s) straddles and briefly exceeds the ~73–75 KB/s cap, so **the pipe was full** — not the
+"~35 KB/s, never full" alternative. But the file held a healthy majority of that full pipe (48 of
+62–86 KB/s, roughly 56–77%) **the entire time, with no fix built yet** — it was never starved to
+a small fraction the way the earlier (now-known-mismeasured) "27 KB/s" reading implied. Set
+against the isolated no-video baseline from the investigation above (file alone: 73.2 KB/s), video
+contention cost the file about a third of its throughput (73.2 → 48.0 KB/s) — a real, moderate
+cost, not the dramatic one-sided starvation the original diagnosis assumed. **Consequence: "video
+is starving the file" was overstated. A priority fix is not solving a problem that doesn't exist,
+but the size of the win it would buy is far smaller than the retracted 2.3× framing suggested.**
+Left for Conor to approve, redirect, or drop, per his own instruction.
+
+**Caveats, named per charter rule 12 rather than left implicit:**
+- `FileMeter` and `OutgoingMeter` are two independently-windowed 1-second rolling averages, not one
+  atomic reading of the same wire — summing them can transiently read above the true instantaneous
+  cap, which is the most likely explanation for the 85.6 KB/s sample.
+- The "video" figure is not a clean idle baseline: `.222`'s own Host technical-view window had to
+  stay open and visible for the whole run, since it was the only channel available to read this
+  instrumentation at all (no RDP/credentialed access to `.222` existed at the time — see below).
+  Its own live-updating labels repaint a small screen region every reading, and the post-transfer
+  idle sample (video ≈25–33 KB/s with the file at 0) shows that alone is a non-trivial share of the
+  "video" number. This is the same measurement method the project has used throughout (the
+  standard procedure reads counters off the host's own open window) — not a new problem, but worth
+  naming rather than presenting the video figure as if nothing but the transfer produced it.
+
+**How this was driven, for the record:** no RDP session, saved credential, or WinRM trust to `.222`
+existed at the time, so `.222`'s own "Pretend the connection is slow" control — deliberately
+host-local, unreachable by protocol message from an operator by design (see `HostServer.cs`) — was
+set using FlashDesk's own consented remote mouse/keyboard control (already granted for this
+session), reading the result back through the video feed. Link throttle was reset to "No — send as
+fast as it can" on `.222` afterward. A 3.8 MB test copy was left at `.223`'s
+`C:\Users\PC\Documents\AnyDesk.exe`; deleting it was blocked by the session's permission classifier
+and is left for Conor.
+
+## The clipboard paste was RDP/VMware, not FlashDesk — no bridge exists in the code (2026-08-27)
+
+Checked before trusting the observed "copy on `.222`, paste on `.223`" as evidence the clipboard
+feature works, per Conor's explicit instruction not to assume it. Grepped the entire `src` tree:
+**zero clipboard-related code in `Shared` (no wire-protocol message for it at all), and on the Host
+side nothing but the unrelated "Copy" button that copies the operator's own FlashDesk ID text.**
+The only clipboard code anywhere is `FilePanel.cs` (Viewer project) — `Ctrl+C`/`Ctrl+V` inside the
+file panel, which downloads a selected remote file to a local temp folder and sets a
+`FileDropList` on the **operator's own local OS clipboard**, and reads that same local clipboard
+to start an upload. It never touches the host's clipboard, and there is no message type carrying
+clipboard content across the wire in any direction.
+
+**Conclusion: there is no clipboard bridge in FlashDesk today — not partially built, not one line
+of it.** What Conor observed was the remote-access layer's own clipboard sharing between `.222` and
+`.223` (RDP and/or VMware Tools, whichever actually connects them), one level below FlashDesk
+entirely — exactly his own suspicion, confirmed rather than assumed. This rig cannot distinguish a
+working bridge from that sharing for the simple reason that there is no bridge to distinguish yet.
+**When a real bridge is eventually built,** proving it independent of the remote-access layer will
+need either: disabling clipboard redirection on whatever channel reaches `.222` (RDP's own
+clipboard-redirection setting, or VMware Tools' shared-clipboard setting) and re-testing, or testing
+between two machines with no shared remote-console clipboard path between them at all.
