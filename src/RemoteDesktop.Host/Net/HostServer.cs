@@ -103,6 +103,14 @@ public sealed class HostServer : IDisposable
     /// caller's number and the plain-text account of how the session went, ready for the log.
     /// </summary>
     public Action<string, string>? SessionSummaryReady;
+
+    /// <summary>
+    /// Raised WHILE a session is still running, with the same block <see cref="SessionSummaryReady"/>
+    /// carries at the true end. Added 2026-08-27 so a session that never gets a clean close (a crash,
+    /// Task Manager, a plain kill) still leaves what was known up to the last checkpoint — see
+    /// <see cref="EmitCheckpoint"/> and PROGRESS.md, "a three-hour session vanished with no record".
+    /// </summary>
+    public Action<string>? SessionCheckpoint;
     private readonly object _captureLock = new();
     private IScreenCapture? _capture;
     private InputInjector? _injector;
@@ -381,6 +389,26 @@ public sealed class HostServer : IDisposable
     }
 
     /// <summary>
+    /// The same block <see cref="FinishSessionReport"/> would produce if the session ended right
+    /// now, without ending it — <c>SessionRecorder.Report</c> only reads and rolls its per-second
+    /// history forward, it does not consume anything, so this is safe to call as often as wanted.
+    /// Used to checkpoint sessions.txt DURING a session; see <see cref="EmitCheckpoint"/>.
+    /// </summary>
+    public string? SnapshotReport() => _recorder?.Report(Governor.LadderSize);
+
+    /// <summary>
+    /// Writes a checkpoint of "how it went so far" — called after every file transfer ends (the
+    /// moment its before/during/after and recovery reading become worth having on disk even if
+    /// nothing else ever gets written) and periodically from the UI timer as a plain dead-man's
+    /// switch for a session with no transfers at all. No-op while nothing is being recorded.
+    /// </summary>
+    public void EmitCheckpoint()
+    {
+        var snapshot = SnapshotReport();
+        if (!string.IsNullOrEmpty(snapshot)) SessionCheckpoint?.Invoke(snapshot);
+    }
+
+    /// <summary>
     /// Closes off the session being recorded and hands its account over, exactly once. Called when a
     /// genuinely NEW session begins — at which point the previous one is certainly finished — and
     /// when sharing stops. A dropped link that comes back inside the grace window is the same
@@ -431,7 +459,15 @@ public sealed class HostServer : IDisposable
             // derived from it: duration, KB/s) must agree on what "started" means, or the log times
             // a real transfer from the wrong instant. See PROGRESS.md, 2026-08-27.
             transferStarted: () => { _recorder?.BeginTransfer(); LastTransferStartedUtc = DateTimeOffset.UtcNow; LastTransferEndedUtc = null; },
-            transferEnded: () => { _recorder?.EndTransfer(); LastTransferEndedUtc = DateTimeOffset.UtcNow; Governor.OnBulkTransferEnded(); },
+            transferEnded: () =>
+            {
+                _recorder?.EndTransfer();
+                LastTransferEndedUtc = DateTimeOffset.UtcNow;
+                Governor.OnBulkTransferEnded();
+                // A transfer just ended is exactly when the before/during figures become worth
+                // having on disk even if nothing else ever is — see EmitCheckpoint.
+                EmitCheckpoint();
+            },
             fileBytesTransferred: n => { FileMeter.Record(1, n); _recorder?.RecordFileBytes(n); });
 
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct);

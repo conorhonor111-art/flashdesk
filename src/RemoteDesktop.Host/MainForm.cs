@@ -85,6 +85,7 @@ public sealed class MainForm : Form
     private readonly Label _monitoring = NewDetail();
     private readonly Label _survived = NewDetail();
     private readonly Label _failures = NewDetail();
+    private readonly Label _sessionLogHealth = NewDetail();
     private readonly Label _allAddresses = NewDetail();
     private readonly Label _relayState = NewDetail();
     private readonly Label _identityDetail = NewDetail();
@@ -109,6 +110,14 @@ public sealed class MainForm : Form
     private bool _technicalOpen;
 
     private readonly System.Windows.Forms.Timer _timer = new() { Interval = 500 };
+
+    /// <summary>
+    /// Counts this timer's own 500 ms ticks so a checkpoint can be written every few minutes without
+    /// a second timer. A plain dead-man's switch for a session with no file transfers at all — see
+    /// HostServer.EmitCheckpoint, and PROGRESS.md, 2026-08-27.
+    /// </summary>
+    private int _checkpointTicks;
+    private const int CheckpointEveryTicks = 360; // 360 * 500 ms = 3 minutes
 
     public MainForm()
     {
@@ -297,6 +306,21 @@ public sealed class MainForm : Form
             if (!string.IsNullOrEmpty(report)) _sessionLog.Detail(report);
         };
 
+        // The same block, but WHILE the session is still running — see HostServer.EmitCheckpoint
+        // and SessionLog.Checkpoint. Exists because the block above only ever gets written on a
+        // clean close, and a real session that ended by any other path once left nothing at all.
+        _server.SessionCheckpoint = report => _sessionLog.Checkpoint(report);
+
+        // A failure to write the session log used to vanish silently — "must never take the session
+        // down" was implemented as "say nothing", and a failure that says nothing is indistinguishable
+        // from nothing having happened. Filed here into the capture log too — a second, independent
+        // file, on the Desktop, not gated behind FLASHDESK_CONFIG_DIR — timestamped at the moment it
+        // happened. UpdateStatus() reads _sessionLog.LastWriteError every tick for the technical-view
+        // line, so that display self-corrects the moment writes start working again; this event exists
+        // for the permanent, timestamped trace, not the live display. See PROGRESS.md, 2026-08-27.
+        _sessionLog.WriteFailed += message =>
+            _server.Health.Note($"SESSION LOG WRITE FAILED: {message}  (file: {_sessionLog.FilePath})");
+
         Load += (_, _) => { ShowIdentityState(); StartSharing(); _ = RegisterIdentityAsync(); SweepUnfinishedFiles(); };
 
         // ⚠ Nothing may hold focus when this window opens. WinForms otherwise focuses the first
@@ -308,7 +332,15 @@ public sealed class MainForm : Form
         // Set on Shown, not Load: WinForms re-selects a control between the two.
         Shown += (_, _) => ActiveControl = null;
         FormClosing += (_, _) => { _server.Dispose(); _timer.Dispose(); };
-        _timer.Tick += (_, _) => UpdateStatus();
+        _timer.Tick += (_, _) =>
+        {
+            UpdateStatus();
+            if (++_checkpointTicks >= CheckpointEveryTicks)
+            {
+                _checkpointTicks = 0;
+                _server.EmitCheckpoint();
+            }
+        };
         _timer.Start();
     }
 
@@ -575,6 +607,7 @@ public sealed class MainForm : Form
 
         return MakeCard(new Padding(Theme.S3),
             _method, _fps, _kb, _adaptive, _frameStages, _fileTransferDetail, _monitoring, _survived, _failures,
+            _sessionLogHealth,
             _relayState, _identityDetail, _identityFile, _relayUrl, _allAddresses, _versionDetail,
             qualityRow, linkRow, buttonRow, _selfTestResult);
     }
@@ -871,6 +904,21 @@ public sealed class MainForm : Form
         _survived.Text = $"Interruptions survived: {_server.Health.Survived}";
         _failures.Text = $"Capture failures: {_server.Health.Failures}";
         _failures.ForeColor = _server.Health.Failures > 0 ? Theme.Red : Theme.TextSecondary;
+
+        // The one honest way to know sessions.txt is actually being written, rather than assuming it
+        // because nothing complained — silence used to mean both "fine" and "broken" identically. See
+        // PROGRESS.md, 2026-08-27.
+        if (_sessionLog.LastWriteError is { } error)
+        {
+            _sessionLogHealth.Text = $"Session log: FAILING since {_sessionLog.LastWriteErrorAtUtc:HH:mm:ss} — {error}";
+            _sessionLogHealth.ForeColor = Theme.Red;
+        }
+        else
+        {
+            _sessionLogHealth.Text = "Session log: writing normally";
+            _sessionLogHealth.ForeColor = Theme.TextSecondary;
+        }
+
         _relayState.Text = "Relay link: " + _server.RelayStatus;
 
         if (!_server.IsCapturing)

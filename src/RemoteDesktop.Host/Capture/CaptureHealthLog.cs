@@ -67,6 +67,18 @@ public sealed class CaptureHealthLog
 
     private double ElapsedMs() => (Stopwatch.GetTimestamp() - _interruptedAt) * 1000.0 / Stopwatch.Frequency;
 
+    /// <summary>
+    /// A plain informational line from somewhere else in the program, filed alongside capture
+    /// events rather than invented a new file for it. Added 2026-08-27 so <c>SessionLog</c> has
+    /// somewhere to say "I could not write" when it cannot write to its own file — see
+    /// <c>SessionLog.WriteFailed</c>. This file's own write is on the SAME best-effort footing
+    /// (the catch below), so it is a second, independent chance to leave a trace, not a guarantee.
+    /// </summary>
+    public void Note(string line)
+    {
+        lock (_gate) { Write(line); }
+    }
+
     private void Write(string line)
     {
         try { File.AppendAllText(LogPath, $"{DateTime.Now:HH:mm:ss}  {line}{Environment.NewLine}"); }

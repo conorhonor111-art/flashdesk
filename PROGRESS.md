@@ -2319,3 +2319,99 @@ the observation, reading from the session log or the viewer's own side instead. 
 upload test with the NOW-real throttling in place and actually observe the input-blocking severity
 on a genuinely slow channel, which the first run could not do. Stale-input design work does not start
 until after both.
+
+## Recovery diagnosis, live run on `cfe3eea` (2026-08-27) — two findings, one still open
+
+A live run produced four file transfers in one session: #1 recovered to level 0 in 54s, #2 in 4s,
+#3 and #4 never recovered — read from the technical view as "stuck at level 6/9" for 985s and 744s
+respectively before the session ended. Conor's instruction: name the state that differs between #2
+and #3 by reading the code, not by running more transfers.
+
+**Finding 1 — recovery is all-or-nothing, with no partial credit.** `BandwidthGovernor.OnFrameSent`
+requires **three consecutive** clean 500 ms windows (`QuietWindowsToRecover`) before giving one level
+back. But `StepDown()` — called on a single over-budget frame, a single panic-slow send, or a single
+round trip over `QueueHeavyMs`/`QueueSevereMs` — unconditionally zeroes `_quietWindows`
+(`BandwidthGovernor.cs:410`). There is no decay, no partial credit: one bad half-second anywhere in
+the count discards all progress and the three-window count restarts from zero. Going DOWN needs one
+event; coming UP needs perfect silence for 1.5 straight seconds, repeated for every level owed. A
+steady trickle on the channel — a blinking cursor, a clock tile redrawing, the technical view's own
+repaint — never *slows* recovery under this design. It *stops* it, for as long as the trickle
+continues. This is a real design asymmetry, confirmed by reading `OnFrameSent`/`StepDown` directly,
+independent of what caused #3 and #4's specific stall.
+
+**Finding 2 — the host's own rate estimate is upload-blind and never reset between transfers.**
+`BandwidthGovernor._rateEstimate` (the EWMA behind the "send burst" reading and the over-budget
+safety check) is fed from two places only: video frames (`OnFrameSent`) and DOWNLOAD chunks
+(`OnBulkSent`, called from `HostFileService.StreamFileAsync`). It is **never** fed from an UPLOAD —
+`WriteChunksAsync` (the host receiving a file) has no equivalent call anywhere in it. And it is never
+reset between transfers, only at `Reset()` when a session begins. So if an earlier transfer or a
+burst of video traffic pushes it high, and a later transfer in the same session is an upload, the
+host has no way to learn from that upload that the link is actually slower than it believes — the
+belief can only be corrected by traffic it structurally never observes. Recorded per Conor's
+instruction regardless of whether it explains today's stall: a stale "the link is fast" reading that
+only self-corrects via evidence it never receives is a bug waiting for its day.
+
+**Still open — which world #3 was in.** Reading the log to settle "trickle vs. genuine silence"
+during the stuck window turned up a THIRD finding first: closing the host window after the run left
+**`sessions.txt` byte-for-byte unchanged** — same length (4202), same last-write time (2026-08-26
+06:50:28) as before the run, even though the host process (`FlashDesk.exe`, PID 4580, running since
+06:36:04 that morning) had by then exited with no Windows Application-log crash event recorded
+against it. Traced the write path: `MainForm`'s `FormClosing` calls `HostServer.Dispose()` →
+`Stop()` → `FinishSessionReport()` → `SessionSummaryReady` → `SessionLog.Detail()`, which should
+have appended the full "how it went" block including the four transfers' before/during/after and
+`RecoveryLine` verdicts. It did not fire, or fired and failed silently (`SessionLog.Append`'s
+`catch { }` swallows any write failure on purpose, per its own comment, "a log that cannot be
+written must never take the session down" — which also means a failure here leaves no trace
+anywhere to explain itself). Both are real possibilities and neither is confirmed: whether the host
+was closed by a path that skips `FormClosing` (a task-kill, a crash with no logged event, closing a
+window that was not actually this `FormClosing`'s owner) versus `FormClosing` running but the append
+failing quietly. **Needs one fact from Conor: exactly how the app was closed**, before this can be
+narrowed further. Until then, the trickle-vs-silence question for #3 is unanswered — not "genuinely
+silent and stuck" and not "confirmed trickle," but "the instrument meant to answer this did not
+produce a reading at all." No code changed while chasing this.
+
+## The session log's silent catch, fixed — a three-hour session cannot vanish again (2026-08-27)
+
+Conor's own close (the X button — "nothing unusual, no Task Manager, no crash") lost a three-hour,
+four-transfer session with zero trace. Since `FormClosing` definitely runs on that path, the cause is
+either a broken link in the write chain or a swallowed exception in `SessionLog.Append`'s `catch { }`
+— and since the failure left no trace anywhere, which one it actually was is now unrecoverable
+forensic evidence. Built to Conor's exact order, so it cannot happen invisibly again:
+
+1. **Write as you go.** `HostServer.SnapshotReport()`/`EmitCheckpoint()` produce the same "how it
+   went" block `FinishSessionReport` writes at the true end, without ending anything —
+   `SessionRecorder.Report` only reads and rolls its history forward, so this is safe to call
+   repeatedly. `SessionLog.Checkpoint()` appends it as a clearly-marked, non-final block. Wired to
+   fire (a) after **every file transfer ends** — the before/during figures and the recovery reading
+   become worth having on disk the moment they exist — and (b) every **3 minutes** from the existing
+   UI timer, as a plain dead-man's switch for a session with no transfers at all. Each transfer's
+   history remains queryable this way at any point, not only at a clean close.
+2. **The silent catch is gone.** `SessionLog.Append` now sets `LastWriteError`/`LastWriteErrorAtUtc`
+   and raises `WriteFailed` on any exception, instead of doing nothing. The session still never stops
+   over a log write failing — that part of the original reasoning was right — but the failure is now
+   filed into `CaptureHealthLog` (the Desktop capture log, a second, independent file, not gated
+   behind `FLASHDESK_CONFIG_DIR`) and shown live in the technical view (`Session log: writing
+   normally` / `FAILING since HH:mm:ss — <message>`, self-correcting the moment writes succeed again).
+3. **Coverage by close path, stated honestly rather than promised:**
+   - **X button / Stop sharing** (both route through `HostServer.Stop()` → `FinishSessionReport()`):
+     fully covered — the final block still writes, and checkpoints throughout the session are now a
+     second safety net under it.
+   - **Task Manager "End Task", a crash, a plain kill:** `FormClosing` does not reliably run on these.
+     The final "how it went" block and the true `RecoveryLine` verdict are lost, same as before — but
+     everything checkpointed before the kill is already on disk, because checkpoints are ordinary
+     appends, not a buffer flushed at exit. Bounded loss: at most the last 3 minutes, or since the
+     last transfer ended, whichever is more recent.
+   - **The machine sleeping:** not actually a close — the process is merely suspended and resumes
+     where it left off on wake. Nothing lost to sleep itself; only a genuine close/kill loses anything.
+   - **What is NOT fixed:** the gap between the last checkpoint and an abrupt kill. This is a real,
+     stated limit, not a hidden one — narrowing it further trades against turning sessions.txt into
+     the "fourteen near-identical blocks" noise problem the original design was written to avoid.
+4. **`dotnet build -c Release`: 0 errors, 0 warnings.** `dotnet test -c Release`: 298/300 passing.
+   The 2 failures (`HostFileServiceTests.A_PROGRAM_is_asked_about_by_name_every_single_time`,
+   `FileTransferEndToEndTests.A_reply_for_a_request_the_operator_has_moved_on_from_is_dropped`) were
+   confirmed, by running the identical suite against the unmodified `cfe3eea` tree, to be **pre-existing
+   and unrelated to this change** — both fail identically with no code touched, and the first passes
+   reliably in isolation (5/5), which is the signature of test-parallelism/isolation flakiness in the
+   suite itself, not a defect in this fix. Not investigated further; out of scope for what was asked.
+
+Recovery (the three-consecutive-quiet-windows finding) is untouched and waits, per instruction.

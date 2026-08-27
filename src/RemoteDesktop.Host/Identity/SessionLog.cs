@@ -31,6 +31,23 @@ public sealed class SessionLog
 
     public string FilePath => _file;
 
+    /// <summary>
+    /// Set the moment a write to this file fails, cleared the moment one succeeds. Null means either
+    /// "never tried" or "the last attempt worked" — read <see cref="LastWriteErrorAtUtc"/> together
+    /// with it if that distinction matters.
+    ///
+    /// <para>Added 2026-08-27 after a real three-hour session vanished with nothing on disk and
+    /// nothing to say why: <see cref="Append"/>'s catch was silent on purpose ("a log that cannot be
+    /// written must never take the session down"), which was right about not crashing the session
+    /// and wrong about leaving no trace — the two are not the same requirement. A failure that looks
+    /// identical to nothing having happened cannot be told apart from nothing having happened.</para>
+    /// </summary>
+    public string? LastWriteError { get; private set; }
+    public DateTime? LastWriteErrorAtUtc { get; private set; }
+
+    /// <summary>Fired every time a write fails, with the exception message. See <see cref="LastWriteError"/>.</summary>
+    public event Action<string>? WriteFailed;
+
     public void Started(string callerId) => Write($"CONNECTED    {Pretty(callerId)} accepted and connected");
     public void Ended(string callerId) => Write($"DISCONNECTED {Pretty(callerId)} session ended");
     public void Refused(string callerId) => Write($"REFUSED      {Pretty(callerId)} was refused (Reject, or no answer)");
@@ -92,6 +109,22 @@ public sealed class SessionLog
     public void Detail(string block) => Append(block + Environment.NewLine);
 
     /// <summary>
+    /// The same "how it went" block as <see cref="Detail"/>, written WHILE the session is still
+    /// running, not only once it ends cleanly. Added 2026-08-27: <see cref="Detail"/> alone means a
+    /// session that never gets a clean close — the X button on a machine with something else wrong,
+    /// Task Manager, a crash, a plain kill — leaves nothing on disk at all, which is exactly the
+    /// scenario the file exists for (a nervous stranger closes the way they close everything, and
+    /// sends whatever is there). Each checkpoint is its own block rather than replacing the last
+    /// one: this file is append-only everywhere else, and rewriting a live line risks losing MORE on
+    /// a crash mid-write than leaving the redundancy would. If the session ends cleanly, the real
+    /// "how it went" block after the DISCONNECTED line is the one that matters and checkpoints
+    /// before it are superseded; if it does not, the last checkpoint IS the record.
+    /// </summary>
+    public void Checkpoint(string block) =>
+        Append($"  -- snapshot at {DateTime.Now:HH:mm:ss}, session still running --{Environment.NewLine}"
+             + block + Environment.NewLine);
+
+    /// <summary>
     /// A size a person reads, not a number of bytes. "2.4 MB" tells someone whether that was their
     /// holiday photos or a spreadsheet; "2514763" tells them nothing without arithmetic.
     /// </summary>
@@ -125,8 +158,20 @@ public sealed class SessionLog
                         "Times are this computer's local time." + Environment.NewLine + Environment.NewLine,
                         encoding);
                 File.AppendAllText(_file, text, encoding);
+                LastWriteError = null;
             }
-            catch { /* a log that cannot be written must never take the session down */ }
+            catch (Exception ex)
+            {
+                // A log that cannot be written must never take the session down — that part was
+                // always right. What was wrong was doing NOTHING else: silence here is
+                // indistinguishable from nothing having happened, which is exactly the failure mode
+                // that let a real three-hour session vanish with no record and no clue why. See
+                // PROGRESS.md, 2026-08-27. The session still does not stop; the failure just stops
+                // being invisible.
+                LastWriteError = ex.Message;
+                LastWriteErrorAtUtc = DateTime.UtcNow;
+                try { WriteFailed?.Invoke(ex.Message); } catch { /* a subscriber's own failure is not this file's problem */ }
+            }
         }
     }
 }
