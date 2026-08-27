@@ -2059,16 +2059,25 @@ code rather than assumed, before anything is fixed:
   is on screen by the time they arrive, not what was there when they were made. This is worse than
   "no response, then normal again" — it is "no response, then a burst of commands aimed at a screen
   that no longer matches them."
-- **Related, found while re-checking `OnBulkTransferStarted`'s own timing, not asked about:** the
-  proactive step-down fires from `_transferStarted`, which `HostFileService` raises the moment
-  `_transferBusy` is claimed — BEFORE `IncomingFileDialog`/`ReplaceFileDialog` are even shown, let
-  alone answered. On a slow link the picture can therefore dip for as long as the client takes to
-  decide (`IncomingFileDialog.TimeoutSeconds = 30`), before a single byte has moved and before any
-  real contention exists to justify it. Not fixed — noted for whenever this area is revisited.
+- **Related, found while re-checking `OnBulkTransferStarted`'s own timing — Conor called this a bug
+  and it is FIXED (commit `d1b6b59`).** The proactive step-down fired from `_transferStarted`, which
+  `HostFileService` raised the moment `_transferBusy` was claimed — BEFORE `IncomingFileDialog` /
+  `ReplaceFileDialog` were even shown, let alone answered. On a slow link the picture dipped for as
+  long as the client took to decide (`IncomingFileDialog.TimeoutSeconds = 30`), before a single byte
+  had moved and before any real contention existed to justify it — punishing the client for taking
+  their time. `Governor.OnBulkTransferStarted()` now fires from inside `HostFileService` itself, once,
+  on the first chunk actually sent (`StreamFileAsync`) or received (`WriteChunksAsync`), guarded by a
+  per-call flag; `HostServer`'s `transferStarted` callback no longer calls it. Same principle already
+  applied to the Viewer's own ETA tracking: the waiting-for-an-answer phase is not transfer time.
+  `_recorder.BeginTransfer()`/`LastTransferStartedUtc` were deliberately left at claim-time, unchanged
+  — only the ladder timing was in scope for this fix; whether the session-log timestamp and the
+  derived KB/s figures have the same "claim time vs first byte" gap is a separate, open question,
+  not acted on.
 
-**Not fixed, per Conor's explicit instruction** ("do not fix it yet"). Recorded here so the shape,
-the scope (upload-only), and the severity (delayed-then-stale-replay, not merely delayed) are not
-re-derived later.
+**The input-queue discard/coalesce design itself is NOT fixed, per Conor's explicit instruction**
+("do not fix it yet"). Recorded here so the shape, the scope (upload-only), and the severity
+(delayed-then-stale-replay, not merely delayed) are not re-derived later. See "Stale input — design
+proposal, not built" below for the approach put to Conor.
 
 ## Risk 2 decision — kept as is (Conor, 2026-08-27)
 
@@ -2077,6 +2086,37 @@ behaviour. An unmeasured link being treated the same as a known-slow one, worst 
 level 2 (12 fps, quality 95) for a few seconds, is an acceptable price for not guessing — and
 `LinkLimiter`'s 512 KB burst figure was correctly refused as a size filter, since it describes the
 TEST harness's simulated router buffer, not any real-world guarantee. No code change from this.
+
+## Stale input — design proposal, not built (2026-08-27)
+
+Conor's correction: "input is queued, not lost" is worse, not better — thousands of stale clicks
+and moves from a long upload will eventually fire onto a screen that has moved on, which is more
+dangerous than input simply being delayed. Proposed approach, not built — Conor asked to see the
+approach before anything is written:
+
+- **Mouse MOVE events (no button change): latest-only, per Conor's own conclusion.** A position
+  older than a moment is worthless once stale — only the newest matters. Replace the single
+  unbounded FIFO the input loop currently drains with a coalescing slot for pure movement: a new
+  move overwrites whatever move is still waiting, never queues behind it. Nothing here needs a
+  judgment call; this is what "only the newest matters" already decides.
+- **Clicks and keystrokes: NOT decided here — three options put to Conor, not chosen unilaterally,**
+  because (his own reasoning) a keystroke may be part of something the person typed, and dropping it
+  silently could corrupt that.
+  1. *Discard past a threshold too* (e.g. ~2–3 s old) — simplest, safest against a stale click
+     landing somewhere unintended, but risks losing part of something someone was mid-typing if the
+     delay ran long.
+  2. *Never drop, but warn afterward* — deliver everything queued, then tell the operator plainly
+     once the backlog clears ("N actions were sent late — check what happened"), so a human notices
+     rather than assumes silence meant nothing happened.
+  3. *Stop ACCEPTING new input once the backlog passes a small bound, instead of ever building a
+     large one* — bounds the problem at the source rather than cleaning up after it. Pairs naturally
+     with the existing "Screen is slowed while the file transfers" message (already built): extend it
+     to also say control is paused, the moment it actually is, so the operator is told in real time
+     instead of clicking into what they will otherwise read as a frozen picture and only learning
+     why afterward.
+  Leaning toward a combination of 3 (bound the queue, tell the operator immediately) with 2 for
+  whatever small amount still queues before the bound is hit — but this is a recommendation, not a
+  decision made without Conor.
 
 ## The latency line joins the mislabelled-number list (Conor, 2026-08-27)
 
