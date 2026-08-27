@@ -115,6 +115,22 @@ public sealed class HostServer : IDisposable
 
     public RateMeter OutgoingMeter { get; } = new();
 
+    /// <summary>
+    /// File-chunk bytes only — never fed by video frames. Built 2026-08-27 because OutgoingMeter is
+    /// video-only (fed solely from FrameLoopAsync), so it could never answer "what was the file
+    /// actually achieving" during a transfer; the technical view was silently showing the video rate
+    /// and nothing measured the file rate at all.
+    /// </summary>
+    public RateMeter FileMeter { get; } = new();
+
+    /// <summary>
+    /// True code-level start/end of the most recent (or current, if EndedUtc is null) file transfer —
+    /// timestamped where the transfer actually begins/ends in HostFileService, not from any UI click
+    /// or dialog, which can sit open for minutes before the network request is even sent.
+    /// </summary>
+    public DateTimeOffset? LastTransferStartedUtc { get; private set; }
+    public DateTimeOffset? LastTransferEndedUtc { get; private set; }
+
     /// <summary>Where the frame time goes, stage by stage, over the last second. See FrameTimings.</summary>
     public FrameTimings Timings { get; } = new();
 
@@ -408,7 +424,9 @@ public sealed class HostServer : IDisposable
         // per-connection rather than per-caller. See HostFileService.
         using var files = new HostFileService(channel, Governor, _currentPeerId ?? string.Empty,
             Partials, FileAccessAsk, FileSentLogged, IncomingFileAsk, ReplaceFileAsk, FileArrivedLogged,
-            transferStarted: () => _recorder?.BeginTransfer(), transferEnded: () => _recorder?.EndTransfer());
+            transferStarted: () => { _recorder?.BeginTransfer(); LastTransferStartedUtc = DateTimeOffset.UtcNow; LastTransferEndedUtc = null; },
+            transferEnded: () => { _recorder?.EndTransfer(); LastTransferEndedUtc = DateTimeOffset.UtcNow; },
+            fileBytesTransferred: n => FileMeter.Record(1, n));
 
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct);
         var inbound = InboundLoopAsync(channel, files, linked.Token);

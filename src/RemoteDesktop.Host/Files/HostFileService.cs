@@ -60,6 +60,13 @@ internal sealed class HostFileService : IDisposable
     private readonly Action? _transferStarted;
     private readonly Action? _transferEnded;
 
+    /// <summary>
+    /// Fires with the byte count of every chunk sent or received, separately from the video path,
+    /// so the technical view can show a file-transfer rate that is not contaminated by frame bytes.
+    /// See HostServer.FileMeter.
+    /// </summary>
+    private readonly Action<int>? _fileBytesTransferred;
+
     /// <summary>The three things the WRITE side needs. All null-safe: a missing ask means refuse.</summary>
     private readonly AskIncomingFile? _askIncoming;
     private readonly AskReplaceFile? _askReplace;
@@ -89,7 +96,8 @@ internal sealed class HostFileService : IDisposable
         AskReplaceFile? askReplace = null,
         FileArrived? fileArrived = null,
         Action? transferStarted = null,
-        Action? transferEnded = null)
+        Action? transferEnded = null,
+        Action<int>? fileBytesTransferred = null)
     {
         _channel = channel;
         _governor = governor;
@@ -102,6 +110,7 @@ internal sealed class HostFileService : IDisposable
         _fileArrived = fileArrived;
         _transferStarted = transferStarted;
         _transferEnded = transferEnded;
+        _fileBytesTransferred = fileBytesTransferred;
     }
 
     /// <summary>
@@ -463,6 +472,7 @@ internal sealed class HostFileService : IDisposable
                 // screen the frames are too small to time anything, so these chunks are the only
                 // measurement of the link there is — and a link being full is not a link in trouble.
                 _governor.OnBulkSent(bytes.Length, sendTimer.Elapsed.TotalMilliseconds);
+                _fileBytesTransferred?.Invoke(bytes.Length);
 
                 offset += read;
                 sent += read;
@@ -775,6 +785,7 @@ internal sealed class HostFileService : IDisposable
                     { status = FileStatus.WriteError; message = "The file could not be written to that computer's disk."; goto failed; }
 
                     written += chunk.Length;
+                    _fileBytesTransferred?.Invoke(chunk.Length);
                 }
 
                 await file.FlushAsync(ct).ConfigureAwait(false);

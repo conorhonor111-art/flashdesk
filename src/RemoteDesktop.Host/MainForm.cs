@@ -81,6 +81,7 @@ public sealed class MainForm : Form
     private readonly Label _kb = NewDetail();
     private readonly Label _adaptive = NewDetail();
     private readonly Label _frameStages = NewDetail();
+    private readonly Label _fileTransferDetail = NewDetail();
     private readonly Label _monitoring = NewDetail();
     private readonly Label _survived = NewDetail();
     private readonly Label _failures = NewDetail();
@@ -562,7 +563,7 @@ public sealed class MainForm : Form
         }
 
         return MakeCard(new Padding(Theme.S3),
-            _method, _fps, _kb, _adaptive, _frameStages, _monitoring, _survived, _failures,
+            _method, _fps, _kb, _adaptive, _frameStages, _fileTransferDetail, _monitoring, _survived, _failures,
             _relayState, _identityDetail, _identityFile, _relayUrl, _allAddresses,
             qualityRow, linkRow, buttonRow, _selfTestResult);
     }
@@ -873,6 +874,7 @@ public sealed class MainForm : Form
             _kb.Text = "";
             _adaptive.Text = "";
             _frameStages.Text = "";
+            _fileTransferDetail.Text = "";
             return;
         }
 
@@ -918,6 +920,38 @@ public sealed class MainForm : Form
             ? "Frame stages: waiting for a session"
             : $"Frame stages: capture {stages.CaptureMs:0.0} · diff {stages.DiffMs:0.0} · "
             + $"encode {stages.EncodeMs:0.0} · send {stages.SendMs:0.0} ms";
+
+        // File-transfer instrumentation (2026-08-27): OutgoingMeter above is fed only from the video
+        // frame loop, so "video" here reuses that same bytesPerSecond — it was never file traffic.
+        // FileMeter is fed only from HostFileService's chunk loops, so the two numbers are now
+        // measured separately instead of one being silently mistaken for the other. Start/end are
+        // stamped in HostServer at the moment HostFileService's own transfer callbacks fire, not from
+        // any click or dialog on either side.
+        var (_, fileBytesPerSecond) = _server.FileMeter.Read();
+        double fileKBps = fileBytesPerSecond / 1024.0;
+        double videoKBps = bytesPerSecond / 1024.0;
+        double totalKBps = fileKBps + videoKBps;
+
+        if (_server.LastTransferStartedUtc is null)
+        {
+            _fileTransferDetail.Text = "File transfer: none yet";
+        }
+        else if (_server.LastTransferEndedUtc is null)
+        {
+            var elapsed = DateTimeOffset.UtcNow - _server.LastTransferStartedUtc.Value;
+            _fileTransferDetail.Text =
+                $"File transfer: ACTIVE, started {_server.LastTransferStartedUtc.Value.ToLocalTime():HH:mm:ss.fff}, "
+                + $"running {elapsed.TotalSeconds:0.0}s — file {fileKBps:0.0} KB/s · video {videoKBps:0.0} KB/s · "
+                + $"total {totalKBps:0.0} KB/s";
+        }
+        else
+        {
+            var duration = _server.LastTransferEndedUtc.Value - _server.LastTransferStartedUtc.Value;
+            _fileTransferDetail.Text =
+                $"Last file transfer: {_server.LastTransferStartedUtc.Value.ToLocalTime():HH:mm:ss.fff} to "
+                + $"{_server.LastTransferEndedUtc.Value.ToLocalTime():HH:mm:ss.fff} ({duration.TotalSeconds:0.0}s) — "
+                + $"now: file {fileKBps:0.0} KB/s · video {videoKBps:0.0} KB/s · total {totalKBps:0.0} KB/s";
+        }
     }
 
     private static Icon? LoadAppIcon(string logicalName)
