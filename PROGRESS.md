@@ -1980,6 +1980,81 @@ were captured), all against the real production classes:
 threatens it — if anything, a confirmed-non-leaking limiter makes the "two independently-windowed
 meters" explanation for the 85.6 KB/s sample (straddling the cap) more credible, not less.
 
+## The same shape elsewhere — a survey, not a fix (2026-08-27)
+
+Conor's framing: the governor's round-trip signal is queued behind the very traffic it reports on,
+so it cannot arrive until a transfer ends — "that is not a file-transfer bug, it is a shape: any
+large send blinds the thing watching it." Asked to look for the same shape elsewhere before fixing
+anything else. Findings, not yet acted on:
+
+**Confirmed instances of the shape (a decision arrives too late because the signal it needs is
+queued behind the thing it is supposed to be judging):**
+- `BandwidthGovernor.OnRoundTripReported` — the original finding. Now addressed by
+  `OnBulkTransferStarted`/`OnBulkTransferEnded`.
+- **Mouse and keyboard input, during an UPLOAD — newly found, not yet touched.** `ViewerClient`'s
+  input-send loop and `ViewerFileClient`'s upload-chunk loop both call `SendAsync` on the exact same
+  `MessageChannel` instance (confirmed by reading the constructor wiring, not assumed) — one
+  semaphore, shared. So while the operator is sending a file TO the client, their own mouse and
+  keyboard commands to the remote machine queue behind their own upload's chunks. This is the same
+  root cause as the governor bug, on the opposite side of the connection, and arguably more
+  user-visible than a status number: it would read as the remote machine lagging or ignoring input.
+  Not fixed — Conor asked for the survey only.
+
+**Adjacent, but not the same shape (real-time, not stale — flagged so it is not conflated with the
+above):** `ViewerClient.LastLatencyMs`, shown in the operator's own status bar as "latency X ms".
+This is a direct, live measurement (Stopwatch from Ping-sent to Pong-received), not a relayed
+one-cycle-old value like the governor's round trip, so it is not "blinded until the cause ends" —
+it updates as soon as some Pong gets through. But a spike during a transfer means "our own queue was
+busy," not genuine network latency, and nothing on screen says so — the same family of mislabeling
+already flagged for "capture ms" (PART 3, pending). A number, not a blindness.
+
+**Checked and found NOT vulnerable — recorded so nobody re-checks them:**
+- Relay-level liveness (`RelaySessions.cs`): deliberately socket-drop-based, not round-trip-timed —
+  "There is no separate heartbeat to go stale... if a host's socket drops it leaves this dictionary
+  immediately." The right pattern, already in use there.
+- `ViewerClient.IsConnected`: set false only when the receive loop itself exits on a real socket
+  failure, never inferred from a timeout or a missed round trip.
+- The four consent-dialog countdowns (`ConsentDialog`, `FileConsentDialog`, `IncomingFileDialog`,
+  `ReplaceFileDialog`): local wall-clock timers, do not depend on receiving anything over the wire.
+
+**Open, not confirmed either way:** whether `OnFrameSent`'s own send-timing evidence can be
+STARVED (not just delayed) if file chunks so dominate the shared lock that video frames rarely get
+a turn to send at all during a transfer — a different variant of the same one-lock-no-fairness root
+cause. Not measured.
+
+## Answering the two risks in the governor fix, before testing (2026-08-27)
+
+**Q1 — what raises the ladder back up, and how fast?** Originally: nothing new — only the
+pre-existing `OnFrameSent` quiet-window climb (3 consecutive 500 ms windows with low send-overrun
+AND low queue delay), which still partly depends on the same round-trip signal for its
+"queue delay is clear" half. Real risk, as Conor suspected: the FIRST round trip reported right
+after a transfer ends can still be the stale, transfer-inflated kind, holding recovery hostage for
+one extra cycle. **Fixed, not just explained: `BandwidthGovernor.OnBulkTransferEnded()` (commit
+`0b97b9c`)** clears `_queueDelayMs` and `_quietWindows` the moment a transfer ends, so the very next
+real round trip (due within about one Ping interval, ~1 s) is judged on its own evidence instead of
+the transfer's leftover reading. It deliberately does NOT step the ladder up itself — recovery still
+has to earn it through real quiet evidence, the same "up slow" principle the class already uses
+everywhere else. Expected recovery order of magnitude: roughly one Ping interval plus up to three
+500 ms decision windows ≈ 2.5–4 s after a transfer ends, assuming video is sending something to
+accumulate evidence from — not yet measured live.
+
+**Q2 — what counts as "fast", and is there a flicker risk on a fast link with a short transfer?**
+Honest gap, not yet closed: `KnownFastBytesPerSecond = 3 MB/s`, and the check is
+`_rateEstimate > 0 && _rateEstimate >= 3 MB/s`. This correctly SKIPS the proactive step-down when the
+link is already MEASURED fast. It does NOT skip it when the rate is simply unknown (`_rateEstimate`
+still 0 — e.g. the very first transfer of a session before video has measured anything) — an unmeasured
+fast LAN and an unmeasured slow link are treated identically today. So a first, tiny, sub-second
+transfer on a fast but not-yet-measured link WILL trigger the proactive step-down. Bounded, though:
+`OnBulkTransferStarted` steps down by 2 LEVELS, not to the floor — from level 0 that lands on level 2
+(12 fps, quality 95, per the ladder table above), which is a mild dip, not a collapse, for at most the
+~2.5–4 s recovery window above. Considered and deliberately NOT built without Conor's steer: gating
+on file SIZE using LinkLimiter's 512 KB burst figure would be wrong — that number describes the TEST
+harness's simulated router buffer, not any real-world guarantee, and a real slow uplink has no free
+allowance at all. A principled size/duration gate is possible but needs a threshold based on
+real-world slow-link figures (CLAUDE.md's ~40–600 KB/s home-upload range), not reused from the test
+instrument. Left for Conor to decide whether the bounded worst case (one mild, few-second dip on an
+unmeasured-but-actually-fast link) is acceptable as is.
+
 **Built, since Conor approved these as cheap and worth doing once the bandwidth split was dropped**
 (commit `239e5e3`):
 - **The honest transfer message.** `FilePanel` now tracks each transfer's own average rate and time
@@ -1999,3 +2074,10 @@ meters" explanation for the 85.6 KB/s sample (straddling the cap) more credible,
   wired from the same `transferStarted` callback `HostServer` already uses for the new instrumentation
   above. Not yet re-verified live against a real transfer — the next live test should check the
   technical view no longer shows quality 95 while a slow-link transfer is in progress.
+- **The session log now carries the file/video split, not just the screen** (commit `0b97b9c`),
+  per "record all of it into the session log... so the next measurement does not depend on someone
+  watching a window that pollutes it": `SessionRecorder` buckets file and video bytes separately per
+  second (fed from the same point `HostServer.FileMeter` is), and each transfer's before/during/after
+  line in the client's own log now states file KB/s, video KB/s, and total, the precise UTC start/end
+  timestamps, and a computed "recovered after Ns" line — all read from history already recorded,
+  the same principle `AppendTransfers` already used for fps/quality.
