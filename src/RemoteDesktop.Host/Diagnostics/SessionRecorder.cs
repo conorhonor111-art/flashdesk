@@ -54,11 +54,18 @@ public sealed class SessionRecorder
     // its own was silently video-only, and a tester watching the live window to get the file/video
     // split is exactly the "someone has to watch a window that pollutes it" problem this class exists
     // to remove. See PROGRESS.md, "The 27 KB/s reading was never the file".
-    private readonly record struct SecondBucket(long Second, int Frames, double AvgQuality, long VideoBytes, long FileBytes);
+    // Level added 2026-08-27: quality alone cannot answer "did it get all the way back", because
+    // the ladder holds quality at 95 across levels 0-4 (see BandwidthGovernor's own table) — a
+    // session sitting at level 4 would read as "quality recovered" while still 4 steps short of
+    // full speed. The level actually in force is the only figure that can settle "recovered, or
+    // stuck at a lesser speed" the way Conor asked for, from the log, without anyone watching a
+    // window while it happens.
+    private readonly record struct SecondBucket(long Second, int Frames, double AvgQuality, long VideoBytes, long FileBytes, int Level);
     private readonly List<SecondBucket> _seconds = new();
     private double _qualitySumThisSecond;
     private long _videoBytesThisSecond;
     private long _fileBytesThisSecond;
+    private int _levelThisSecond;
 
     // A transfer is "one at a time" by the file service's own rule (HostFileService._transferBusy),
     // so a plain list of windows is enough — no need to track which transfer a frame belongs to.
@@ -107,6 +114,7 @@ public sealed class SessionRecorder
             _framesThisSecond++;
             _qualitySumThisSecond += quality;
             _videoBytesThisSecond += bytes;
+            _levelThisSecond = level; // last frame in the second wins — same granularity as AvgQuality
 
             _sumCapture += captureMs;
             _sumDiff += diffMs;
@@ -198,7 +206,7 @@ public sealed class SessionRecorder
             if (_currentSecond > 0) _worstFps = Math.Min(_worstFps, (int)_framesThisSecond);
             _seconds.Add(new SecondBucket(_currentSecond, (int)_framesThisSecond,
                 _framesThisSecond > 0 ? _qualitySumThisSecond / _framesThisSecond : 0,
-                _videoBytesThisSecond, _fileBytesThisSecond));
+                _videoBytesThisSecond, _fileBytesThisSecond, _levelThisSecond));
             _framesThisSecond = 0;
             _qualitySumThisSecond = 0;
             _videoBytesThisSecond = 0;
@@ -276,7 +284,7 @@ public sealed class SessionRecorder
                 : $"    Interruptions  : {_reconnects} — the link dropped and came back on its own " +
                   $"(about {Duration(TimeSpan.FromMilliseconds(_reconnectMsTotal))} in total)");
 
-            AppendTransfers(b);
+            AppendTransfers(b, ladderSize - 1);
 
             b.Append("  --- end ---");
             return b.ToString();
@@ -289,7 +297,7 @@ public sealed class SessionRecorder
     /// doing in the five seconds before it started, for its whole duration, and in the five seconds
     /// after it ended. Must be called with _gate already held.
     /// </summary>
-    private void AppendTransfers(StringBuilder b)
+    private void AppendTransfers(StringBuilder b, int ladderTop)
     {
         if (_transfers.Count == 0) return;
 
@@ -307,7 +315,7 @@ public sealed class SessionRecorder
             {
                 var afterSeconds = _seconds.Where(s => s.Second >= endSecond && s.Second < endSecond + TransferWindowSeconds).ToList();
                 after = SummarizeWindow(afterSeconds);
-                after += " — " + RecoveryLine(beforeSeconds, endSecond);
+                after += " — " + RecoveryLine(endSecond, ladderTop);
             }
             else
             {
@@ -345,22 +353,29 @@ public sealed class SessionRecorder
     }
 
     /// <summary>
-    /// How many of the seconds right after a transfer ended it took for quality to climb back to
-    /// what it was before the transfer started — answers Conor's "confirm it recovers, and how long
-    /// that takes" (2026-08-27) from recorded history instead of a stopwatch on the technical view.
+    /// How many seconds after a transfer ended it took the LADDER to reach level 0 — full speed —
+    /// or, if it never did within what was recorded, where it got stuck. Answers Conor's "confirm it
+    /// recovers, and how long that takes" (2026-08-27) from recorded history instead of a stopwatch
+    /// on the technical view.
+    ///
+    /// <para>Deliberately checks the LEVEL, not quality: the ladder holds quality at 95 across levels
+    /// 0-4 (see <see cref="BandwidthGovernor"/>'s own table), so a session sitting at level 4 would
+    /// read as "quality recovered" while still four steps short of full speed — exactly the gap that
+    /// made the first live run's "stalled around level 5" finding impossible to state precisely from
+    /// quality alone.</para>
     /// </summary>
-    private string RecoveryLine(List<SecondBucket> beforeSeconds, long endSecond)
+    private string RecoveryLine(long endSecond, int ladderTop)
     {
-        if (beforeSeconds.Count == 0) return "recovery: no 'before' quality to compare against";
-        double targetQuality = beforeSeconds.Average(s => s.AvgQuality) - 1; // 1 point of slack for rounding
-
         for (long s = endSecond; s <= _currentSecond; s++)
         {
             var bucket = _seconds.FirstOrDefault(b => b.Second == s);
-            if (bucket.Frames > 0 && bucket.AvgQuality >= targetQuality)
-                return s == endSecond ? "recovered immediately" : $"recovered after {s - endSecond}s";
+            if (bucket.Frames > 0 && bucket.Level == 0)
+                return s == endSecond ? "back to full speed (level 0) immediately" : $"back to full speed (level 0) after {s - endSecond}s";
         }
-        return $"had not recovered to pre-transfer quality by the end of the recorded window ({_currentSecond - endSecond}s and counting)";
+        var lastSeen = _seconds.Where(b => b.Second >= endSecond && b.Frames > 0)
+            .OrderByDescending(b => b.Second).FirstOrDefault();
+        string stuckAt = lastSeen.Frames > 0 ? $"level {lastSeen.Level}/{ladderTop}" : "no frames recorded since";
+        return $"NOT back to full speed within {_currentSecond - endSecond}s and counting — stuck at {stuckAt}";
     }
 
     private static string Duration(TimeSpan span) =>
