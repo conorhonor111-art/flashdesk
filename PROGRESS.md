@@ -1931,3 +1931,71 @@ working bridge from that sharing for the simple reason that there is no bridge t
 need either: disabling clipboard redirection on whatever channel reaches `.222` (RDP's own
 clipboard-redirection setting, or VMware Tools' shared-clipboard setting) and re-testing, or testing
 between two machines with no shared remote-console clipboard path between them at all.
+
+**Also recorded so nobody re-derives it: the "two machines, two clipboards" instinct is wrong.**
+Conor's own first assumption — that `.222` and `.223` each have their own separate clipboard, so a
+paste succeeding on one must mean SOMETHING bridged it — was the mistake underneath the mistake.
+RDP shares one clipboard across the session by default (and VMware Tools' guest-host sharing does
+the same thing at a different layer), so two machines reached that way are not two clipboards to
+begin with. Do not treat "it crossed two machines" as evidence of a bridge on its own; check what
+remote-access layer connects them first.
+
+## Chasing the pinned 48.0 KB/s — chunk sizer dismissed, LinkLimiter cleared, governor fix built (2026-08-27)
+
+Before approving or dropping the bandwidth-priority fix, Conor asked for one more thing chased with
+numbers: the file sat at EXACTLY 48.0 KB/s at two points in the clean 600 Kbit/s run above, 44
+seconds apart, and "twice to one decimal is not coincidence." His first suspicion: `FileChunkSize`
+sizes each chunk from `BandwidthGovernor._rateEstimate` divided by 3, and that estimate is a SHARED
+EWMA fed by both `OnBulkSent` (file) and `OnFrameSent` (video) — so with video in the mix, the rate
+it measures might not be the rate it thinks it is, sizing chunks wrong. Also asked, quickly: is
+`LinkLimiter` actually enforcing 600 Kbit/s, or leaking?
+
+Three throwaway tests (not kept — `ChunkSizeAndLimiterInvestigation.cs`, deleted once these findings
+were captured), all against the real production classes:
+
+1. **Chunk-sizer hypothesis: DISMISSED, by direct computation.** `FileChunkSize.ForMeasuredRate` is
+   floor-clamped to the 16 KB minimum for the ENTIRE plausible range a 600 Kbit/s link (75,000 B/s
+   true) could produce — confirmed by sweeping the estimate from 0.3× to 4× the true rate. The chunk
+   size only starts growing past 16 KB above ≈245,760 B/s, more than 3.3× the true rate. So even a
+   badly video-contaminated estimate cannot be what pinned the file — the chunk size literally cannot
+   move at this link speed, contaminated or not.
+2. **LinkLimiter: cleared, not leaking.** A first black-box 30-second run read 92,378 B/s against a
+   75,000 B/s cap (23% over) — alarming on its own. Instrumenting the exact same leaky-bucket
+   arithmetic in the open (not the class's black box) and isolating the POST-BURST region — i.e.
+   excluding the documented, intentional 512 KB free-burst allowance (≈7 s worth at this rate) —
+   gave **74,977 B/s against the 75,000 B/s cap: a ratio of 1.000.** The earlier "23% over" reading
+   was entirely the burst diluting a short window's average, not a defect; the burst is designed
+   behavior (see `LinkLimiter`'s own doc comment, "a stand-in for the buffer inside a home router"),
+   and a longer window shows it enforcing essentially exactly.
+3. **What the 48.0 KB/s pin most likely is, evidenced but not reproduced bit-for-bit:** with chunk
+   size fixed at the 16 KB floor and the limiter enforcing the combined 600 Kbit/s cap almost
+   exactly, a file loop sending fixed-size chunks back-to-back against a video loop attempting a send
+   on a fixed ~500 ms cadence, both serialized through ONE send lock, is a fundamentally periodic
+   system — it is expected to settle into a stable, repeatable division of the link, which two 1-second
+   snapshots 44 seconds apart would read as identical to one decimal. This is offered as the
+   best-supported explanation, not proven to the same standard as findings 1 and 2 above — reproducing
+   the exact 48.0 figure in isolation would need a much longer contention simulation than was run here.
+
+**Consequence for the earlier "pipe full, file majority share" verdict: unchanged.** Neither dismissal
+threatens it — if anything, a confirmed-non-leaking limiter makes the "two independently-windowed
+meters" explanation for the 85.6 KB/s sample (straddling the cap) more credible, not less.
+
+**Built, since Conor approved these as cheap and worth doing once the bandwidth split was dropped**
+(commit `239e5e3`):
+- **The honest transfer message.** `FilePanel` now tracks each transfer's own average rate and time
+  remaining (starting on the first real progress sample, so an upload's "waiting for them to answer"
+  phase before consent is never counted as transfer time). `SessionWindow`'s status line shows
+  "Screen is slowed while the file transfers — about N minutes left" in place of the fps/latency
+  line while a transfer is active. Deliberately not "paused" — the picture keeps updating, just
+  slowly, and saying otherwise would be a lie the operator could catch by looking at it.
+- **The governor no longer waits for a signal that cannot arrive in time.** Investigating why an
+  earlier real transfer left quality unchanged for its entire length and only stepped down once the
+  transfer was already over: `OnRoundTripReported`'s round trip is carried in the viewer's Ping as a
+  ONE-CYCLE-OLD measurement, and the Host's own Pong reply is queued behind the very file chunks it
+  is trying to report on, through the same send lock — so the signal that is supposed to catch this
+  structurally cannot arrive before the file transfer that caused it has mostly or fully finished.
+  `BandwidthGovernor.OnBulkTransferStarted()` now steps the ladder down the moment a transfer begins
+  (skipped when the link is already known fast, so a session that never needed it is never touched),
+  wired from the same `transferStarted` callback `HostServer` already uses for the new instrumentation
+  above. Not yet re-verified live against a real transfer — the next live test should check the
+  technical view no longer shows quality 95 while a slow-link transfer is in progress.
