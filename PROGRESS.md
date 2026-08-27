@@ -2022,6 +2022,71 @@ STARVED (not just delayed) if file chunks so dominate the shared lock that video
 a turn to send at all during a transfer — a different variant of the same one-lock-no-fairness root
 cause. Not measured.
 
+**⚠ THE INPUT-QUEUE FINDING IS THE MOST SERIOUS THING FOUND IN THIS WHOLE INVESTIGATION (Conor,
+2026-08-27).** Not a diagnostic curiosity: while the operator sends a file TO the client, the
+operator's own mouse and keyboard commands to the client's machine queue behind the upload's own
+chunks, silently, for the length of the transfer. Two follow-up questions, answered by reading the
+code rather than assumed, before anything is fixed:
+
+1. **Does it affect the CLIENT's own mouse and keyboard on their own machine? No.** Their physical
+   input never touches FlashDesk's network code at all — it goes directly into Windows' own input
+   stack on their machine, completely independent of any `MessageChannel`, any socket, any queue.
+   The client can use their own computer throughout, uninterrupted. What is lost is only the
+   OPERATOR's ability to reach them — the person on the other end is not locked out of their own
+   machine, but the person meant to be helping them effectively is, without either side being told.
+2. **Does the same queue carry consent replies? Only briefly, and not by the transfer it is
+   itself about.** Read `HostFileService.ReceiveFileAsync` directly: every consent step
+   (`AllowedToWriteAsync`, `_askReplace`) and its reply (`SendReplyAsync` → `FileSendReply`, over
+   the same shared `_channel`) happens BEFORE the `Upload`/chunk channel is even created — a
+   transfer's own bytes cannot delay the very question that decides whether it happens. But the
+   reply still shares the one send lock with everything else on the connection, so if a VIDEO FRAME
+   happens to be mid-send (blocked in `LinkLimiter`) at that exact instant, the reply waits behind
+   it — bounded to roughly one frame's send time (measured up to ~300 ms on the 600 Kbit/s run
+   above), not indefinite, and nothing like the full length of a transfer. A consent dialog would
+   not read as ignored; a slow link could make it feel one beat behind.
+
+**Two things found alongside this, not asked for but load-bearing:**
+- **The problem is UPLOAD-specific, not download-specific — a real asymmetry.** Input travels
+  viewer→host. During an UPLOAD, the viewer's own outbound queue carries both the operator's input
+  AND the upload's own chunks — contention. During a DOWNLOAD, chunks travel host→viewer, the
+  opposite direction from input, so a download does not delay the operator's own input at all.
+  "Sending a file" is the dangerous direction; "getting one" is not.
+- **Input is delayed, not dropped — and what queues eventually plays back onto a screen that has
+  moved on.** `ViewerClient`'s `_inputQueue` is unbounded (`Channel.CreateUnbounded`), so nothing
+  drops silently while a transfer runs. But every mouse move and click from that whole window is
+  still queued and WILL eventually be sent, one at a time, once the shared lock frees up — a person
+  moving a mouse for seven minutes queues thousands of stale events that then drain onto whatever
+  is on screen by the time they arrive, not what was there when they were made. This is worse than
+  "no response, then normal again" — it is "no response, then a burst of commands aimed at a screen
+  that no longer matches them."
+- **Related, found while re-checking `OnBulkTransferStarted`'s own timing, not asked about:** the
+  proactive step-down fires from `_transferStarted`, which `HostFileService` raises the moment
+  `_transferBusy` is claimed — BEFORE `IncomingFileDialog`/`ReplaceFileDialog` are even shown, let
+  alone answered. On a slow link the picture can therefore dip for as long as the client takes to
+  decide (`IncomingFileDialog.TimeoutSeconds = 30`), before a single byte has moved and before any
+  real contention exists to justify it. Not fixed — noted for whenever this area is revisited.
+
+**Not fixed, per Conor's explicit instruction** ("do not fix it yet"). Recorded here so the shape,
+the scope (upload-only), and the severity (delayed-then-stale-replay, not merely delayed) are not
+re-derived later.
+
+## Risk 2 decision — kept as is (Conor, 2026-08-27)
+
+Conor's call, since the finding above left it to him: keep `OnBulkTransferStarted`'s current
+behaviour. An unmeasured link being treated the same as a known-slow one, worst case landing on
+level 2 (12 fps, quality 95) for a few seconds, is an acceptable price for not guessing — and
+`LinkLimiter`'s 512 KB burst figure was correctly refused as a size filter, since it describes the
+TEST harness's simulated router buffer, not any real-world guarantee. No code change from this.
+
+## The latency line joins the mislabelled-number list (Conor, 2026-08-27)
+
+`ViewerClient.LastLatencyMs`, shown as "latency X ms" in the operator's own status bar, measures how
+long OUR OWN queue was busy before a Ping got out and a Pong came back — not genuine network
+latency to a person reading the label. Filed alongside "capture ms" (PART 3, pending) as the same
+class of defect charter rule 12 exists to catch: a real, reproducible number, answering a different
+question than the one its label asks. Not fixed now, per instruction — recorded so it is fixed
+together with "capture ms" rather than separately, when that work is picked up.
+
 ## Answering the two risks in the governor fix, before testing (2026-08-27)
 
 **Q1 — what raises the ladder back up, and how fast?** Originally: nothing new — only the
