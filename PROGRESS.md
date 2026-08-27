@@ -1815,3 +1815,47 @@ number is retracted as a promise.** It was arithmetic on an assumption ("90% of 
 three real tests now show does not describe what's actually happening on the rig. The real number
 will come from remeasuring after the fix, on the same 600 Kbit/s setting, before/during/after —
 exactly as Conor asked, and not before.
+
+## The "27 KB/s" reading was never the file — it was video, discovered by grep (2026-08-27)
+
+Before trusting the 27 KB/s figure any further, Conor asked for the one number that was missing:
+the TOTAL outgoing rate at the same moment, so the two possible worlds (pipe full, ~73 KB/s total,
+video eating the rest — vs. pipe never full, ~35 KB/s total, bottleneck elsewhere) could be told
+apart. Checking where that 27 KB/s figure actually came from, before remeasuring anything, found
+the real problem: **it was never a file measurement at all.**
+
+`HostServer.OutgoingMeter` — the only source of the technical view's "Outgoing: X KB/s" line — is
+fed from exactly one call site, `OutgoingMeter.Record(1, bytes.Length)` inside `FrameLoopAsync`,
+the VIDEO frame send loop. Grepped, not assumed: it appears nowhere else in the file. So every
+"Outgoing" figure this project has ever reported during a file transfer, including the 27 KB/s
+quoted to Conor, was the video rate — the file's own throughput has never been measured at any
+point in this project. This is exactly the gap Conor's message identified before any remeasuring
+was attempted.
+
+**Fix (instrumentation only, no behavior change — commit `e1f558c`):** added `HostServer.FileMeter`,
+a second `RateMeter` fed only from `HostFileService`'s two chunk loops (`StreamFileAsync`'s send
+loop, `WriteChunksAsync`'s write loop, via a new `fileBytesTransferred` callback threaded through
+the same optional-parameter pattern as the existing `transferStarted`/`transferEnded` callbacks).
+Also added `HostServer.LastTransferStartedUtc`/`LastTransferEndedUtc`, stamped at the exact moment
+those existing transfer callbacks fire — the same code-level boundary `SessionRecorder` already
+uses — not from a UI click or a `FolderBrowserDialog` that can sit open and unnoticed for minutes
+first (Conor's second doubt: the earlier 12 MB / 7-minute ≈ 27 KB/s arithmetic may also have dead
+dialog time sitting inside its divisor; these are now real, code-level timestamps instead). The
+technical view's file-transfer line now reads `file X KB/s · video Y KB/s · total Z KB/s`, live
+while a transfer is active, plus the transfer's true start, end and duration once it completes.
+
+Build: 0 warnings, 0 errors. Tests: 299/300 (`A_reply_for_a_request_the_operator_has_moved_on_from_is_dropped`
+failed this run; `A_PROGRAM_is_asked_about_by_name_every_single_time` passed — matches the two
+documented pre-existing flaky tests, only one tripped this time). Published build's embedded
+version `e1f558cb8ef5fd2fb1e06c07c441723075863131` confirmed equal to `git rev-parse HEAD`.
+
+**Not yet done:** the actual clean 600 Kbit/s measurement run Conor asked for. This instrumentation
+makes that run possible; it does not replace it. No fix has been built yet — Conor said explicitly
+not to build the bandwidth-priority fix until the measurement settles which of the two worlds this
+is.
+
+**Noted for later, not acted on now (Conor's instruction):** `LinkLimiter`'s 512 KB burst buffer
+means any single file transfer under roughly half a megabyte is never throttled at all — it
+completes entirely inside the free burst. Harmless, and probably a reasonable real-world default,
+but it means small-file transfers will always look instant in testing and can never be used to
+reproduce a slow-link problem; any future slow-link test must use a file safely larger than 512 KB.
