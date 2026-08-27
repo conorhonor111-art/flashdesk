@@ -90,6 +90,11 @@ public sealed class MainForm : Form
     private readonly Label _identityDetail = NewDetail();
     private readonly Label _identityFile = NewDetail();
     private readonly Label _relayUrl = NewDetail();
+    // Answers "is .222 actually running the build we think it is" by reading, not inferring from a
+    // rounded file size — the file panel exposes neither a hash nor a version anywhere (2026-08-27:
+    // a live test had to proceed on a rounded-MB-and-date match, which Conor rightly called indirect
+    // rather than proof). Same string PowerShell's (Get-Item ...).VersionInfo.ProductVersion reads.
+    private readonly Label _versionDetail = NewDetail();
     private readonly ThemedComboBox _quality = new() { Font = Theme.Body, Width = Theme.SmallFieldWidth, Margin = new Padding(Theme.S2, 0, 0, 0) };
     // TEST INSTRUMENT, technical view only. See HostServer.TestLinkKbps and LinkLimiter.
     private readonly ThemedComboBox _testLink = new() { Font = Theme.Body, Width = Theme.MediumFieldWidth, Margin = new Padding(Theme.S2, 0, 0, 0) };
@@ -110,6 +115,12 @@ public sealed class MainForm : Form
         _knownCallers = new KnownCallers(_identityStore.Folder);
         _sessionLog = new SessionLog(_identityStore.Folder);
         _partialFiles = new PartialFiles(_identityStore.Folder);
+
+        string version = (System.Attribute.GetCustomAttribute(
+                System.Reflection.Assembly.GetExecutingAssembly(),
+                typeof(System.Reflection.AssemblyInformationalVersionAttribute))
+            as System.Reflection.AssemblyInformationalVersionAttribute)?.InformationalVersion ?? "unknown";
+        _versionDetail.Text = "Version: " + version;
 
         Text = FlashDeskTestMode.ControlDisabled
             ? "FlashDesk — TEST COPY (remote control disabled)"
@@ -564,7 +575,7 @@ public sealed class MainForm : Form
 
         return MakeCard(new Padding(Theme.S3),
             _method, _fps, _kb, _adaptive, _frameStages, _fileTransferDetail, _monitoring, _survived, _failures,
-            _relayState, _identityDetail, _identityFile, _relayUrl, _allAddresses,
+            _relayState, _identityDetail, _identityFile, _relayUrl, _allAddresses, _versionDetail,
             qualityRow, linkRow, buttonRow, _selfTestResult);
     }
 

@@ -379,7 +379,7 @@ public sealed class FilePanel : UserControl
         {
             var end = await _files.DownloadAsync(
                 Path.Combine(_folder, entry.Name), destination, entry.Name,
-                Progress(entry.Size), _transfer.Token);
+                Progress(entry.Size, "Copying…"), _transfer.Token);
 
             if (end.Status == FileStatus.Ok)
             {
@@ -442,7 +442,7 @@ public sealed class FilePanel : UserControl
         {
             var end = await _files.DownloadAsync(
                 Path.Combine(_folder, entry.Name), tempFolder, entry.Name,
-                Progress(entry.Size), _transfer.Token);
+                Progress(entry.Size, "Copying…"), _transfer.Token);
 
             if (end.Status != FileStatus.Ok)
             {
@@ -531,7 +531,7 @@ public sealed class FilePanel : UserControl
 
         try
         {
-            var (reply, result) = await _files.UploadAsync(localPath, _folder, Progress(size), _transfer.Token);
+            var (reply, result) = await _files.UploadAsync(localPath, _folder, Progress(size, "Sending…"), _transfer.Token);
 
             if (reply.Status != FileStatus.Ok)
             {
@@ -557,13 +557,26 @@ public sealed class FilePanel : UserControl
         }
     }
 
-    private IProgress<long> Progress(long total) => new Progress<long>(done =>
+    /// <param name="activeStatusText">
+    /// What to say the FIRST moment real bytes are confirmed moving. Needed because the status set
+    /// before the call (e.g. upload's "Waiting for them to answer") is only true up to that point —
+    /// left alone, it keeps saying "waiting" for the rest of the transfer even once the other side
+    /// has answered and bytes are visibly flowing, which is its own version of a number answering
+    /// the wrong question (found live, 2026-08-27: the technical view showed real KB/s while this
+    /// label still claimed nobody had responded).
+    /// </param>
+    private IProgress<long> Progress(long total, string activeStatusText) => new Progress<long>(done =>
     {
         // Marked active on the FIRST real progress callback, not when the call is made — an upload
         // waits for the other side to accept first ("Waiting for them to answer"), and nothing is
         // slowing the picture while that wait has nothing to do with bytes moving. A download has
         // no such wait, so for a download this fires on the very first sample.
-        if (!IsTransferActive) { IsTransferActive = true; _transferStartedAtMs = Environment.TickCount64; }
+        if (!IsTransferActive)
+        {
+            IsTransferActive = true;
+            _transferStartedAtMs = Environment.TickCount64;
+            _status.Text = activeStatusText;
+        }
 
         if (total <= 0) return;
         _progress.Value = (int)Math.Clamp(done * 1000 / total, 0, 1000);
