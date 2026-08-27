@@ -2276,3 +2276,46 @@ confirmed by reading the constructor wiring) rather than on a measured worst cas
 worst case cannot be measured yet. If a real client's slow-uplink severity ever needs to be
 quantified precisely, `LinkLimiter` (or a viewer-side equivalent) would need to start throttling
 sends on the VIEWER's own outbound side, which does not exist today.
+
+## Three fixes from the live-run debrief, before the stale-input work (2026-08-27)
+
+Conor's read on the run: the governor fix is confirmed and that was the goal, but two things were
+open, and one of them — uploads never being throttled — undoes the ability to test the thing he
+cares about most. Ordered: fix the tool, then prove recovery without the polluting instrument, then
+re-run the slow upload for real, then design stale-input against what is actually seen. Stale-input
+still not started, per instruction.
+
+**1. `LinkLimiter` now throttles reads too (commit `79fa3ea`).** The class's own doc comment used to
+say "reads pass straight through — only sends are held back, which is the direction a home upload
+actually limits" — backwards for the case that matters: an UPLOAD is the client's machine
+*receiving*, i.e. reading on this side, and reads were never touched at all. Fixed with a second,
+independent leaky bucket (`Bucket`, one per direction, sharing only the Stopwatch) — reads throttled
+after the fact, since a read's byte count isn't known until it returns, unlike a write's. **Verified
+with a throwaway test before trusting it** (`LinkLimiterReadThrottleInvestigation.cs`, deleted after
+— per charter rule 11, a fix must be proven to work, not just proven to compile): a source stream
+with zero delay of its own, read through a 600 Kbit/s `LinkLimiter`, landed at a post-burst rate of
+75,589 B/s against a 75,000 B/s cap — **ratio 1.008**, matching the write side's own already-verified
+figure (1.000) almost exactly. The FAIL side of rule 11 is the live run itself, already on record:
+the unfixed code moved a 1 GB upload in 116.8 s (~9.4 MB/s) with 600 Kbit/s selected — real evidence
+the old code did not throttle reads at all, not a hypothetical.
+
+**2. The frozen upload status text is fixed (commit `79fa3ea`).** Conor's correction on calling this
+minor: "It says the client has not answered when the client has — the same class of lie as
+everything else we found." `FilePanel.Progress()` now takes an active-transfer status string and
+sets it the moment real bytes are confirmed moving — `"Sending…"` for uploads (replacing the frozen
+`"Waiting for them to answer…"`), `"Copying…"` for downloads (which previously showed nothing at all
+during the transfer, not even a wrong answer).
+
+**3. The build version is now readable, not inferred (commit `79fa3ea`).** The file panel exposes no
+hash or version anywhere — the live run above had to proceed on a rounded-MB-and-date match, which
+Conor called indirect and asked to be fixed properly. `MainForm`'s technical view now shows
+`Version: <the same string PowerShell's VersionInfo.ProductVersion reads>`, read once at startup via
+`AssemblyInformationalVersionAttribute`. Either side of a live test can now be confirmed by reading a
+line on screen instead of comparing a rounded file size.
+
+**Not yet done, next in the stated order:** prove the stalled recovery from the first live run is
+real or is the technical-view-repaint artifact suspected — without the technical view open during
+the observation, reading from the session log or the viewer's own side instead. Then re-run the
+upload test with the NOW-real throttling in place and actually observe the input-blocking severity
+on a genuinely slow channel, which the first run could not do. Stale-input design work does not start
+until after both.
