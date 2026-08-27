@@ -233,6 +233,27 @@ public sealed class BandwidthGovernor
         OpenWindow(Environment.TickCount64);
     }
 
+    /// <summary>
+    /// The transfer above just ended. Does NOT step the ladder up — recovery still has to earn it
+    /// through <see cref="OnFrameSent"/>'s ordinary quiet-window climb, same "up slow" principle as
+    /// everywhere else here; a step down that needed no evidence does not buy a step up that needs
+    /// none either.
+    ///
+    /// <para>What this DOES do: clears the queue-delay reading, because the one sitting here right
+    /// now may still be the stale, transfer-inflated kind <see cref="OnBulkTransferStarted"/>'s own
+    /// doc comment describes — measured while the Pong carrying it was queued behind the chunks that
+    /// just stopped. Left alone, that stale reading would hold recovery hostage for one more round
+    /// trip after the real cause is already gone, which is the exact shape of defect this pair of
+    /// methods exists to fix. Clearing it means the next real round trip — due within about one Ping
+    /// interval — is judged on its own evidence. <see cref="_quietWindows"/> is reset alongside it so
+    /// a window straddling the transfer's end cannot half-count.</para>
+    /// </summary>
+    public void OnBulkTransferEnded()
+    {
+        _queueDelayMs = 0;
+        _quietWindows = 0;
+    }
+
     public int Level => _level;
     public int LadderSize => Ladder.Length;
 

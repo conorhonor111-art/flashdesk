@@ -49,9 +49,16 @@ public sealed class SessionRecorder
     // One entry per completed second: what the picture actually did during it. Kept so a file
     // transfer's before/during/after can be answered from history already recorded, instead of
     // asking a tester to watch the technical view at the exact moment a transfer happens.
-    private readonly record struct SecondBucket(long Second, int Frames, double AvgQuality);
+    //
+    // VideoBytes/FileBytes were added 2026-08-27, same reasoning as HostServer.FileMeter: "Sent" on
+    // its own was silently video-only, and a tester watching the live window to get the file/video
+    // split is exactly the "someone has to watch a window that pollutes it" problem this class exists
+    // to remove. See PROGRESS.md, "The 27 KB/s reading was never the file".
+    private readonly record struct SecondBucket(long Second, int Frames, double AvgQuality, long VideoBytes, long FileBytes);
     private readonly List<SecondBucket> _seconds = new();
     private double _qualitySumThisSecond;
+    private long _videoBytesThisSecond;
+    private long _fileBytesThisSecond;
 
     // A transfer is "one at a time" by the file service's own rule (HostFileService._transferBusy),
     // so a plain list of windows is enough — no need to track which transfer a frame belongs to.
@@ -59,6 +66,11 @@ public sealed class SessionRecorder
     {
         public long StartSecond;
         public long? EndSecond;
+        // Precise, code-level timestamps — what Conor asked to see "from the code, not from when I
+        // clicked" (2026-08-27). The whole-second window above is what the before/during/after
+        // averaging already used; these are for stating the true duration exactly.
+        public DateTimeOffset StartedAtUtc;
+        public DateTimeOffset? EndedAtUtc;
     }
     private readonly List<TransferWindow> _transfers = new();
     private TransferWindow? _activeTransfer;
@@ -94,6 +106,7 @@ public sealed class SessionRecorder
             RollSecondsTo(second);
             _framesThisSecond++;
             _qualitySumThisSecond += quality;
+            _videoBytesThisSecond += bytes;
 
             _sumCapture += captureMs;
             _sumDiff += diffMs;
@@ -107,6 +120,23 @@ public sealed class SessionRecorder
             _lastLevelAtMs = nowMs;
             _lastLevel = level;
             _highestLevel = Math.Max(_highestLevel, level);
+        }
+    }
+
+    /// <summary>
+    /// A file chunk just went out or arrived. Called from the same point HostServer's FileMeter is,
+    /// so the session log and the technical view are reading the same measurement, not two different
+    /// ones that could quietly drift apart.
+    /// </summary>
+    public void RecordFileBytes(int bytes)
+    {
+        lock (_gate)
+        {
+            long nowMs = _clock.ElapsedMilliseconds;
+            long second = nowMs / 1000;
+            if (_currentSecond < 0) _currentSecond = second;
+            RollSecondsTo(second);
+            _fileBytesThisSecond += bytes;
         }
     }
 
@@ -129,7 +159,7 @@ public sealed class SessionRecorder
         lock (_gate)
         {
             RollSecondsTo(_clock.ElapsedMilliseconds / 1000);
-            var window = new TransferWindow { StartSecond = _currentSecond };
+            var window = new TransferWindow { StartSecond = _currentSecond, StartedAtUtc = DateTimeOffset.UtcNow };
             _transfers.Add(window);
             _activeTransfer = window;
         }
@@ -141,7 +171,11 @@ public sealed class SessionRecorder
         lock (_gate)
         {
             RollSecondsTo(_clock.ElapsedMilliseconds / 1000);
-            if (_activeTransfer is not null) _activeTransfer.EndSecond = _currentSecond;
+            if (_activeTransfer is not null)
+            {
+                _activeTransfer.EndSecond = _currentSecond;
+                _activeTransfer.EndedAtUtc = DateTimeOffset.UtcNow;
+            }
             _activeTransfer = null;
         }
     }
@@ -163,9 +197,12 @@ public sealed class SessionRecorder
             // "before" data rather than none.
             if (_currentSecond > 0) _worstFps = Math.Min(_worstFps, (int)_framesThisSecond);
             _seconds.Add(new SecondBucket(_currentSecond, (int)_framesThisSecond,
-                _framesThisSecond > 0 ? _qualitySumThisSecond / _framesThisSecond : 0));
+                _framesThisSecond > 0 ? _qualitySumThisSecond / _framesThisSecond : 0,
+                _videoBytesThisSecond, _fileBytesThisSecond));
             _framesThisSecond = 0;
             _qualitySumThisSecond = 0;
+            _videoBytesThisSecond = 0;
+            _fileBytesThisSecond = 0;
             _currentSecond++;
         }
     }
@@ -260,28 +297,70 @@ public sealed class SessionRecorder
         for (int i = 0; i < _transfers.Count; i++)
         {
             var t = _transfers[i];
-            string before = SummarizeWindow(t.StartSecond - TransferWindowSeconds, t.StartSecond);
+            var beforeSeconds = _seconds.Where(s => s.Second >= t.StartSecond - TransferWindowSeconds && s.Second < t.StartSecond).ToList();
+            string before = SummarizeWindow(beforeSeconds);
             long duringEnd = t.EndSecond ?? _currentSecond;
-            string during = SummarizeWindow(t.StartSecond, duringEnd);
-            string after = t.EndSecond is long endSecond
-                ? SummarizeWindow(endSecond, endSecond + TransferWindowSeconds)
-                : "n/a — still moving when the session ended";
+            var duringSeconds = _seconds.Where(s => s.Second >= t.StartSecond && s.Second < duringEnd).ToList();
+            string during = SummarizeWindow(duringSeconds);
+            string after;
+            if (t.EndSecond is long endSecond)
+            {
+                var afterSeconds = _seconds.Where(s => s.Second >= endSecond && s.Second < endSecond + TransferWindowSeconds).ToList();
+                after = SummarizeWindow(afterSeconds);
+                after += " — " + RecoveryLine(beforeSeconds, endSecond);
+            }
+            else
+            {
+                after = "n/a — still moving when the session ended";
+            }
 
-            b.AppendLine($"                     #{i + 1}  before: {before}");
+            string span = t.EndedAtUtc is { } endedAt
+                ? $"{t.StartedAtUtc.ToLocalTime():HH:mm:ss.fff} to {endedAt.ToLocalTime():HH:mm:ss.fff} ({(endedAt - t.StartedAtUtc).TotalSeconds:0.0}s)"
+                : $"started {t.StartedAtUtc.ToLocalTime():HH:mm:ss.fff}, still moving";
+            b.AppendLine($"                     #{i + 1}  {span}");
+            b.AppendLine($"                          before: {before}");
             b.AppendLine($"                          during: {during}" +
                          (t.EndSecond is null ? " (still in progress when the session ended)" : ""));
             b.AppendLine($"                          after : {after}");
         }
     }
 
-    /// <summary>Average fps and quality across the completed seconds in [startInclusive, endExclusive).</summary>
-    private string SummarizeWindow(long startInclusive, long endExclusive)
+    /// <summary>
+    /// Average fps, quality, and the file/video byte split across a set of completed seconds — the
+    /// same figures the technical view shows live, read from history instead, so nobody has to watch
+    /// a window to get them (and watching it would have changed what it measured — see
+    /// PROGRESS.md, 2026-08-27).
+    /// </summary>
+    private static string SummarizeWindow(List<SecondBucket> seconds)
     {
-        var matching = _seconds.Where(s => s.Second >= startInclusive && s.Second < endExclusive).ToList();
-        if (matching.Count == 0) return "not enough of the session either side to say";
-        double avgFps = matching.Average(s => s.Frames);
-        double avgQuality = matching.Average(s => s.AvgQuality);
-        return $"{avgFps:0.0} fps, quality {avgQuality:0} (over {matching.Count}s)";
+        if (seconds.Count == 0) return "not enough of the session either side to say";
+        double avgFps = seconds.Average(s => s.Frames);
+        double avgQuality = seconds.Average(s => s.AvgQuality);
+        double videoKBps = seconds.Average(s => s.VideoBytes) / 1024.0;
+        double fileKBps = seconds.Average(s => s.FileBytes) / 1024.0;
+        string bytes = fileKBps > 0.05
+            ? $", file {fileKBps:0.0} KB/s + video {videoKBps:0.0} KB/s = {fileKBps + videoKBps:0.0} KB/s total"
+            : $", {videoKBps:0.0} KB/s";
+        return $"{avgFps:0.0} fps, quality {avgQuality:0}{bytes} (over {seconds.Count}s)";
+    }
+
+    /// <summary>
+    /// How many of the seconds right after a transfer ended it took for quality to climb back to
+    /// what it was before the transfer started — answers Conor's "confirm it recovers, and how long
+    /// that takes" (2026-08-27) from recorded history instead of a stopwatch on the technical view.
+    /// </summary>
+    private string RecoveryLine(List<SecondBucket> beforeSeconds, long endSecond)
+    {
+        if (beforeSeconds.Count == 0) return "recovery: no 'before' quality to compare against";
+        double targetQuality = beforeSeconds.Average(s => s.AvgQuality) - 1; // 1 point of slack for rounding
+
+        for (long s = endSecond; s <= _currentSecond; s++)
+        {
+            var bucket = _seconds.FirstOrDefault(b => b.Second == s);
+            if (bucket.Frames > 0 && bucket.AvgQuality >= targetQuality)
+                return s == endSecond ? "recovered immediately" : $"recovered after {s - endSecond}s";
+        }
+        return $"had not recovered to pre-transfer quality by the end of the recorded window ({_currentSecond - endSecond}s and counting)";
     }
 
     private static string Duration(TimeSpan span) =>

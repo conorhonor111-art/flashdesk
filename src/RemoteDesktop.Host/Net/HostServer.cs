@@ -425,8 +425,8 @@ public sealed class HostServer : IDisposable
         using var files = new HostFileService(channel, Governor, _currentPeerId ?? string.Empty,
             Partials, FileAccessAsk, FileSentLogged, IncomingFileAsk, ReplaceFileAsk, FileArrivedLogged,
             transferStarted: () => { _recorder?.BeginTransfer(); LastTransferStartedUtc = DateTimeOffset.UtcNow; LastTransferEndedUtc = null; Governor.OnBulkTransferStarted(); },
-            transferEnded: () => { _recorder?.EndTransfer(); LastTransferEndedUtc = DateTimeOffset.UtcNow; },
-            fileBytesTransferred: n => FileMeter.Record(1, n));
+            transferEnded: () => { _recorder?.EndTransfer(); LastTransferEndedUtc = DateTimeOffset.UtcNow; Governor.OnBulkTransferEnded(); },
+            fileBytesTransferred: n => { FileMeter.Record(1, n); _recorder?.RecordFileBytes(n); });
 
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct);
         var inbound = InboundLoopAsync(channel, files, linked.Token);
