@@ -350,6 +350,26 @@ confirmed working — not only when something feels off. None of today's five we
 feeling; each was caught by naming the counter's actual source or grepping for the feature that
 was assumed to exist.
 
+### ⚠ ADDENDUM 2026-08-27 — an instrument that produced no output has not measured anything
+
+**Why:** the per-second recovery log built the same day to answer one specific question — did
+transfer #3 recover — was read, and said nothing at all: sessions.txt was byte-for-byte unchanged
+across a real three-hour, four-transfer session. For a moment that silence was nearly read as
+"genuinely silent link" — the very answer being investigated — when it was the instrument itself
+having failed to write anything. The two look identical from outside unless checked first.
+
+**The rule this produces, concretely:**
+- Before interpreting what a measurement says — including "nothing happened" or "it stayed at
+  zero" — confirm the instrument actually recorded something for the period in question. A log
+  with no new lines, a counter that never moved, a file with an old timestamp: each is consistent
+  BOTH with "nothing to report" and with "the reporting broke." They are not the same finding, and
+  only one of them is safe to act on.
+- A measurement that produced no output is not evidence of anything, either way, until that is
+  settled.
+
+**How to apply:** every time a measurement or log is read to settle a question — not only when the
+absence of a signal is itself surprising.
+
 ---
 
 # Project facts (discovered during setup — keep these; I cannot recover them otherwise)
