@@ -2545,3 +2545,48 @@ non-oscillating residual limit rather than solved further.
 human Accept for one connection: connect, accept, run a minute, one small transfer, close with the
 X. The trace added earlier today will show whether all seven links fire and whether the block lands
 in `sessions.txt` for real, closing the gap `SessionLogTests` could only cover at the unit level.
+
+## ⚠ THE LIVE TEST PROVED NOTHING — the exe Conor ran was never rebuilt (2026-09-02)
+
+Conor ran the agreed test on 2026-09-02: connect, Accept, a minute idle, one small download, close
+with the X. `sessions.txt` on `.223` (`C:\Users\PC\AppData\Roaming\FlashDesk\sessions.txt`) came back
+byte-for-byte unchanged from 2026-08-26 — and the capture log showed the host starting at 08:40:36,
+one routine startup DXGI blip, and then nothing: no CONNECTED line, no CLOSE-TRACE line, no crash
+event, no process still running.
+
+**Before reading that as a result either way — Rule 12, the addendum committed this same day —
+checked what actually ran.** `(Get-Item ...FlashDesk.exe).VersionInfo.ProductVersion`:
+```
+C:\Users\PC\Desktop\FlashDesk-test-build\FlashDesk.exe  ->  0.3.1+cfe3eea54f4b8d03db14799c58fafea0b2e4002c
+```
+**`cfe3eea` is the commit `git log` showed as HEAD at the very start of this conversation — before a
+single line of today's work.** Every fix built today (`66297af` silent-catch fix, `bdeb5af`
+close-chain trace and checkpoint split, `a9ff7a2` recovery decay) exists in git and in
+`bin\Release\...\FlashDesk.exe` from local `dotnet build` runs, and NEVER reached the one file Conor
+actually double-clicks. The exe in `FlashDesk-test-build` had not been touched since 2026-08-27 —
+confirmed by its own unchanged file timestamp, not inferred. This is the exact mistake CLAUDE.md's
+"CHECK WHICH BUILD IS ACTUALLY ON THE SERVER BEFORE ANY TEST" paragraph already warns about, by name,
+with its own prior incident (`flashdesk.org` serving a build twelve commits behind) — made again,
+here, by never publishing a build for Conor to run and never saying so.
+
+**Consequence, said plainly, not softened: today's live test answers NOTHING about links 5–7.**
+Whatever ran was the code from before this entire investigation started — it has none of today's
+checkpoint or trace instrumentation, and it may well still carry whatever the ORIGINAL unexplained
+write failure was (never root-caused — see the first entry today). The empty `sessions.txt` is
+consistent with that original bug recurring, or with something else entirely; there is no way to
+tell from this run, because the code that ran was never the code in question.
+
+**Fixed the actual process gap, not just this one instance of it:** published a fresh, self-contained
+build straight into `C:\Users\PC\Desktop\FlashDesk-test-build\` (the exact folder Conor already runs
+from, so nothing changes on his side) with the documented command:
+```
+dotnet publish src\RemoteDesktop.Host -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o C:\Users\PC\Desktop\FlashDesk-test-build
+```
+Verified, not assumed: `VersionInfo.ProductVersion` now reads `0.3.1+a9ff7a27f50460d41b6b9759248fa6fd09cc07a2`
+— `a9ff7a2` is current HEAD, everything from today included.
+
+**Still open:** whether `.222` was running an equally stale HOST copy (this project's "TEST COPY on
+one machine" pattern means a host can run on either machine) — `.222` is not reachable from `.223` (no
+credentials, `TrustedHosts` deliberately untouched per standing decision), so that can only be
+answered by Conor. Links 5–7 remain unproven; the test needs to be run again, now that the binary
+under test is no longer nine commits behind the fix being tested.
