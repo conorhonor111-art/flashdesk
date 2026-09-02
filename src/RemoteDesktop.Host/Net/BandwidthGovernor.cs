@@ -388,7 +388,20 @@ public sealed class BandwidthGovernor
         }
         else
         {
-            _quietWindows = 0; // in the dead zone: hold this level, which is the point of having one
+            // DEAD ZONE — hold this level; that much was always right. What was wrong was making a
+            // window here cost the SAME as a genuine overload: nothing here actually got worse, so
+            // recovery should lose a step, not the whole climb. A single bad half-second — a blinking
+            // cursor, the technical view's own repaint — used to zero the count outright, and recovery
+            // needs three CONSECUTIVE clean windows, so that one window could hold a session at a
+            // degraded level indefinitely even though the level itself was never being pushed down
+            // again. Measured live 2026-08-27: two real transfers on the same session recovered in 4s
+            // and 54s; two more, on a session with the same kind of low-level trickle, never recovered
+            // at all — 985s and 744s of "stuck", not "recovering slowly". See PROGRESS.md.
+            //
+            // Real overload is untouched: HeavyOverrun above still calls StepDown, which still zeroes
+            // this outright, same as it always did. This branch is the ONLY one being softened, and it
+            // is specifically the one where nothing got worse.
+            _quietWindows = Math.Max(0, _quietWindows - 1);
         }
 
         OpenWindow(now);

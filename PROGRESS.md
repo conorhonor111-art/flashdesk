@@ -2486,3 +2486,62 @@ before it is committed; see the reply for the exact text proposed.
 **Recovery — proposal only, not built, per instruction.** See the reply for the one-line fix proposed
 (decay `_quietWindows` in `OnFrameSent`'s dead-zone branch instead of zeroing it) and the reasoning
 for why it does not reopen the oscillation the 3-window design was built to prevent.
+
+## Recovery fix BUILT and proven Rule-11 style; Rule 12 addendum committed (2026-08-27, later same day)
+
+Conor approved the recovery fix and the Rule 12 wording word for word, and asked for the fix proven
+old-fails/new-passes with real numbers, plus an answer to one specific question: can the new decay
+get stuck oscillating at a fixed count, never climbing, never dropping?
+
+**Rule 12 addendum is now in `CLAUDE.md`** (§12, appended verbatim as approved) — not a summary,
+the literal text shown to Conor.
+
+**The fix — one line, `BandwidthGovernor.OnFrameSent`'s dead-zone branch:**
+```csharp
+_quietWindows = Math.Max(0, _quietWindows - 1);   // was: _quietWindows = 0;
+```
+Real overload (`HeavyOverrun`, panic sends, over-budget, round-trip severe/heavy) is untouched — all
+of those still call `StepDown`, which still zeroes the count outright. Only the branch where NOTHING
+got worse — the dead zone — changed, from erasing all progress to costing one step of it.
+
+**Proven Rule-11 style, both numbers, both runs against the real wall clock (the governor's windows
+are timed off `Environment.TickCount64`, not injectable — `BandwidthGovernorRecoveryTests.cs` is
+consequently a live-timing test, kept to one method for that reason):**
+- Test forces the governor to level 6/9 (the exact level the real stuck session was found at, via
+  three PANIC-path calls), then runs a steady 2-clean-to-1-dead-zone rhythm — a harmless trickle
+  that never crosses `HeavyOverrun`, so it never re-triggers a real step-down either way.
+- **Line reverted to `_quietWindows = 0` (the old behaviour): stayed at level 6/9 for the full 40
+  windows / 26.3s — never moved.** Test correctly FAILED.
+- **Line restored to the fix: reached level 0/9 after 20 windows / 13.1s.** Test PASSED.
+- Fix restored immediately after the comparison; `dotnet build -c Release`: 0/0. Full suite:
+  304 tests, 303 passing — the one remaining failure is `FileTransferEndToEndTests.A_reply_for_a_
+  request_the_operator_has_moved_on_from_is_dropped`, already confirmed pre-existing and unrelated
+  (see the earlier entry today); the OTHER previously-flaky test happened not to fail this
+  particular run, consistent with it being parallelism/timing flakiness rather than a fixed defect.
+
+**Conor's oscillation question, answered — reachable, but bounded and inaudible:**
+Yes, a persistent EXACT 1:1 alternation of clean and dead-zone windows can pin the count oscillating
+between two fixed values (e.g. 1 and 2) forever, never reaching 3, because each pair cancels to a net
+of zero. Traced by hand: starting at 2, `clean → 3`? No — starting at 2, dead-zone → 1, clean → 2,
+dead-zone → 1, clean → 2, … — an infinite 1↔2 cycle under that exact rhythm. Three things bound how
+much this matters:
+1. **It requires an exact, sustained tie**, not merely "some noise" — any rhythm with even a slight
+   favourable bias (2:1, 3:2, anything better than dead-even) still nets positive over time and
+   climbs, as the passing test above demonstrates at 2:1.
+2. **It is strictly narrower than today's failure**, which stalls under ANY dead-zone window at all,
+   regardless of ratio. The fix does not eliminate every stuck case; it shrinks "stuck" from "any
+   noise, ever" down to "noise that happens to arrive in an exact tie, indefinitely."
+3. **It never re-triggers a real step-down and never reaches the climb either — the LEVEL itself
+   does not move at all while this holds**, so there is nothing to see or feel: no picture
+   "breathing" between two quality levels, just a recovery that would take longer than it should
+   under a specifically adversarial rhythm a real network is not expected to sustain forever.
+Deliberately not hardened further: making a clean window worth more than a dead-zone window costs is
+the only way to break an exact tie, and doing that would blur the dead zone's own stated purpose
+("hold this level, which is the point of having one") — a link sitting exactly on the boundary is
+supposed to hold, not be nudged either way by an asymmetric weighting. Recorded as a known, narrow,
+non-oscillating residual limit rather than solved further.
+
+**Links 5–7 still unproven, by design — scheduled for right after this.** Conor is providing a real
+human Accept for one connection: connect, accept, run a minute, one small transfer, close with the
+X. The trace added earlier today will show whether all seven links fire and whether the block lands
+in `sessions.txt` for real, closing the gap `SessionLogTests` could only cover at the unit level.
