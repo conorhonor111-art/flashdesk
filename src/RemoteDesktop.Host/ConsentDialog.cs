@@ -51,6 +51,18 @@ public sealed class ConsentDialog : Form
 
     public bool Accepted { get; private set; }
 
+    /// <summary>
+    /// HOW the decision was actually made — added 2026-09-03 after a real session where "was it a
+    /// click or did we just lose track of who was at the keyboard" could not be answered from the
+    /// log, only reasoned about from idle timers and guesswork. Distinguishing mouse from keyboard:
+    /// a real mouse click always raises <c>MouseClick</c> immediately before <c>Click</c>; keyboard
+    /// activation (Space/Enter, or Escape via <see cref="CancelButton"/>) raises only <c>Click</c>.
+    /// </summary>
+    public ConsentAnswerMethod How { get; private set; } = ConsentAnswerMethod.WindowClosed;
+
+    private bool _viaMouse;
+    private bool _finished;
+
     public ConsentDialog(string callerId, bool isKnown)
     {
         _acceptUnlocksIn = isKnown ? 0 : FirstContactDelaySeconds;
@@ -156,8 +168,10 @@ public sealed class ConsentDialog : Form
             Margin = new Padding(0),
         };
         _reject.Margin = new Padding(0, 0, Theme.S3, 0);
-        _reject.Click += (_, _) => Finish(false);
-        _accept.Click += (_, _) => Finish(true);
+        _reject.MouseClick += (_, _) => _viaMouse = true;
+        _accept.MouseClick += (_, _) => _viaMouse = true;
+        _reject.Click += (_, _) => Finish(false, _viaMouse ? ConsentAnswerMethod.Clicked : ConsentAnswerMethod.Keyboard);
+        _accept.Click += (_, _) => Finish(true, _viaMouse ? ConsentAnswerMethod.Clicked : ConsentAnswerMethod.Keyboard);
         _accept.Enabled = _acceptUnlocksIn == 0;
         buttons.Controls.Add(_reject);
         buttons.Controls.Add(_accept);
@@ -172,7 +186,9 @@ public sealed class ConsentDialog : Form
         FormClosing += (_, _) =>
         {
             _timer.Stop();
-            if (DialogResult != DialogResult.OK) Accepted = false;
+            // Reached only by the X button or Alt+F4 — Escape goes through _reject.Click (CancelButton
+            // invokes it), and Accept/Reject/timeout all already set _finished before calling Close().
+            if (!_finished) { Accepted = false; How = ConsentAnswerMethod.WindowClosed; }
         };
 
         _timer.Tick += (_, _) => Tick();
@@ -191,7 +207,7 @@ public sealed class ConsentDialog : Form
         _secondsLeft--;
         if (_secondsLeft <= 0)
         {
-            Finish(false); // silence is never a yes
+            Finish(false, ConsentAnswerMethod.TimedOut); // silence is never a yes
             return;
         }
         UpdateCountdown();
@@ -206,10 +222,12 @@ public sealed class ConsentDialog : Form
             : $"If you do nothing, this is refused in {_secondsLeft} seconds — nobody gets in.";
     }
 
-    private void Finish(bool accepted)
+    private void Finish(bool accepted, ConsentAnswerMethod how)
     {
         _timer.Stop();
+        _finished = true;
         Accepted = accepted;
+        How = how;
         DialogResult = accepted ? DialogResult.OK : DialogResult.Cancel;
         Close();
     }

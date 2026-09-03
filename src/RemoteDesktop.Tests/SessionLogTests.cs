@@ -27,7 +27,7 @@ public class SessionLogTests
         string? seen = null;
         log.WriteFailed += message => seen = message;
 
-        log.Started("123456789");
+        log.Started("123456789", "clicked");
 
         Assert.NotNull(log.LastWriteError);
         Assert.NotNull(log.LastWriteErrorAtUtc);
@@ -48,7 +48,7 @@ public class SessionLogTests
             File.WriteAllText(folder, "not a directory");
 
             var log = new SessionLog(folder);
-            log.Started("123456789");
+            log.Started("123456789", "clicked");
             Assert.NotNull(log.LastWriteError);
 
             // Clear the obstruction and let the SAME instance try again — self-correcting is the
@@ -79,7 +79,7 @@ public class SessionLogTests
             bool fired = false;
             log.WriteFailed += _ => fired = true;
 
-            log.Started("123456789");
+            log.Started("123456789", "clicked");
             log.Checkpoint("2m so far, 12.0 fps avg, 4.2 KB/s avg, level 0 now (reached 3 at worst), 1 file transfer(s)");
             log.TransferCheckpoint("                     #1  10:00:00.000 to 10:00:05.000 (5.0s)");
             log.Ended("123456789");

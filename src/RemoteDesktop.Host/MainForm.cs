@@ -119,6 +119,14 @@ public sealed class MainForm : Form
     private int _checkpointTicks;
     private const int CheckpointEveryTicks = 360; // 360 * 500 ms = 3 minutes
 
+    /// <summary>
+    /// How the most recent connection request was answered — set inside ConsentAsk the moment the
+    /// dialog resolves, read later by SessionLogged when the session actually begins, since that is
+    /// a separate callback with no access to the dialog itself. One connection is decided at a time
+    /// in this product, so this is safe as a single field.
+    /// </summary>
+    private string _lastConnectHow = ConsentAnswerMethod.WindowClosed.Describe();
+
     public MainForm()
     {
         _knownCallers = new KnownCallers(_identityStore.Folder);
@@ -205,13 +213,18 @@ public sealed class MainForm : Form
                     bool accepted = false;
                     try
                     {
+                        _sessionLog.ConnectAsked(callerId);
                         using var dialog = new ConsentDialog(callerId, _knownCallers.IsKnown(callerId));
                         dialog.ShowDialog(this);
                         accepted = dialog.Accepted;
+                        // Carried to SessionLogged below: "accepted" here is only the CLAIM the
+                        // relay loop acts on, and Started() writes the CONNECTED line later, once a
+                        // session genuinely begins — but only this scope knows HOW it was answered.
+                        _lastConnectHow = dialog.How.Describe();
                         if (accepted) _knownCallers.Remember(callerId);
-                        else _sessionLog.Refused(callerId);
+                        else _sessionLog.Refused(callerId, _lastConnectHow);
                     }
-                    catch { accepted = false; }
+                    catch { accepted = false; _lastConnectHow = ConsentAnswerMethod.WindowClosed.Describe(); }
                     done.TrySetResult(accepted);
                 });
             }
@@ -240,8 +253,9 @@ public sealed class MainForm : Form
                         using var dialog = new FileConsentDialog(callerId);
                         dialog.ShowDialog(this);
                         allowed = dialog.Allowed;
-                        if (allowed) _sessionLog.FilesAllowed(callerId);
-                        else _sessionLog.FilesRefused(callerId);
+                        string how = dialog.How.Describe();
+                        if (allowed) _sessionLog.FilesAllowed(callerId, how);
+                        else _sessionLog.FilesRefused(callerId, how);
                     }
                     catch { allowed = false; }
                     done.TrySetResult(allowed);
@@ -290,7 +304,7 @@ public sealed class MainForm : Form
         {
             if (starting)
             {
-                _sessionLog.Started(callerId);
+                _sessionLog.Started(callerId, _lastConnectHow);
             }
             else
             {

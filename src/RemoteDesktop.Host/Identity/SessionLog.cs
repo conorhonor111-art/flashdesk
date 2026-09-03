@@ -1,3 +1,5 @@
+using RemoteDesktop.Host;
+
 namespace RemoteDesktop.Host.Identity;
 
 /// <summary>
@@ -48,9 +50,26 @@ public sealed class SessionLog
     /// <summary>Fired every time a write fails, with the exception message. See <see cref="LastWriteError"/>.</summary>
     public event Action<string>? WriteFailed;
 
-    public void Started(string callerId) => Write($"CONNECTED    {Pretty(callerId)} accepted and connected");
+    /// <summary>
+    /// Someone is asking to connect, BEFORE the dialog is shown — the other half of the pair
+    /// completed 2026-09-03. FILES already had "asked" + "was allowed/refused"; the connection
+    /// accept had only the outcome, with no line marking that a question was ever put. Added so a
+    /// reader can see a decision was actually asked for, not merely reason backwards from its result.
+    /// </summary>
+    public void ConnectAsked(string callerId) =>
+        Write($"CONNECT      {Pretty(callerId)} is asking to connect");
+
+    /// <summary>
+    /// <paramref name="how"/> is <see cref="ConsentAnswerMethod.Describe"/> — clicked, keyboard, or
+    /// timed out. Added 2026-09-03: without it, "was this really answered, or did something answer
+    /// it for me" could only be reasoned about from idle timers, never read off the file it belongs
+    /// in. See ConsentAnswerMethod's own doc comment for the incident that produced this.
+    /// </summary>
+    public void Started(string callerId, string how) =>
+        Write($"CONNECTED    {Pretty(callerId)} accepted and connected ({how})");
     public void Ended(string callerId) => Write($"DISCONNECTED {Pretty(callerId)} session ended");
-    public void Refused(string callerId) => Write($"REFUSED      {Pretty(callerId)} was refused (Reject, or no answer)");
+    public void Refused(string callerId, string how) =>
+        Write($"REFUSED      {Pretty(callerId)} was refused ({how})");
 
     // --- File transfer. Every line names the direction, the file, its size and the folder, because
     // "a file was transferred" answers nothing a person actually wants to know. The verb column is
@@ -60,11 +79,11 @@ public sealed class SessionLog
     public void FilesAsked(string callerId) =>
         Write($"FILES        {Pretty(callerId)} asked to look at the files on this computer");
 
-    public void FilesAllowed(string callerId) =>
-        Write($"FILES        {Pretty(callerId)} was allowed to look at the files on this computer");
+    public void FilesAllowed(string callerId, string how) =>
+        Write($"FILES        {Pretty(callerId)} was allowed to look at the files on this computer ({how})");
 
-    public void FilesRefused(string callerId) =>
-        Write($"FILES        {Pretty(callerId)} was refused when asking to look at the files");
+    public void FilesRefused(string callerId, string how) =>
+        Write($"FILES        {Pretty(callerId)} was refused when asking to look at the files ({how})");
 
     /// <summary>A file left this computer.</summary>
     public void FileSent(string callerId, string name, long bytes, string folder) =>
