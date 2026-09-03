@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  FlashDesk mark — single-colour, transparent background, for LIGHT surfaces the dark tile plate
+  was never designed for: a GitHub README rendered on white, a printed document, a light-themed
+  browser bookmark bar. The tile+green version (assets\make-icon.ps1, the favicon, the site
+  header) stays canonical for dark surfaces — this is not a replacement, it is the light-surface
+  companion every serious mark needs.
+
+  GEOMETRY IS LOCKED to assets\make-icon.ps1's $pts array and to the site's favicon/header SVGs —
+  same three points, same 16-unit grid, same 2.6 stroke width, only the colour and the missing
+  tile plate differ. scripts\Check-MarkGeometry.ps1 asserts this file still matches; if you change
+  the points here, you are changing the mark, and make-icon.ps1 + both HTML files must change in
+  the same commit (Conor, 2026-08-06 — this is the rule that already cost a five-file hand-edit
+  once).
+
+  Colour: Theme.BrandTile #17191E, the same "ink = structure" dark used for the tile itself
+  (round-4/5 exploration, CLAUDE.md "The icon is an instrument") — reused rather than inventing a
+  fourth brand colour. Contrast on white: ~19:1, far past the 4.5:1 body-text floor, so it reads
+  as a clear dark mark rather than a grey smudge.
+
+  Verified 2026-09-03 (scratchpad\measure-mark.ps1, System.Drawing, same rendering path as
+  make-icon.ps1): rasterized at 16x16, 58 pixels carry any ink, 19 are solid core (alpha 255),
+  and ZERO pixels touch the canvas edge — the shape does not clip without the tile's margin.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" role="img" aria-label="FlashDesk">
+  <polyline points="4.631,2.512 9.387,11.495 11.325,7.620" fill="none" stroke="#17191E" stroke-width="2.6"/>
+</svg>

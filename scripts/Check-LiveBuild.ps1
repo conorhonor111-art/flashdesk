@@ -51,6 +51,21 @@ Say ' FlashDesk - is the file people download the build we think?'
 Say '================================================================'
 Say ''
 
+# ------------------------------------------------------- 0. the mark's geometry, everywhere it lives
+# Added 2026-09-03: the mark's points live in six files by hand (CLAUDE.md, "THE MARK WAS REFITTED
+# 2026-08-06"), and a page that is otherwise byte-identical to the repo (section 5 below) can still
+# be wearing a drifted mark if only make-icon.ps1 or one HTML copy was touched. Checked first, before
+# any network call, because a local mismatch needs no download to catch.
+Say '0. The mark - same geometry in every copy'
+$markCheck = Join-Path $PSScriptRoot 'Check-MarkGeometry.ps1'
+if (Test-Path $markCheck) {
+    & $markCheck -RepoRoot $RepoRoot
+    if ($LASTEXITCODE -ne 0) { Bad 'The mark has drifted between files - see the output above.' }
+    else { Good 'All copies of the mark carry the same geometry.' }
+} else {
+    Bad "Could not find $markCheck."
+}
+
 # ---------------------------------------------------------------- 1. the site
 Say '1. The website'
 try {

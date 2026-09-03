@@ -64,10 +64,38 @@
        controls, which is exactly the confusion this page cannot afford. */
     --radius-depiction: 8px;
 
-    /* Type scale, declared here so no size is invented at the point of use. */
-    --h1: 1.7rem;
-    --h2: 1.4rem;
+    /* ---------------------------------------------------------------------------------------
+       FLUID TYPE. These used to jump at each width breakpoint (1.7rem -> 2.1rem -> 2.9rem ->
+       3.2rem for h1, in three discrete steps) — visible as a size "pop" the instant the window
+       crossed 640/900/1300px, rather than growing with it. clamp(MIN, PREFERRED, MAX) replaces
+       the jump with continuous growth between the same two end values, so nothing changed about
+       how small or how large the type gets, only how it gets there.
+
+       Each PREFERRED term is derived, not guessed, from the same two real endpoints the old
+       breakpoints already used (a floor at a 360px viewport — the narrowest phone this page is
+       reasonably measured on — and a ceiling at 1300px, where growth already stopped):
+         slope     = (max_px - min_px) / (1300 - 360)      -- rem of vw
+         intercept = min_px - slope * 360                   -- the "+ Nrem" constant term
+       so at 360px the formula evaluates to exactly MIN, and at 1300px exactly MAX; clamp()'s own
+       ends hold it flat outside that range. Re-derive with the same formula if either endpoint
+       value ever changes — do not hand-tune the vw coefficient.
+       --------------------------------------------------------------------------------------------- */
+    --h1: clamp(1.7rem, 1.13rem + 2.55vw, 3.2rem);   /* 27.2px @360 -> 51.2px @1300 */
+    --h2: clamp(1.4rem, 1.32rem + 0.34vw, 1.6rem);   /* 22.4px @360 -> 25.6px @1300 */
+    /* Deliberately NOT fluid: the "sub" heading inside the warnings box is meant to sit quietly
+       below the section it belongs to (muted colour, already smaller) — it is not a reading
+       anchor the way h1/h2 are, so growing it with viewport width buys nothing and one static
+       size is simpler and just as correct. */
     --h2-sub: 1.1rem;
+    /* Body copy: 19.2px @360 -> 20px @640, then flat (the old design deliberately stopped
+       growing the reading text past 640 and kept enlarging only headings and layout — see the
+       DESKTOP LAYOUT comment below; this preserves that choice, just removes the jump getting
+       there). */
+    --body-font: clamp(1.2rem, 1.14rem + 0.29vw, 1.25rem);
+    /* The one button whose size matters most on the page: 21.6px @360 -> 24px @640, flat after —
+       mirrors --body-font's range for the same reason (nothing beyond 640 was ever asked to grow
+       further; only the DESKTOP LAYOUT rules below still resize its PADDING, not this). */
+    --cta-font: clamp(1.35rem, 1.16rem + 0.86vw, 1.5rem);
   }
 
   /* ONE downloaded typeface, self-hosted from this domain — no third-party request, no tracking,
@@ -102,7 +130,7 @@
     background: var(--tile);
     color: var(--text);
     font-family: 'Inter', 'Inter fallback', system-ui, "Segoe UI", Arial, sans-serif;
-    font-size: 1.2rem;
+    font-size: var(--body-font);
     line-height: 1.55;
     padding: var(--s3) var(--s3) var(--s5);
   }
@@ -125,21 +153,51 @@
   h1 { font-size: var(--h1); line-height: 1.2; letter-spacing: -0.02em; margin-bottom: var(--s1); font-weight: 700; }
   .phone-note { color: var(--muted); margin-bottom: var(--s4); }
 
-  /* Green appears in exactly one filled block on this page: the button. */
-  .download {
+  /* ---------------------------------------------------------------------------------------
+     DEVICE-AWARE PRIMARY ACTION. FlashDesk is a Windows .exe; on a touch device that cannot run
+     it, offering the same 70 MB "Download" button as the primary action is a promise the page
+     cannot keep, made to exactly the visitor whose trust this page needs (see the header comment
+     at the top of this file). .download and .send-link share one shape so the swap below changes
+     only WHICH of them is filled, never their size or position — green still appears in exactly
+     one filled block, it just is not always the same block.
+
+     Detected with (pointer: coarse) — a CSS media feature the platform itself reports (the type
+     of the device's PRIMARY pointer), not a User-Agent string sniff, and not a width guess: a
+     1024px touch tablet and a 1024px mouse-driven laptop can share a width and still get
+     different treatment here (see the POINTER section further down for the matching touch-target
+     sizing). It is an imperfect proxy — a touch-only Windows tablet CAN run the file, and still
+     gets the demoted button — which is why the rule is DEMOTE, never hide: the download stays one
+     tap away either way, see "If the download button does not work" further down the page too. */
+  .download, .send-link {
     display: block;
-    background: var(--green);
-    color: var(--tile);
     text-align: center;
     text-decoration: none;
-    font-size: 1.35rem;
+    font-size: var(--cta-font);
     font-weight: 650;
     padding: var(--s2) var(--s3);
     border-radius: var(--radius);
     margin-bottom: var(--s1);
   }
+  .download { background: var(--green); color: var(--tile); }
+  /* Hidden by default (fine pointer: mouse, trackpad) — .download alone is the primary action,
+     exactly as before this round. */
+  .send-link, .touch-note, .send-link-fallback { display: none; }
+
   .download-meta { text-align: center; color: var(--muted); font-size: 1rem; margin-bottom: var(--s4); }
   .quiet-link { color: var(--muted); }
+
+  /* The line explaining WHY, shown only where it is true. Full-strength text (not muted) because
+     it is doing real work, not decorating — same reasoning as .near-button below. */
+  .touch-note { color: var(--text); margin-bottom: var(--s2); }
+  .send-link-fallback { color: var(--muted); font-size: 1rem; margin-bottom: var(--s4); }
+
+  @media (pointer: coarse) {
+    .touch-note, .send-link, .send-link-fallback { display: block; }
+    .send-link { background: var(--green); color: var(--tile); border: none; }
+    /* Demoted, not hidden: still the same tap target, still one click away, just no longer the
+       thing a stressed thumb lands on first. */
+    .download { background: transparent; color: var(--text); border: 1px solid var(--muted); }
+  }
 
   /* A hairline above each section, so the page reads as built rather than typed. Depth from a
      1px rule and a tonal step, never from a shadow or a glow — those cost contrast, and contrast
@@ -272,28 +330,46 @@
   a { color: var(--text); }
   /* Keyboard focus must be visible on every link, not just the button. */
   a:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; border-radius: var(--radius); }
-  .download:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; }
+  .download:focus-visible, .send-link:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; }
 
 
+  /* ---------------------------------------------------------------------------------------------
+     THREE WIDTH BREAKPOINTS, each earned by something the CONTENT does at that width, not by a
+     device name — a phone, a tablet and a laptop are all just numbers to a browser, and "tablet"
+     stopped meaning one width the day phones got this big. Type SIZE no longer jumps here (see the
+     clamp() block in :root) — what's left in each breakpoint below is genuine LAYOUT: things that
+     do not exist in a smaller or larger form, only in an on/off one (a column either splits into
+     two or it does not; a line either gets more top padding or it does not).
+     --------------------------------------------------------------------------------------------- */
+
+  /* 640px: the point where the phone-note ("This runs on a Windows computer...") and the hero
+     column both have enough width that the extra top padding stops feeling cramped against the
+     browser chrome above it. Content-measured, not device-named: this is not "where phones end" —
+     large phones in landscape and small tablets both sit above and below 640px depending on the
+     device, and both get treated identically by width alone, which is the point. */
   @media (min-width: 640px) {
-    body { padding-top: var(--s5); font-size: 1.25rem; }
-    :root { --h1: 2.1rem; }
-    .download { font-size: 1.5rem; padding: var(--s3) var(--s4); }
+    body { padding-top: var(--s5); }
+    .download, .send-link { padding: var(--s3) var(--s4); }
   }
 
   /* ---------------------------------------------------------------------------------------------
      THE DESKTOP LAYOUT. Below 900px nothing here applies and the phone layout is untouched — that
      one carries the product and must never get worse to make a monitor look better.
 
-     What the width is for: the page used to be a 640px phone column stranded in a black field, and
-     the largest thing on a 1200px screen was a green slab the width of a wall. So above 900px the
-     screenshot moves BESIDE the words rather than below them, the button shrinks to its own size
-     instead of spanning the measure, and the type steps up. The prose below the hero deliberately
-     does NOT widen: a line of body text is readable to about 70 characters and no further, so the
-     column stays put and the space to its right is left empty on purpose rather than filled.
+     900px is where the CONTENT actually breaks: the two-column hero needs the text column's own
+     40rem (640px) reading measure PLUS a screenshot no smaller than ~20rem (320px) PLUS a column
+     gap — under about 960-1000px combined, a real second column has nowhere to go and would either
+     overflow or squeeze the screenshot illegibly, which is why an iPad-class PORTRAIT screen
+     (~768-834px, still narrower than this) correctly stays single-column below. 900 sits just under
+     that arithmetic floor, verified in section 3 of the design report against real tablet-portrait
+     and tablet-landscape numbers, not assumed. Below 900px the page used to be a 640px phone column
+     stranded in a black field, and the largest thing on a 1200px screen was a green slab the width
+     of a wall — above 900px the screenshot moves BESIDE the words, and the button shrinks to its
+     own size instead of spanning the measure. The prose below the hero deliberately does NOT widen:
+     a line of body text is readable to about 70 characters and no further, so the column stays put
+     and the space to its right is left empty on purpose rather than filled.
      --------------------------------------------------------------------------------------------- */
   @media (min-width: 900px) {
-    :root { --h1: 2.9rem; --h2: 1.6rem; }
     main { max-width: 66rem; }
 
     /* Two columns. The figure is placed by GRID, not by moving it in the markup, so the phone's
@@ -312,15 +388,22 @@
     .hero .shot img { max-width: 25rem; }
 
     h1 { margin-bottom: var(--s2); }
-    .phone-note { max-width: 30rem; }
+    .phone-note, .touch-note, .send-link-fallback { max-width: 30rem; }
 
     /* A slab of green the width of the column is a wall at this size. The button takes its own
-       width, and the eye still finds it because it is the only filled block on the page. */
+       width, and the eye still finds it because it is the only filled block on the page.
+       ⚠ display: inline-block is set on .download ONLY here — it used to be set on .send-link too,
+       which silently overrode that element's display:none default on a WIDE FINE-POINTER screen
+       (a real 1440px desktop was measured showing the mailto button when it should have stayed
+       hidden — caught by the harness, not by eye). .send-link's own display is decided ONLY by
+       pointer (see the two pointer-scoped rules below); this block sizes it once it is already
+       showing, and never turns it on by itself. */
     .download {
       display: inline-block;
       padding: var(--s2) var(--s5);
       margin-bottom: var(--s2);
     }
+    .send-link { padding: var(--s2) var(--s5); margin-bottom: var(--s2); }
     .download-meta { text-align: left; margin-bottom: var(--s2); }
     .near-button { text-align: left; max-width: 32rem; margin-bottom: 0; }
 
@@ -330,10 +413,49 @@
     main > section { max-width: 40rem; }
   }
 
+  /* 1300px: the point where the two-column hero's own gap and screenshot have room to grow without
+     taking width away from the 40rem reading column beside them — a fixed reading measure plus a
+     bigger picture needs a viewport that can afford both at once. Nothing about type size changes
+     here any more (the h1 clamp already reaches its own ceiling at exactly 1300px by construction —
+     see the derivation comment in :root); what's left is the two purely-spatial adjustments below. */
   @media (min-width: 1300px) {
-    :root { --h1: 3.2rem; }
     .hero { column-gap: 4rem; }
     .hero .shot img { max-width: 28rem; }
+  }
+
+  /* ---------------------------------------------------------------------------------------------
+     POINTER — the second, independent axis. WIDTH (above) decides layout; POINTER decides size.
+     A 1024px touch tablet in landscape gets the same two-column layout as a 1024px laptop (by
+     width), but its targets are sized for a fingertip, not a mouse cursor, regardless of how wide
+     its screen happens to be — so this block is a separate media feature, not folded into the
+     width breakpoints above, and applies (or doesn't) independently of every one of them.
+
+     Sizes: 44x44 is Apple's iOS floor and the one used here — chosen over Android's 48dp and the
+     WCAG 2.2 AA minimum of 24x24 because it is the largest of the three commonly-cited numbers and
+     a target sized for it clears the other two automatically; WCAG's 24px floor is what genuinely
+     inline links below are held to instead (blowing a three-word inline link up to a 44px box would
+     fracture the paragraph around it — see below).
+     --------------------------------------------------------------------------------------------- */
+  @media (pointer: coarse) {
+    .download, .send-link { min-height: 44px; }
+    /* Real inline links a fingertip might miss: nudge their effective hit area toward the WCAG
+       24px floor with padding, cancelled by an equal negative margin so surrounding text does not
+       reflow — the link's visible size and position stay exactly what they were. */
+    .quiet-link, .fallback-link, .who a {
+      display: inline-block;
+      padding: 0.3em 0.15em;
+      margin: -0.3em -0.15em;
+    }
+  }
+
+  /* Combined with BOTH axes at once, deliberately as its own rule rather than nested inside either
+     block above: a coarse-pointer device wide enough for the desktop layout (a landscape tablet)
+     needs .send-link to sit beside the text the way .download already does at this width, but
+     ONLY when it is actually the visible button (pointer: coarse) — see the warning comment on
+     .download's inline-block rule above for what goes wrong if this is folded back into the plain
+     900px block instead. */
+  @media (min-width: 900px) and (pointer: coarse) {
+    .send-link { display: inline-block; }
   }
 </style>
 </head>
@@ -367,9 +489,23 @@
        stranger, that is a dead end: the reason they are on a phone is that the computer is broken,
        and the page then abandoned them without saying the file is useless on a phone or how to get
        to it on the other machine. That failure produces NO phone call, so it was invisible from
-       our side by construction. -->
-  <p class="phone-note">This runs on a Windows computer, not on a phone. If you are on your phone,
-  type <strong>flashdesk.org</strong> on the computer that needs help.</p>
+       our side by construction. The second half of that fix ("type flashdesk.org") now lives in
+       the touch-only block below, as an actual action (email yourself the link) rather than an
+       instruction to remember a domain under stress — this line stays as the short, always-true
+       context sentence everyone gets. -->
+  <p class="phone-note">This runs on a Windows computer &mdash; not a phone or tablet.</p>
+
+  <!-- DEVICE-AWARE PRIMARY ACTION (2026-09-03). Shown ONLY on (pointer: coarse) devices — see the
+       CSS above for why that signal was chosen over a User-Agent check. Sits in the DOM before
+       .download so that on a coarse pointer it is what a top-to-bottom read meets FIRST; on a fine
+       pointer these three elements render nothing (display: none) and .download is simply first,
+       unchanged from before this round. The download stays reachable right below either way — it
+       is demoted, never hidden, because someone here may be on a Windows tablet, or downloading
+       now for later. -->
+  <p class="touch-note">This device can't run it. Email yourself this page's link, and open it on
+  the computer that needs help.</p>
+  <a class="send-link" href="mailto:?subject=FlashDesk%20download%20link&amp;body=Open%20this%20on%20the%20Windows%20computer%20that%20needs%20help%3A%20https%3A%2F%2Fflashdesk.org%2F">Email yourself this link</a>
+  <p class="send-link-fallback">Or just remember: <strong>flashdesk.org</strong></p>
 
   <!-- ⚠ THE BUTTON POINTS AT GITHUB ON PURPOSE, AND THIS MUST NOT BE "TIDIED" BACK.
        The identical file served from flashdesk.org was BLOCKED by Chrome — downloaded in full and
@@ -564,7 +700,7 @@
   <section>
     <h2>If the download button does not work</h2>
     <p>The same file is also here:
-    <a href="https://flashdesk.org/dl/FlashDesk.exe">flashdesk.org/dl/FlashDesk.exe</a> &mdash;
+    <a class="fallback-link" href="https://flashdesk.org/dl/FlashDesk.exe">flashdesk.org/dl/FlashDesk.exe</a> &mdash;
     identical in every way. Browsers are more suspicious of it there, so the button above is the
     easier route, but if that one fails for any reason this one will still work.</p>
   </section>
