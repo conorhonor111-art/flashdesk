@@ -3016,3 +3016,68 @@ regress even though the page got longer.
    static host serves `site\how-it-works\` as `/how-it-works/` automatically via its own
    `index.html`, no server config needed).
 3. `scripts\Check-LiveBuild.ps1` last, to verify all five pages and every asset.
+
+## Design pass round 3: the real centring bug, then a genuine quality pass (2026-09-04)
+
+Committed at `ebac9db`, staged only — nothing uploaded. Conor's own diagnosis of what round 2
+missed: "I asked you to centre the page, you centred the OUTER FRAME, which is exactly what I
+said." Every section below the hero was capped at 42rem and left at its block default (no
+`margin-inline: auto`) — left-pinned inside an already-centred frame, while the hero fills the
+frame edge to edge. Two centres of gravity on one page.
+
+**The fix was one missing CSS declaration.** Chosen over a two-column label+content layout
+(Conor's own stated instinct) after fetching tailscale.com and 1password.com directly rather than
+guessing: both revert to a single centred text column below their hero, with the leftover width
+left as deliberate negative space — neither uses a label-left/content-right body layout anywhere.
+Centring is also the only mechanism that satisfies "share ONE optical centre" by mathematical
+construction. **Measured, not claimed:** 36 sections across all 5 pages at 1440 and 1890px, zero
+centre mismatches. New `.wide` section modifier for content that genuinely has width to use
+(feature-grid cards); home's 9-item "what this does" list became 5 cards under it.
+
+**Then, for the first time, a quality pass rather than a defect fix** (Conor: "I have never once
+asked you to make the page GOOD"). Ran `ui-ux-pro-max`'s design-system generator (useful for its
+checklist, not its suggested colours/fonts). Fetched tailscale.com and 1password.com directly for
+structural discipline: whitespace-only section rhythm (no hairline at every boundary), 4-5 heading
+levels via weight+size not colour, cards for parallel content. Applied: new `--s6` (64px) spacing
+step used only for section-to-section rhythm; hairlines removed by default (one exception,
+`.section-break`, used exactly once — before the canonical scam warning); a real prose-rhythm rule
+for consecutive paragraphs; `h3`'s font-size bug fixed (it was SMALLER than body text — an
+inverted hierarchy nobody had checked); the decision card's button shrunk again (20rem) with the
+warning given its own hairline+weight treatment.
+
+**A second adversarial review, deliberately different framing** ("does this look like a product
+someone is proud of, or a page that stopped when it worked" — not a rules check). Verdict: Home
+earned real design effort (the SmartScreen quote as its own nested sub-card); How-it-works/
+Privacy/FAQ were the same card-and-paragraph molecule repeated with no second heading tier and no
+visual break. **Acted on two of three findings this commit:** h2 weight bumped 650→700 with tight
+tracking (a real tier above card titles now); a new `.statement` component — one elevated,
+uncarded sentence per inner page, on the single VERIFIED fact already doing the most trust-
+building work there — giving all three inner pages the same "assertion, then supporting grid"
+shape, which also answers the reviewer's complaint that the five pages didn't feel like one
+product. **Declined the third finding** (8-10 small icons reusing the brand mark's language) for
+this commit — the mark itself took seven rounds to get right; a rushed same-day icon set risks
+diluting it. Recorded as agreed-with and deliberately deferred, not rejected — Conor's call whether
+to schedule it.
+
+**Caught by screenshot, not by reading the CSS:** `.statement` collided with zero gap against the
+section that followed it on all three inner pages (`section:first-of-type { margin-top: 0 }`
+zeroed the wrong gap once a new element sat between `.lead` and the first `<section>`). Fixed with
+`.statement`'s own bottom margin. Also caught: FAQ's card column didn't share `.statement`'s left
+edge (its section lacked `.wide`, so it centred at a narrower measure than the other two inner
+pages) — tagged `.wide`, added a matching measure rule for a lone `.card`.
+
+**Cleanup:** removed `dl.facts` and an empty `.faq-item {}` rule, both dead CSS from an earlier
+version of Privacy/FAQ.
+
+**Measured, not assumed:** phone (390×844) — send-link and download positions BYTE-IDENTICAL
+before/after this round (y506-572, y662-764) — nothing in this round touches below 900px. Frame
+symmetry and mark geometry both re-confirmed unchanged.
+
+**Not touched:** the anti-scam warning's wording or position, external-host policy, any C# project.
+
+**Upload list (in order, nothing uploaded yet):**
+1. `site\site.css` (changed again — every page's `<link>` depends on it).
+2. `site\index.html`, `site\how-it-works\index.html`, `site\privacy\index.html`,
+   `site\faq\index.html` (all four changed this round; `site\terms\index.html` did NOT change and
+   does not need re-uploading, though re-uploading it is harmless if it's simpler to do all five).
+3. `scripts\Check-LiveBuild.ps1` last, to verify.
