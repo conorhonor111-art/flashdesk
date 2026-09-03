@@ -1,3 +1,4 @@
+using RemoteDesktop.Host;
 using RemoteDesktop.Host.Input;
 using RemoteDesktop.Shared.Identity;
 using RemoteDesktop.UI;
@@ -50,6 +51,14 @@ public sealed class ReplaceFileDialog : Form
 
     /// <summary>Starts at Refuse, so every way out of this window that is not a button is a refusal.</summary>
     public ReplaceChoice Choice { get; private set; } = ReplaceChoice.Refuse;
+
+    /// <summary>See <see cref="ConsentAnswerMethod"/>. This dialog's answer destroys the client's own
+    /// file when it is Replace — the only irreversible thing this whole feature can do — and had no
+    /// record of how that answer was actually reached.</summary>
+    public ConsentAnswerMethod How { get; private set; } = ConsentAnswerMethod.WindowClosed;
+
+    private bool _viaMouse;
+    private bool _finished;
 
     public ReplaceFileDialog(string callerId, string fileName, string folder)
     {
@@ -118,9 +127,13 @@ public sealed class ReplaceFileDialog : Form
         };
         _refuse.Margin = new Padding(0, 0, Theme.S3, 0);
         _keepBoth.Margin = new Padding(0, 0, Theme.S3, 0);
-        _refuse.Click += (_, _) => Finish(ReplaceChoice.Refuse);
-        _keepBoth.Click += (_, _) => Finish(ReplaceChoice.KeepBoth);
-        _replace.Click += (_, _) => Finish(ReplaceChoice.Replace);
+        _refuse.MouseClick += (_, _) => _viaMouse = true;
+        _keepBoth.MouseClick += (_, _) => _viaMouse = true;
+        _replace.MouseClick += (_, _) => _viaMouse = true;
+        ConsentAnswerMethod Method() => _viaMouse ? ConsentAnswerMethod.Clicked : ConsentAnswerMethod.Keyboard;
+        _refuse.Click += (_, _) => Finish(ReplaceChoice.Refuse, Method());
+        _keepBoth.Click += (_, _) => Finish(ReplaceChoice.KeepBoth, Method());
+        _replace.Click += (_, _) => Finish(ReplaceChoice.Replace, Method());
         buttons.Controls.Add(_refuse);
         buttons.Controls.Add(_keepBoth);
         buttons.Controls.Add(_replace);
@@ -132,7 +145,7 @@ public sealed class ReplaceFileDialog : Form
         FormClosing += (_, _) =>
         {
             _timer.Stop();
-            if (DialogResult != DialogResult.OK) Choice = ReplaceChoice.Refuse;
+            if (!_finished) { Choice = ReplaceChoice.Refuse; How = ConsentAnswerMethod.WindowClosed; }
         };
 
         _timer.Tick += (_, _) => Tick();
@@ -153,17 +166,19 @@ public sealed class ReplaceFileDialog : Form
     private void Tick()
     {
         _secondsLeft--;
-        if (_secondsLeft <= 0) { Finish(ReplaceChoice.Refuse); return; }
+        if (_secondsLeft <= 0) { Finish(ReplaceChoice.Refuse, ConsentAnswerMethod.TimedOut); return; }
         UpdateCountdown();
     }
 
     private void UpdateCountdown() =>
         _countdown.Text = $"If you do nothing, nothing is changed — in {_secondsLeft} seconds.";
 
-    private void Finish(ReplaceChoice choice)
+    private void Finish(ReplaceChoice choice, ConsentAnswerMethod how)
     {
         _timer.Stop();
+        _finished = true;
         Choice = choice;
+        How = how;
         // OK only for the two answers that let the file land. Anything else leaves Choice at Refuse
         // via FormClosing, which is what makes every other exit a refusal.
         DialogResult = choice == ReplaceChoice.Refuse ? DialogResult.Cancel : DialogResult.OK;

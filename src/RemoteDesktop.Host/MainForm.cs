@@ -127,6 +127,13 @@ public sealed class MainForm : Form
     /// </summary>
     private string _lastConnectHow = ConsentAnswerMethod.WindowClosed.Describe();
 
+    /// <summary>Same reasoning as _lastConnectHow, carried from IncomingFileAsk/ReplaceFileAsk to
+    /// FileArrivedLogged — a separate callback that fires once the file has actually finished
+    /// arriving and has no access to the dialog itself. Transfers are one at a time in this product
+    /// (HostFileService._transferBusy), so a single field is safe here too.</summary>
+    private string _lastIncomingHow = ConsentAnswerMethod.WindowClosed.Describe();
+    private string _lastReplaceHow = ConsentAnswerMethod.WindowClosed.Describe();
+
     public MainForm()
     {
         _knownCallers = new KnownCallers(_identityStore.Folder);
@@ -274,11 +281,18 @@ public sealed class MainForm : Form
         _server.Partials = _partialFiles;
 
         // May they put a file HERE. A different act from being looked at, so a different question.
+        // The asked/refused pair and the "how" are logged here, 2026-09-03 — this dialog used to
+        // leave no record at all of a refusal, only of an arrival. See SessionLog.IncomingAsked.
         _server.IncomingFileAsk = (callerId, name, bytes, folder, isProgram) =>
             OnUiThread(() =>
             {
+                _sessionLog.IncomingAsked(callerId, name, bytes, folder, isProgram);
                 using var dialog = new IncomingFileDialog(callerId, name, bytes, folder, isProgram);
                 dialog.ShowDialog(this);
+                // Carried to FileArrivedLogged below, which fires later once the file is actually
+                // written — the only place with both the "how" and the eventual outcome.
+                _lastIncomingHow = dialog.How.Describe();
+                if (!dialog.Allowed) _sessionLog.IncomingRefused(callerId, name, isProgram, _lastIncomingHow);
                 return dialog.Allowed;
             });
 
@@ -286,8 +300,11 @@ public sealed class MainForm : Form
         _server.ReplaceFileAsk = (callerId, name, folder) =>
             OnUiThread(() =>
             {
+                _sessionLog.ReplaceAsked(callerId, name, folder);
                 using var dialog = new ReplaceFileDialog(callerId, name, folder);
                 dialog.ShowDialog(this);
+                _lastReplaceHow = dialog.How.Describe();
+                if (dialog.Choice == ReplaceChoice.Refuse) _sessionLog.ReplaceRefused(callerId, name, _lastReplaceHow);
                 return dialog.Choice;
             });
 
@@ -295,9 +312,9 @@ public sealed class MainForm : Form
         // that software was put on their machine without having to know what ".exe" means.
         _server.FileArrivedLogged = (callerId, name, bytes, folder, isProgram, replaced) =>
         {
-            if (replaced) _sessionLog.FileReplaced(callerId, name, folder);
-            if (isProgram) _sessionLog.ProgramReceived(callerId, name, bytes, folder);
-            else _sessionLog.FileReceived(callerId, name, bytes, folder);
+            if (replaced) _sessionLog.FileReplaced(callerId, name, folder, _lastReplaceHow);
+            if (isProgram) _sessionLog.ProgramReceived(callerId, name, bytes, folder, _lastIncomingHow);
+            else _sessionLog.FileReceived(callerId, name, bytes, folder, _lastIncomingHow);
         };
 
         _server.SessionLogged = (callerId, starting) =>

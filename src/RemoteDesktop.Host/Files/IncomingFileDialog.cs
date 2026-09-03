@@ -1,3 +1,4 @@
+using RemoteDesktop.Host;
 using RemoteDesktop.Host.Input;
 using RemoteDesktop.Shared.Identity;
 using RemoteDesktop.UI;
@@ -45,6 +46,14 @@ public sealed class IncomingFileDialog : Form
     private int _allowUnlocksIn = AllowUnlockSeconds;
 
     public bool Allowed { get; private set; }
+
+    /// <summary>See <see cref="ConsentAnswerMethod"/>. Added 2026-09-03 — this dialog decides whether
+    /// a PROGRAM lands on the machine, which is the single sharpest edge in the whole file feature,
+    /// and it had no record of how its answer was actually reached, nor of a refusal at all.</summary>
+    public ConsentAnswerMethod How { get; private set; } = ConsentAnswerMethod.WindowClosed;
+
+    private bool _viaMouse;
+    private bool _finished;
 
     public IncomingFileDialog(string callerId, string fileName, long bytes, string folder, bool isProgram)
     {
@@ -123,8 +132,10 @@ public sealed class IncomingFileDialog : Form
             Margin = new Padding(0),
         };
         _refuse.Margin = new Padding(0, 0, Theme.S3, 0);
-        _refuse.Click += (_, _) => Finish(false);
-        _allow.Click += (_, _) => Finish(true);
+        _refuse.MouseClick += (_, _) => _viaMouse = true;
+        _allow.MouseClick += (_, _) => _viaMouse = true;
+        _refuse.Click += (_, _) => Finish(false, _viaMouse ? ConsentAnswerMethod.Clicked : ConsentAnswerMethod.Keyboard);
+        _allow.Click += (_, _) => Finish(true, _viaMouse ? ConsentAnswerMethod.Clicked : ConsentAnswerMethod.Keyboard);
         _allow.Enabled = false;
         buttons.Controls.Add(_refuse);
         buttons.Controls.Add(_allow);
@@ -136,7 +147,7 @@ public sealed class IncomingFileDialog : Form
         FormClosing += (_, _) =>
         {
             _timer.Stop();
-            if (DialogResult != DialogResult.OK) Allowed = false;
+            if (!_finished) { Allowed = false; How = ConsentAnswerMethod.WindowClosed; }
         };
 
         _timer.Tick += (_, _) => Tick();
@@ -172,7 +183,7 @@ public sealed class IncomingFileDialog : Form
         }
 
         _secondsLeft--;
-        if (_secondsLeft <= 0) { Finish(false); return; }
+        if (_secondsLeft <= 0) { Finish(false, ConsentAnswerMethod.TimedOut); return; }
         UpdateCountdown();
     }
 
@@ -181,10 +192,12 @@ public sealed class IncomingFileDialog : Form
             ? $"Read this first. Allow unlocks in {_allowUnlocksIn} seconds."
             : $"If you do nothing, this is refused in {_secondsLeft} seconds.";
 
-    private void Finish(bool allowed)
+    private void Finish(bool allowed, ConsentAnswerMethod how)
     {
         _timer.Stop();
+        _finished = true;
         Allowed = allowed;
+        How = how;
         DialogResult = allowed ? DialogResult.OK : DialogResult.Cancel;
         Close();
     }

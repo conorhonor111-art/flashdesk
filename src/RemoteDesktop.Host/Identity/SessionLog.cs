@@ -89,9 +89,24 @@ public sealed class SessionLog
     public void FileSent(string callerId, string name, long bytes, string folder) =>
         Write($"SENT         {Pretty(callerId)} copied \"{name}\" ({Size(bytes)}) from {folder}");
 
+    // --- Incoming files and programs. Added 2026-09-03: this pair used to have NO "asked" line and
+    // NO record at all of a refusal — only a successful arrival was ever logged, so a person scanning
+    // the file afterwards could not tell "nothing was ever offered" from "something was offered and
+    // refused". This is exactly the gap Conor named: "the PROGRAM line logged the result with no
+    // record of the asking." Matches the FILES asked/allowed/refused shape already in place above.
+
+    /// <summary>They are asking to put a file, or a program, on this computer — before the dialog shows.</summary>
+    public void IncomingAsked(string callerId, string name, long bytes, string folder, bool isProgram) =>
+        Write($"UPLOAD       {Pretty(callerId)} is asking to put {(isProgram ? "the program " : "")}"
+            + $"\"{name}\" ({Size(bytes)}) into {folder}");
+
+    public void IncomingRefused(string callerId, string name, bool isProgram, string how) =>
+        Write($"UPLOAD       {Pretty(callerId)} was refused when asking to put "
+            + $"{(isProgram ? "the program " : "")}\"{name}\" here ({how})");
+
     /// <summary>A file arrived on this computer.</summary>
-    public void FileReceived(string callerId, string name, long bytes, string folder) =>
-        Write($"RECEIVED     {Pretty(callerId)} put \"{name}\" ({Size(bytes)}) into {folder}");
+    public void FileReceived(string callerId, string name, long bytes, string folder, string how) =>
+        Write($"RECEIVED     {Pretty(callerId)} put \"{name}\" ({Size(bytes)}) into {folder} ({how})");
 
     /// <summary>
     /// A PROGRAM arrived. Logged with its own verb at Conor's instruction, because a person
@@ -99,8 +114,8 @@ public sealed class SessionLog
     /// which is the step a tech-support scam depends on — without having to recognise what ".exe"
     /// means among a list of ordinary file names.
     /// </summary>
-    public void ProgramReceived(string callerId, string name, long bytes, string folder) =>
-        Write($"PROGRAM      {Pretty(callerId)} put the program \"{name}\" ({Size(bytes)}) into {folder}");
+    public void ProgramReceived(string callerId, string name, long bytes, string folder, string how) =>
+        Write($"PROGRAM      {Pretty(callerId)} put the program \"{name}\" ({Size(bytes)}) into {folder} ({how})");
 
     /// <summary>
     /// Unfinished files from an interrupted transfer were removed at start-up. It has no caller
@@ -113,9 +128,18 @@ public sealed class SessionLog
         Write($"CLEANED      removed {count} unfinished {(count == 1 ? "file" : "files")} "
             + "left behind by a transfer that was cut off");
 
+    /// <summary>Same reasoning as IncomingAsked/IncomingRefused above — the destructive one of the two
+    /// dialogs (Replace throws away a file that cannot be got back) had no asked line and no record
+    /// of a refusal either.</summary>
+    public void ReplaceAsked(string callerId, string name, string folder) =>
+        Write($"OVERWRITE    {Pretty(callerId)} is asking whether to replace \"{name}\" in {folder}");
+
+    public void ReplaceRefused(string callerId, string name, string how) =>
+        Write($"OVERWRITE    {Pretty(callerId)} was refused when asking to replace \"{name}\" ({how})");
+
     /// <summary>An existing file was replaced, after the person at this machine agreed to it.</summary>
-    public void FileReplaced(string callerId, string name, string folder) =>
-        Write($"REPLACED     {Pretty(callerId)} replaced \"{name}\" in {folder}");
+    public void FileReplaced(string callerId, string name, string folder, string how) =>
+        Write($"REPLACED     {Pretty(callerId)} replaced \"{name}\" in {folder} ({how})");
 
     /// <summary>
     /// Appends the block SessionRecorder produced, unstamped and indented under the DISCONNECTED
