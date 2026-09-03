@@ -1,3 +1,127 @@
+> # HANDOVER — 2026-09-03. READ THIS FIRST — IT SUPERSEDES 2026-08-06 BELOW.
+>
+> The 2026-08-06 handover further down is kept for its still-valid decisions (naming, design,
+> the ID system) but its "next steps" and "unverified" sections are stale. This one is current.
+>
+> ## What shipped today
+>
+> **0.4.0 is published and verified — live, real, not assumed.** `Check-LiveBuild.ps1` ran clean,
+> sections 1–6, against `https://flashdesk.org` and both download routes: version string
+> **`0.4.0+4c84521`**, matching this repository's history at that commit. Two real features are in
+> a stranger's hands for the first time: two-way file transfer and multi-monitor switching (the
+> download page says plainly that multi-monitor is untested on real hardware — see "What this does
+> and what it does not"). Do not re-litigate the version number or re-run Check-LiveBuild against
+> this same commit expecting a different answer; it already answered.
+>
+> **The live build is ONE code commit behind HEAD, and this is a decision, not an oversight.**
+> Missing: `54a5e58`, "Cover the PROGRAM and OVERWRITE dialogs with the same consent logging" — the
+> incoming-file/program dialog and the overwrite dialog now log an asked→decided pair with HOW
+> (clicked/keyboard/timed out), matching what connect and file-access already had; before this
+> commit, refusing either logged NOTHING at all. **Conor's own call: this does not go out tonight
+> — nobody is using file transfer yet, so the gap costs nothing today, and it ships with the next
+> release rather than forcing a same-night re-upload.** Do not re-upload 0.4.0 to add it; fold it
+> into whatever ships next.
+>
+> **The Check-LiveBuild "contradiction," resolved, not a script bug.** Conor ran it and it reported
+> the live build "behind by 1 commit, documentation only, READY" — which looked wrong, because
+> Claude had just warned that `54a5e58` touches `src\`. Checked by timestamp, not assumed: `4c84521`
+> committed 07:18:10, the doc-only `a4cb9ad` (PROGRESS.md) at 07:19:23, `54a5e58` at **07:36:08** —
+> a 17-minute gap. Check-LiveBuild compares the live build against `HEAD` **at the moment it runs**;
+> Conor ran it somewhere in that 17-minute window, while HEAD was still `a4cb9ad` — one commit
+> ahead of live, documentation only, exactly what it reported. `54a5e58` did not exist yet. **The
+> script's `src\` detection is trustworthy and did not miss anything** — two people (well, a person
+> and a session) moved in parallel, and the warning was about a future HEAD the check had no way to
+> see. Worth remembering the shape of this, not just the conclusion: before "the tool is wrong,"
+> check the TIMESTAMPS, not just the diff.
+>
+> ## Everything outstanding, priority order as left
+>
+> 1. **Live download proof.** The one live session run today got through Accept and "may they see
+>    your files" but disconnected before a file was actually picked — `SessionRecorder.
+>    TransferCheckpoint`'s live path is still unit-tested only, never watched end to end on a real
+>    connection. Redo this one short step next time two machines (or two local copies — see below)
+>    are connected; it needs no other work first.
+> 2. **Stale input** — design proposed 2026-08-27, not built. Read that entry before starting.
+> 3. **The upload input-delay instrument** — not built. The real, confirmed delay ("recovered in
+>    single-digit-to-low-double-digit seconds," 2026-08-27) still has no built-in way to show a
+>    figure without watching two windows — the exact thing CLAUDE.md's "never make me the measuring
+>    instrument" rule is about.
+> 4. **Checkpoint thinning.** Conor's design direction, not built: today's fixed 3-minute periodic
+>    checkpoint interval produces ~40 lines in a 2-hour session — readable today, too many for a
+>    nervous stranger to send and for Conor to read at real length. Direction given: every 3 minutes
+>    early in a session, every 10 minutes later. `SessionRecorder.ShortStatusLine`/
+>    `HostServer.EmitPeriodicCheckpoint` are where this lives.
+> 5. **The clipboard bridge.** Grepped, confirmed 2026-08-27: no such bridge exists anywhere in
+>    FlashDesk's own code. A clipboard paste that appeared to work between test machines was the
+>    underlying RDP/VMware layer, one level below FlashDesk entirely — see "The clipboard paste was
+>    RDP/VMware, not FlashDesk" in this file. If clipboard sharing is wanted, it is a real feature to
+>    build, not a bug to fix.
+> 6. **Per-monitor DPI** — deferred to its own stage, per the 2026-07-29/30 design-system decision
+>    (see "Rounded corners and the polish pass" era notes below). Multi-monitor SWITCHING shipped in
+>    0.4.0; per-monitor DPI scaling did not, and is a separate piece of work.
+>
+> ## Standing decisions — do not re-ask
+>
+> Everything in the 2026-08-06 handover's own "Decisions Conor has already made" list still holds
+> (transfer never manipulation, consent identifies by number never name, restore-without-focus,
+> the two-display rig is unreachable, FlashDesk must run in `.222`'s console session not RDP for
+> multi-monitor testing — the last one matters again now that multi-monitor has shipped and needs
+> real verification). Add today's:
+>
+> - **The consent dialogs cannot be bypassed by automation.** Investigated properly after a real
+>   scare (see "Links 5–7 proven live" below) — `ConsentDialog.Accepted` has no path to `true` except
+>   the Accept button; `resuming`/grace-window and `known-callers.json` do not skip it; `Flash
+>   DeskTestMode` explicitly does not touch consent. The apparent bypass was Conor, still on an
+>   active RDP session, answering in real time. Do not re-investigate this from scratch again.
+> - **Recovery no longer requires perfect silence** — `BandwidthGovernor`'s dead-zone branch decays
+>   the quiet-window count instead of zeroing it (commit `a9ff7a2`), proven Rule-11 style (old: stuck
+>   at level 6/9 for 40 windows / 26.3s; new: level 0/9 after 20 windows / 13.1s). A known, narrow,
+>   non-oscillating residual limit remains (an exact sustained 1:1 clean/dead-zone tie can still pin
+>   the count between two values) — recorded as accepted, not something to re-harden.
+> - **The close-chain (FormClosing → ... → Append) is proven live, all 7 links, with a real session's
+>   data landing in `sessions.txt`.** The mechanism that ate three hours of measurements — a session
+>   log write that could fail completely silently — is fixed and cannot recur invisibly: failures
+>   raise `SessionLog.WriteFailed`, are filed into the capture log, and show live in the technical
+>   view. Do not reopen "does the session log actually write."
+> - **Checkpoint format is decided:** a periodic checkpoint is one short line; a per-transfer
+>   checkpoint is that ONE transfer's own few lines, never the whole cumulative report repeated; the
+>   full multi-section report is reserved for the true end. This is what avoids the "fourteen
+>   near-identical blocks" problem in a long session. Only the INTERVAL is still open (see outstanding
+>   item 4) — the shape is not.
+> - **Every consent dialog now logs HOW it was answered** (clicked/keyboard/timed out/window closed)
+>   and has an asked→decided pair in the log — connect, file access, incoming file/program, and
+>   overwrite. This is load-bearing for the NEXT time "did a human really answer this" comes up —
+>   read the file, do not reconstruct it from idle timers again.
+>
+> ## Today's real lesson, plainly
+>
+> **Seven times today an instrument was the problem, not the thing it measured** — not trivia, the
+> working method now (CLAUDE.md rule 12 and its 2026-09-03 addendum exist because of this):
+> 1. A capture-log line's em dash read as mangled text in a PowerShell console — the file was correct
+>    UTF-8 the whole time; the console's own rendering was the only thing wrong.
+> 2. `sessions.txt` sitting unchanged after a real 3-hour session was nearly read as "the link was
+>    genuinely silent" — the actual answer to the recovery question this whole investigation started
+>    from — when it was the session log's own write failing with no trace, silently, by design.
+> 3. A live test against the host app answered nothing, because the exe being tested was frozen at
+>    the commit that existed before the investigation began — never republished, never mentioned.
+> 4. A connection and a file-access request both resolved with nobody visibly at the keyboard —
+>    investigated as a possible consent-bypass bug before being trusted either way; it was Conor,
+>    still on an active RDP session.
+> 5. A guess about WHY a UI field went missing ("today's layout changes pushed it out") was offered
+>    and almost recorded as the explanation, before "ignore it, that is exactly what we have been
+>    fighting" caught it — no bug was ever confirmed to exist in the first place.
+> 6. Today's Check-LiveBuild "contradiction" (see above) — the tool was right; a warning about a
+>    commit that did not exist yet when the tool ran looked like the tool being wrong.
+> 7. The instrument built specifically to answer "did transfer #3 recover" gave no reading at all
+>    when read, and for a moment that silence nearly stood in as the answer to the question it was
+>    built to settle.
+>
+> None of these were caught by a feeling that something was off. Each was caught by checking what
+> the instrument actually recorded — a file's raw bytes, a running process's real version, a
+> commit's real timestamp, an active session's real idle time — before trusting what it seemed to
+> say. That check is not overhead on the real work; on this project, it has repeatedly BEEN the
+> real work.
+
 > # HANDOVER — 2026-08-06. READ THIS BEFORE ANYTHING ELSE.
 >
 > Written because a session was about to be cleared and everything not in a file would have been
