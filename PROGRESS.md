@@ -91,10 +91,14 @@
 >
 > `dotnet build`: 0/0. `dotnet test`: 304/306 (the same two pre-existing, already-confirmed-unrelated
 > flakes). Published and version-verified by reading the running process, not inferred:
-> **`0.4.0+44b91b8`**, both `flashdesk-upload` and the local `FlashDesk-test-build`. **The LIVE site
-> still serves `0.4.0+4c84521`** (Conor's own hold from the first round still applies — nothing here
-> re-opens that decision) — `44b91b8` is proven and staged, not yet pushed to flashdesk.org. Whether
-> to upload it now or bundle it with more is Conor's call, not assumed either way.
+> **`0.4.0+44b91b8`**, both `flashdesk-upload` and the local `FlashDesk-test-build`.
+>
+> **Conor is uploading `44b91b8` to the live site himself** (his own reason, stated plainly: the live
+> build still let someone dial their own number — the exact trap that cost him a test — and the
+> session-log button only helps a tester at all if BOTH sides of the call are running it, so it has
+> to be in the file a stranger downloads). GitHub tag `v0.4.0-1` (`v0.4.0` already used), `site\
+> index.html` unchanged — its text did not change, only the exe did. **Check-LiveBuild had not yet
+> been run as of this note** — do not assume READY until that result is actually reported.
 >
 > ## Everything outstanding, priority order as left
 >
@@ -107,17 +111,25 @@
 >    checkpoint interval produces ~40 lines in a 2-hour session — readable today, too many for a
 >    nervous stranger to send and for Conor to read at real length. Direction given: every 3 minutes
 >    early in a session, every 10 minutes later. `SessionRecorder.ShortStatusLine`/
->    `HostServer.EmitPeriodicCheckpoint` are where this lives. While there, consider the "stuck at no
->    frames recorded since" wording found this round for a near-instant transfer's own checkpoint.
-> 4. **The clipboard bridge.** Grepped, confirmed 2026-08-27: no such bridge exists anywhere in
+>    `HostServer.EmitPeriodicCheckpoint` are where this lives.
+> 4. **"Stuck" is the wrong word for "too soon to tell."** `SessionRecorder.RecoveryLine`, called from
+>    a per-transfer checkpoint fired the instant a transfer ends, can report "NOT back to full speed
+>    ... stuck at no frames recorded since" when the real situation is that zero post-transfer time
+>    has elapsed yet — seen live 2026-09-03 on a 92-byte, 3 ms transfer, where the very next periodic
+>    checkpoint (2m56s later) showed a full, ordinary recovery. Not a bug in the recovery mechanism
+>    itself, confirmed by that same later checkpoint — only in the WORDING of a checkpoint written too
+>    early to say anything real. Conor: "your catch is right... add it to the list." Fix belongs
+>    alongside item 3 above, since both touch the same checkpoint-emission code, but is its own,
+>    separate finding — a wording fix, not an interval fix.
+> 5. **The clipboard bridge.** Grepped, confirmed 2026-08-27: no such bridge exists anywhere in
 >    FlashDesk's own code. A clipboard paste that appeared to work between test machines was the
 >    underlying RDP/VMware layer, one level below FlashDesk entirely — see "The clipboard paste was
 >    RDP/VMware, not FlashDesk" in this file. If clipboard sharing is wanted, it is a real feature to
 >    build, not a bug to fix.
-> 5. **Per-monitor DPI, and multi-monitor SWITCHING verification itself** — both genuinely blocked on
+> 6. **Per-monitor DPI, and multi-monitor SWITCHING verification itself** — both genuinely blocked on
 >    the same thing: neither `.223` nor `.222` has, or can be given, a second display (see above; do
 >    not plan around this changing). Both wait for the real two-screen machine and a phone call.
-> 6. **A one-line hint that `AppData` (and other hidden folders) are click-navigable** in the file
+> 7. **A one-line hint that `AppData` (and other hidden folders) are click-navigable** in the file
 >    panel — Conor's own "worth one line, or not; your call" from this round. Not built; genuinely
 >    optional, and the session-log button already removes the one case that made it matter.
 >
@@ -147,12 +159,13 @@
 > - **Checkpoint format is decided:** a periodic checkpoint is one short line; a per-transfer
 >   checkpoint is that ONE transfer's own few lines, never the whole cumulative report repeated; the
 >   full multi-section report is reserved for the true end. This is what avoids the "fourteen
->   near-identical blocks" problem in a long session. Only the INTERVAL is still open (see outstanding
->   item 4) — the shape is not.
+>   near-identical blocks" problem in a long session. Only the INTERVAL (outstanding item 3) and the
+>   near-instant-transfer WORDING (outstanding item 4) are still open — the shape is not.
 > - **Every consent dialog now logs HOW it was answered** (clicked/keyboard/timed out/window closed)
 >   and has an asked→decided pair in the log — connect, file access, incoming file/program, and
->   overwrite. This is load-bearing for the NEXT time "did a human really answer this" comes up —
->   read the file, do not reconstruct it from idle timers again.
+>   overwrite. **Conor, 2026-09-03, on seeing a real `(keyboard)` in a real log line: "that question
+>   is closed for good."** Whether a human or a machine answered a consent dialog is no longer
+>   something to reason about from idle timers or RDP session state — read the file. Do not reopen.
 > - **The live download path, the transfer checkpoint, the session-log button, and self-connect
 >   refusal are all proven on a real two-machine connection**, not simulated, not unit-test-only.
 >   Do not reopen "does the transfer checkpoint actually land" or "does the session-log button
