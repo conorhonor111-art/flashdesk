@@ -2879,3 +2879,65 @@ moment the consent question is settled, and not before").** Now that it is settl
 the consent-logging fix included: `C:\Users\PC\Desktop\flashdesk-upload\FlashDesk.exe`, version
 `0.4.0+4c84521`, 68.5 MB (71,846,912 bytes), SHA-256 `092C5C41...C85E62`. `dotnet build`: 0/0.
 `dotnet test`: 302/304 — the same two pre-existing, already-confirmed-unrelated flaky tests.
+
+## Design pass: device-aware download page, pointer-scoped breakpoints, fluid type, mark check (2026-09-03)
+
+Built per Conor's own instruction ("flashdesk.org is a download page for a WINDOWS DESKTOP PROGRAM
+— a phone or tablet visitor is offered the same 68.5 MB button and it is dead in their hands").
+Committed at `77bc172`, staged only — nothing uploaded, per Conor's own instruction this round.
+
+**Device-aware primary action.** Detected with `(pointer: coarse)` — a CSS media feature, not a
+User-Agent sniff, and no JavaScript anywhere on the page (matches the existing zero-script rule).
+On a coarse pointer the primary action becomes a `mailto:` "Email yourself this link" button, with
+a plain line explaining why and a "remember flashdesk.org" fallback for a phone with no mail app
+configured; the Download button demotes to an outlined secondary, never hidden — a touch Windows
+tablet can still run the file. **A real bug was caught by the measurement harness, not by eye:**
+the first version set `display: inline-block` on both `.download` and `.send-link` at the 900px
+breakpoint, which silently overrode `.send-link`'s `display: none` default on a WIDE FINE-POINTER
+screen — a real 1440px desktop was measured showing the mailto button it should never see. Fixed
+with a combined `(min-width: 900px) and (pointer: coarse)` rule.
+
+**Breakpoints:** kept 640/900/1300, each re-justified in comments by content (900px specifically
+because the two-column hero's own arithmetic — 40rem text + ~20rem screenshot + gap — has nowhere
+to fit before then, verified against real tablet-portrait/landscape numbers, not assumed). New
+`(pointer: coarse)` axis, independent of width: 44px minimum height on both CTA buttons (Apple's
+iOS floor), WCAG-24px-floor padding nudges on three inline links.
+
+**Fluid type:** `h1`/`h2`/body/CTA font-size now `clamp()` instead of jumping at breakpoints, same
+endpoints as before (360px floor, 1300px ceiling). Verified against real Chrome computed values at
+390/834/1194/1440px — every rendered font-size matched the derived formula exactly.
+
+**The mark:** added `assets\FlashDesk-mark-mono.svg` — single-colour, dark-ink, transparent
+background, for light surfaces the tile was never meant for. Verified at 16px by rasterizing it
+make-icon.ps1's own way: 58 ink pixels, 19 solid-core, zero touching the canvas edge. Geometry
+lives in five hand-maintained files plus two regenerated `.ico`s; true single-sourcing is blocked
+by the page's own no-JS/no-build-step rule, so `scripts\Check-MarkGeometry.ps1` parses the
+canonical points out of `make-icon.ps1` and asserts the other five match — **proven to actually
+fail**, per house Rule 11: deliberately corrupted one point in `holding.html`, confirmed the check
+failed naming the right file, restored it, confirmed clean again. Wired into `Check-LiveBuild.ps1`
+as section 0, run before any network call.
+
+**Measured, not assumed:** real `getBoundingClientRect()` positions via a headless-Chrome CDP
+harness (no npm install — raw WebSocket, Node 24's native `fetch`/`WebSocket`) at phone (390×844),
+tablet portrait (834×1194), tablet landscape (1194×834) and desktop (1440×900), before (git HEAD)
+and after. Phone, before: download y312-411 (matches the historical commit `4cd127e` figure
+exactly, cross-validating the method). Phone, after: send-link (new primary) y361-427, download
+(demoted) y492-594 — both above the 844px fold. Same holds at tablet portrait and landscape. On
+desktop the swap correctly shows only `.download`, `.send-link` and `.touch-note` both
+`display: none`.
+
+**Design-critic pass:** a fresh-context adversarial review (independent Claude session) checked the
+file and all four screenshots against every settled rule — anti-scam warning wording/position,
+zero external hosts, amber reserved for live sessions, exactly one filled green at a time (traced
+through the CSS cascade, not just eyeballed), no gradients/shadows/animation, state never carried
+by colour alone. **No violations found.** One thing it checked and ruled out as a false alarm,
+recorded so it is not re-flagged: the screenshot `<img>`'s dimensions looked non-square in a small
+thumbnail; opened the actual 500×500 asset directly and confirmed it is genuinely square — no
+aspect-ratio bug.
+
+**Not touched:** the anti-scam warning's wording or position, the external-host policy, any C#
+project (`dotnet build`/`dotnet test` not re-run this round — no `src\` files changed).
+
+**Upload list (in order, nothing uploaded yet):** 1) `site\index.html` (the only changed deployed
+asset — `inter.woff2` and `flashdesk-window.png` are unmodified). 2) `scripts\Check-LiveBuild.ps1`
+last, to verify.
