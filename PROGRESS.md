@@ -2941,3 +2941,78 @@ project (`dotnet build`/`dotnet test` not re-run this round — no `src\` files 
 **Upload list (in order, nothing uploaded yet):** 1) `site\index.html` (the only changed deployed
 asset — `inter.woff2` and `flashdesk-window.png` are unmodified). 2) `scripts\Check-LiveBuild.ps1`
 last, to verify.
+
+## Design pass: real multi-page site — how-it-works, privacy, faq, terms (2026-09-04)
+
+Built per Conor's own diagnosis: "flashdesk.org is a landing page pretending to be a website" —
+no navigation, no footer, no other pages, and roughly 45% of a wide window sat empty beside a
+left-pinned column. Committed at `a376704`, staged only — nothing uploaded yet.
+
+**Structure:** four real pages with real URLs (`/how-it-works`, `/privacy`, `/faq`, `/terms`), each
+`site\<slug>\index.html`, plus the existing home page. Shared header (mark + 5-link nav) and footer
+(the same links, the copyright line, and "FlashDesk will never telephone you. If someone calls
+claiming to be us, hang up.") on every page.
+
+**Content grounded in the source, not invented.** An independent research pass verified all 14
+factual claims in the brief against `src\`, with file:line citations, before any page copy was
+written. **One brief claim was FALSE as worded and rewritten rather than softened:** "with more
+than one screen they are told how many the helper can reach" — `DisplayLayout.Describe()`'s own
+doc comment says explicitly those words are "what the OPERATOR sees," and the client-facing
+`MainForm.cs` has no monitor-count text anywhere. Written instead as the true, already-existing
+weaker claim (the helper can switch screens; unverified on real hardware). `/privacy` names one
+open question rather than guessing at it: what the relay itself retains beyond the moment of
+connecting two numbers has not had the same line-by-line pass the client program got, and the page
+says so.
+
+**Layout:** one `.frame` element wraps header+main+footer so they share an outer max-width by
+CONSTRUCTION. Measured, not assumed: at 1440px, all three have 152px/152px margins; at 1890px,
+377px/377px — identical on both sides at both widths. The download button (was ~500×78 solid
+green, over "Only download this if you contacted us yourself") and that warning now share one
+`.decision` surfaced card — same words, smaller button, read as one decision rather than a shout
+plus a caption.
+
+**Caught and fixed before shipping — a real, silent CSS failure:** `site.css`'s own top-of-file
+comment contained the literal three characters slash-star-slash inside a described file path,
+which is CSS's close-comment token, and silently truncated the whole leading comment mid-sentence —
+feeding ~1500 characters of real prose to the parser as garbage and dropping the entire `:root`
+block (every colour, spacing and type-scale variable), with no error anywhere. The page rendered as
+completely unstyled default HTML. Caught by asking WHY a freshly-built page had zero applied
+styling, not by trusting that the file "looked right." Fixed, and the fix explains itself in the
+file so it can't be silently reintroduced.
+
+**Technical choice: generation, not a drift check, for the header/footer** (Conor's own framing —
+"six copies of hand-maintained markup has already cost this project once, most recently the mark
+geometry"). `scripts\Build-Site.ps1` generates every page in `site\` from ONE header partial, ONE
+footer partial and one layout shell in `site-src\` — drift between pages' chrome is no longer
+possible to introduce by hand. `site\site.css` stays hand-maintained directly (one shared file
+already satisfies "no duplication" without a build step). `scripts\Check-LiveBuild.ps1` section 5
+now discovers every generated page automatically and fetches every asset every page asks for —
+proven against the real live site: it correctly reported 404 on all four new (not-yet-uploaded)
+pages and a content mismatch on home, exactly the failure class it exists to catch.
+
+**Reviewed twice, deliberately different jobs** (Conor's own instruction — the first round's
+rules-check was "true and useless"). A rules-compliance pass found nothing (expected). A second,
+adversarial pass asked instead whether the site reads as real or abandoned, and what the single
+worst thing about it is. Verdict: reads as real — specific, falsifiable claims (not marketing
+language) are what a scam page doesn't bother writing. **Worst finding, structural and not fixable
+by more copy:** the target reader (frightened, non-technical, deciding in 30 seconds) cannot verify
+any of the page's falsifiable claims, and the site has zero external reputation signal — the phone
+call the person is already on is what actually transfers trust; the page's job is not to
+contradict it, not to manufacture trust alone. **Also flagged and ACTED ON in this same commit:**
+Privacy read as a denser "memo" than Home/How-it-works' scannable cards — reformatted Privacy's two
+fact lists into the same card grid.
+
+**Measured, not assumed:** phone (390×844) before/after — the new primary action and the demoted
+download button both stay above the fold (send-link 506-572px, download 662-764px, viewport 844px)
+despite the page growing ~670px overall from the new nav and footer. The critical path did not
+regress even though the page got longer.
+
+**Not touched:** the anti-scam warning's wording or position, external-host policy, any C# project.
+
+**Upload list (in order, nothing uploaded yet):**
+1. `site\site.css` (new — every page's `<link>` will 404 without it uploaded first).
+2. `site\index.html`, `site\how-it-works\index.html`, `site\privacy\index.html`,
+   `site\faq\index.html`, `site\terms\index.html` (upload each as its own directory + file — a
+   static host serves `site\how-it-works\` as `/how-it-works/` automatically via its own
+   `index.html`, no server config needed).
+3. `scripts\Check-LiveBuild.ps1` last, to verify all five pages and every asset.
