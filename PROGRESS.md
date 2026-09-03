@@ -2590,3 +2590,58 @@ one machine" pattern means a host can run on either machine) — `.222` is not r
 credentials, `TrustedHosts` deliberately untouched per standing decision), so that can only be
 answered by Conor. Links 5–7 remain unproven; the test needs to be run again, now that the binary
 under test is no longer nine commits behind the fix being tested.
+
+## Links 5–7 proven live; the consent question settled as Conor, not a bug (2026-09-03)
+
+Ran the whole thing locally on `.223` — two copies (`163035814` sharing, a fresh `868513634` TEST
+COPY, `FLASHDESK_DISABLE_CONTROL=1`) — to sidestep `.222` being unreachable entirely. Both copies'
+versions read directly off the running processes (`0.3.1+35b2294`, current HEAD at the time).
+`868513634` dialed `163035814` via UI automation (Win32 `SendMessage`/`BM_CLICK` on real controls,
+no vision needed). **Both the connection Accept and the "may they see your files" Allow resolved
+without any click from this session** — investigated properly before trusting it (ConsentDialog's
+`Accepted` field, the `resuming`/grace-window check, `FlashDeskTestMode`, `known-callers.json` — none
+of them offer a bypass), found an active RDP session on `.223` with 2 minutes idle time, and the
+4-second response time on both dialogs matched real human timing rather than a scripted click.
+**Confirmed by Conor: it was him**, still on RDP despite saying he'd step away. Recorded here exactly
+as it happened rather than settled quietly, because the alternative answer would have meant the
+product's central promise — a machine cannot consent on a person's behalf — was broken.
+
+Closed the host (`163035814`) via `CloseMainWindow()` — the real X-equivalent — completing the actual
+test:
+```
+CLOSE-TRACE  1/7  MainForm.FormClosing reached
+CLOSE-TRACE  2/7  Dispose() reached
+CLOSE-TRACE  3/7  Stop() reached
+CLOSE-TRACE  4/7  FinishSessionReport() reached
+CLOSE-TRACE  5/7  SessionSummaryReady invoked, subscriber present: True
+CLOSE-TRACE  5/7  MainForm's SessionSummaryReady handler ran
+CLOSE-TRACE  6/7  calling SessionLog.Detail()
+CLOSE-TRACE  7/7  Append() succeeded — sessions.txt has the final block
+```
+**All seven links fired, in order, live — the block landed in `sessions.txt`, correctly formatted:**
+`CONNECTED`, three periodic one-line checkpoints, `FILES asked`/`FILES allowed`, `DISCONNECTED`, one
+more checkpoint (fired while `_recorder` was still alive, waiting out the grace window — correct,
+not a bug), then the full `--- how it went ---` block. This is the thing that ate three hours,
+closed. **Not closed: an actual file transfer** — the session disconnected before a file was picked,
+so `TransferCheckpoint`'s LIVE path is still unit-tested only, not live-proven. Conor: redo this one
+short step next time we're connected.
+
+**Consent decisions now log HOW they were answered** (commit `4c84521`) — built specifically because
+this incident required reasoning about idle timers instead of reading a fact off the file. New shared
+`ConsentAnswerMethod` (Clicked / Keyboard / TimedOut / WindowClosed), distinguished by whether
+`MouseClick` fired before `Click`. Wired into both `ConsentDialog` and `FileConsentDialog`. Added
+`SessionLog.ConnectAsked()` so the connection accept has the same asked→decided pair FILES already
+had; `Started`/`Refused`/`FilesAllowed`/`FilesRefused` all carry the how now.
+
+**Written down, not built — Conor's two notes:**
+- Checkpoint volume: a 2-hour session at today's fixed 3-minute interval produces ~40 lines, too many
+  for a nervous stranger to send and for Conor to read. Design direction given: thin out over time —
+  every 3 minutes early in a session, every 10 minutes later. Not implemented; recorded so the shape
+  of the fix is not lost before it is picked up.
+- Live download path: still unproven end-to-end (see above).
+
+**Release 0.4.0 — staged, not uploaded, per Conor's own hold ("I will run your four upload steps the
+moment the consent question is settled, and not before").** Now that it is settled, republished with
+the consent-logging fix included: `C:\Users\PC\Desktop\flashdesk-upload\FlashDesk.exe`, version
+`0.4.0+4c84521`, 68.5 MB (71,846,912 bytes), SHA-256 `092C5C41...C85E62`. `dotnet build`: 0/0.
+`dotnet test`: 302/304 — the same two pre-existing, already-confirmed-unrelated flaky tests.
