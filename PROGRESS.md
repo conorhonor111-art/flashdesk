@@ -34,31 +34,92 @@
 > see. Worth remembering the shape of this, not just the conclusion: before "the tool is wrong,"
 > check the TIMESTAMPS, not just the diff.
 >
+> ## Round two, same evening — three real mistakes fixed, then proven on two real machines
+>
+> Conor's own multi-monitor attempt failed for two mundane reasons, both real findings, neither a
+> bug in the sense first feared: he dialed `.223`'s own number into itself (screen recursed like
+> facing mirrors — one screen, so multi-monitor could never have shown anything regardless), and
+> mistyped the session-log path by hand (missing the username segment). **Standing fact, not to be
+> re-planned around: neither `.223` nor `.222` has, or can be given, a second display. Multi-monitor
+> can only be verified on the real two-screen machine belonging to the person Conor helped, and that
+> waits for a phone call.**
+>
+> Three fixes came out of it, all built, tested, and then proven on a REAL two-machine connection
+> (`.223` operator, `.222` host, `830 342 636`) — not simulated, not local copies:
+> 1. **Dialing your own number is refused before it dials**, in plain words — commit `44b91b8`.
+> 2. **`FilePanel` gained "Copy their session log to my computer"** — a reserved request
+>    (`FileGetRequest.SessionLogPath`) the host resolves from its own known path, so the operator
+>    never types anything. **Proven live: worked on the first try, no path typed, no folder dialog
+>    needed (a remembered download folder already existed) — "Saved their session log (33.8 KB) to
+>    C:\Users\PC\Documents\FlashDesk-session-log-20260903-081855.txt."**
+> 3. **The wrong "not there any more" wording is fixed** (a path that never existed now says so,
+>    honestly, with a pointer to double-clicking instead of typing), and the file list's column
+>    widths were undersized for the panel's real on-screen width (the Name header was truncating to
+>    "me" — fixed to 180/70/90 with real headroom).
+>
+> **This same connection also closed the LAST genuinely open item from the whole investigation: the
+> live download path, end to end, with the transfer checkpoint landing in the log — proven, not
+> unit-tested-only, for the first time.** A real download (`win.ini`, 92 bytes, from `.222`'s
+> `C:\Windows`) landed on `.223`'s disk byte-for-byte, and `.222`'s own session log — read only
+> because the NEW button fetched it — shows the whole chain working together for the first time:
+> ```
+> CONNECT      163 035 814 is asking to connect
+> CONNECTED    163 035 814 accepted and connected (keyboard)
+> FILES        163 035 814 asked to look at the files on this computer
+> FILES        163 035 814 was allowed to look at the files on this computer (keyboard)
+> SENT         163 035 814 copied "win.ini" (92 bytes) from C:\Windows
+>   -- transfer finished at 08:18:22, session still running --
+>                      #1  08:18:22.081 to 08:18:22.084 (0.0s)
+>                           before: 2.0 fps, quality 95, 0.0 KB/s (over 5s)
+>                           during: not enough of the session either side to say
+>                           after : not enough ... — NOT back to full speed within 0s and counting — stuck at no frames recorded since
+> ```
+> **One real, honest finding from reading this, not a failure:** for a transfer this fast (92 bytes,
+> 3 ms), the per-transfer checkpoint fires and is WRITTEN before any post-transfer second has had a
+> chance to complete, so its own "after" line reads "stuck" when nothing is actually stuck — it is
+> just too early to say anything yet. The very next periodic checkpoint, 2m56s later, shows
+> `level 0 now (reached 2 at worst)` — the ladder dipped and fully recovered, exactly as designed;
+> the "stuck" wording was a snapshot taken before there was anything to report, not evidence of a
+> real problem. Worth wording more carefully next time this area is touched ("too soon to tell" vs.
+> "stuck"), not urgent enough to justify reopening tonight per Conor's own "do not open anything new."
+>
+> **Two notes from Conor, recorded, neither acted on (his own "not urgent," and tonight's rule was
+> not to open anything new):** (1) nothing on screen tells the operator that hidden folders like
+> `AppData` are click-navigable — worth one line in the panel, someday. (2) the self-test's own
+> "what a PASS does not cover" honesty was noticed and should stay the house style for every check
+> added after it.
+>
+> `dotnet build`: 0/0. `dotnet test`: 304/306 (the same two pre-existing, already-confirmed-unrelated
+> flakes). Published and version-verified by reading the running process, not inferred:
+> **`0.4.0+44b91b8`**, both `flashdesk-upload` and the local `FlashDesk-test-build`. **The LIVE site
+> still serves `0.4.0+4c84521`** (Conor's own hold from the first round still applies — nothing here
+> re-opens that decision) — `44b91b8` is proven and staged, not yet pushed to flashdesk.org. Whether
+> to upload it now or bundle it with more is Conor's call, not assumed either way.
+>
 > ## Everything outstanding, priority order as left
 >
-> 1. **Live download proof.** The one live session run today got through Accept and "may they see
->    your files" but disconnected before a file was actually picked — `SessionRecorder.
->    TransferCheckpoint`'s live path is still unit-tested only, never watched end to end on a real
->    connection. Redo this one short step next time two machines (or two local copies — see below)
->    are connected; it needs no other work first.
-> 2. **Stale input** — design proposed 2026-08-27, not built. Read that entry before starting.
-> 3. **The upload input-delay instrument** — not built. The real, confirmed delay ("recovered in
+> 1. **Stale input** — design proposed 2026-08-27, not built. Read that entry before starting.
+> 2. **The upload input-delay instrument** — not built. The real, confirmed delay ("recovered in
 >    single-digit-to-low-double-digit seconds," 2026-08-27) still has no built-in way to show a
 >    figure without watching two windows — the exact thing CLAUDE.md's "never make me the measuring
 >    instrument" rule is about.
-> 4. **Checkpoint thinning.** Conor's design direction, not built: today's fixed 3-minute periodic
+> 3. **Checkpoint thinning.** Conor's design direction, not built: today's fixed 3-minute periodic
 >    checkpoint interval produces ~40 lines in a 2-hour session — readable today, too many for a
 >    nervous stranger to send and for Conor to read at real length. Direction given: every 3 minutes
 >    early in a session, every 10 minutes later. `SessionRecorder.ShortStatusLine`/
->    `HostServer.EmitPeriodicCheckpoint` are where this lives.
-> 5. **The clipboard bridge.** Grepped, confirmed 2026-08-27: no such bridge exists anywhere in
+>    `HostServer.EmitPeriodicCheckpoint` are where this lives. While there, consider the "stuck at no
+>    frames recorded since" wording found this round for a near-instant transfer's own checkpoint.
+> 4. **The clipboard bridge.** Grepped, confirmed 2026-08-27: no such bridge exists anywhere in
 >    FlashDesk's own code. A clipboard paste that appeared to work between test machines was the
 >    underlying RDP/VMware layer, one level below FlashDesk entirely — see "The clipboard paste was
 >    RDP/VMware, not FlashDesk" in this file. If clipboard sharing is wanted, it is a real feature to
 >    build, not a bug to fix.
-> 6. **Per-monitor DPI** — deferred to its own stage, per the 2026-07-29/30 design-system decision
->    (see "Rounded corners and the polish pass" era notes below). Multi-monitor SWITCHING shipped in
->    0.4.0; per-monitor DPI scaling did not, and is a separate piece of work.
+> 5. **Per-monitor DPI, and multi-monitor SWITCHING verification itself** — both genuinely blocked on
+>    the same thing: neither `.223` nor `.222` has, or can be given, a second display (see above; do
+>    not plan around this changing). Both wait for the real two-screen machine and a phone call.
+> 6. **A one-line hint that `AppData` (and other hidden folders) are click-navigable** in the file
+>    panel — Conor's own "worth one line, or not; your call" from this round. Not built; genuinely
+>    optional, and the session-log button already removes the one case that made it matter.
 >
 > ## Standing decisions — do not re-ask
 >
@@ -92,6 +153,10 @@
 >   and has an asked→decided pair in the log — connect, file access, incoming file/program, and
 >   overwrite. This is load-bearing for the NEXT time "did a human really answer this" comes up —
 >   read the file, do not reconstruct it from idle timers again.
+> - **The live download path, the transfer checkpoint, the session-log button, and self-connect
+>   refusal are all proven on a real two-machine connection**, not simulated, not unit-test-only.
+>   Do not reopen "does the transfer checkpoint actually land" or "does the session-log button
+>   actually work" — both were watched happening, not assumed.
 >
 > ## Today's real lesson, plainly
 >
