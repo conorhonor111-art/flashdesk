@@ -93,12 +93,17 @@
 > flakes). Published and version-verified by reading the running process, not inferred:
 > **`0.4.0+44b91b8`**, both `flashdesk-upload` and the local `FlashDesk-test-build`.
 >
-> **Conor is uploading `44b91b8` to the live site himself** (his own reason, stated plainly: the live
-> build still let someone dial their own number — the exact trap that cost him a test — and the
-> session-log button only helps a tester at all if BOTH sides of the call are running it, so it has
-> to be in the file a stranger downloads). GitHub tag `v0.4.0-1` (`v0.4.0` already used), `site\
-> index.html` unchanged — its text did not change, only the exe did. **Check-LiveBuild had not yet
-> been run as of this note** — do not assume READY until that result is actually reported.
+> **`44b91b8` is live — Conor uploaded it himself and ran Check-LiveBuild: READY, both routes
+> byte-identical, page and assets current, two commits behind on documentation only (correct and
+> expected).** His own reason for uploading same-night, on the record: the previous live build still
+> let someone dial their own number — the exact trap that cost him a test — and the session-log
+> button only helps a tester at all if BOTH sides of the call are running it, so it had to be in the
+> file a stranger downloads. GitHub tag `v0.4.0-1` (`v0.4.0` already used), `site\index.html`
+> unchanged — its text did not change, only the exe did.
+>
+> **Conor's own words closing the day: "That closes today. Do not start anything."** Nothing is
+> open for a next session to pick up mid-thought — everything unfinished is in the numbered
+> outstanding list below, in priority order, ready to be picked up cold.
 >
 > ## Everything outstanding, priority order as left
 >
