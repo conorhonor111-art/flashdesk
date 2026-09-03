@@ -47,13 +47,24 @@
      inside the warnings card). Same technique, one more step, never a shadow. */
   --surface-2: #282D37;
 
-  /* Spacing scale — base 0.5rem, steps x1 x2 x3 x4 x6. Mirrors Theme.S1..S5 on the C# side.
+  /* Spacing scale — base 0.5rem, steps x1 x2 x3 x4 x6 x8. Mirrors Theme.S1..S5 on the C# side
+     for the first five steps; --s6 is this stylesheet's own addition (see below).
      Every margin and padding on every page comes from here; nothing is eyeballed. */
   --s1: 0.5rem;
   --s2: 1rem;
   --s3: 1.5rem;
   --s4: 2rem;
   --s5: 3rem;
+  /* Added round 3 (2026-09-04) for SECTION-level rhythm specifically. Every gap up to --s5 was
+     being reused for both "space between a heading and its own paragraph" and "space between two
+     unrelated sections" — the same number doing two different jobs, which is exactly what a real
+     vertical-rhythm scale does not do (checked directly against tailscale.com and 1password.com:
+     both separate major sections with roughly 60-80px of whitespace and nothing else — no rule,
+     no background shift). --s6 = 4rem = 64px sits in that measured range and is used ONLY for
+     section-to-section spacing (see `section` below); --s1..--s5 stay for everything inside one
+     section, so the two kinds of gap are now visibly different sizes, not the same gap repeated
+     down the page. */
+  --s6: 4rem;
 
   /* ONE corner radius for every surface this site owns. The only other radius is
      --radius-depiction below, and it belongs to somebody else's software, not to us. */
@@ -76,6 +87,14 @@
   --h2-sub: 1.1rem;
   --body-font: clamp(1.2rem, 1.14rem + 0.29vw, 1.25rem);
   --cta-font: clamp(1.35rem, 1.16rem + 0.86vw, 1.5rem);
+  /* ⚠ FIXED round 3: h3 was 1.05rem while --body-font ranges 1.2-1.25rem — a heading SMALLER than
+     its own body text, the exact kind of accidental defect a real hierarchy check catches and a
+     one-off page ships without noticing. h3 now sits deliberately between body and h2: bigger
+     than body's own maximum, smaller than h2's own minimum, at every width, so the four levels
+     (h1 > h2 > h3 > body) hold their order everywhere instead of only "usually." Not fluid — the
+     gap to h2 above and body below is already only ~2-3px at the narrow end; growing it too would
+     risk h3 and h2 colliding on a phone. */
+  --h3: 1.35rem;   /* 21.6px, always > body's 20px ceiling, always < h2's 22.4px floor */
 
   /* -----------------------------------------------------------------------------------------
      THE FRAME. One outer width, shared by the header, every page's content, and the footer, so
@@ -247,13 +266,22 @@ h1 { font-size: var(--h1); line-height: 1.2; letter-spacing: -0.02em; margin-bot
   padding: var(--s3);
   margin-bottom: var(--s4);
 }
-.decision .download, .decision .send-link { margin-bottom: var(--s2); max-width: 26rem; }
+/* ⚠ ROUND 3: shrunk again — max-width down from 26rem to 20rem, so the button reads as a control
+   inside the card rather than a slab the card was built around. Still clears the 44px touch
+   floor (min-height, set elsewhere, is untouched by max-width). */
+.decision .download, .decision .send-link { margin-bottom: var(--s2); max-width: 20rem; }
 .decision .download-meta { text-align: left; }
+/* The warning now gets the SAME structural treatment as the button above it — its own hairline
+   and padding, not just a bigger font — so it reads as the card's second distinct part, not a
+   caption trailing off the first. Same technique as .footer-warning; the two are the only lines
+   on the site that need it. */
 .decision .near-button {
   margin-bottom: 0;
-  margin-top: var(--s2);
+  margin-top: var(--s3);
+  padding-top: var(--s3);
+  border-top: 1px solid var(--line);
   font-weight: 650;
-  font-size: 1.05em;
+  font-size: 1.1em;
 }
 
 /* DEVICE-AWARE PRIMARY ACTION (round 1, 2026-09-03). FlashDesk is a Windows .exe; on a touch
@@ -285,13 +313,45 @@ h1 { font-size: var(--h1); line-height: 1.2; letter-spacing: -0.02em; margin-bot
   .download { background: transparent; color: var(--text); border: 1px solid var(--muted); }
 }
 
-/* A hairline above each section, so the page reads as built rather than typed. Depth from a 1px
-   rule and a tonal step, never a shadow or a glow. */
-section { margin-bottom: var(--s3); padding-top: var(--s3); border-top: 1px solid var(--line); }
-section:first-of-type { border-top: 0; padding-top: 0; }
-h2 { font-size: var(--h2); line-height: 1.25; margin-bottom: var(--s2); font-weight: 650; }
+/* -------------------------------------------------------------------------------------------
+   SECTION RHYTHM. Was: every section boundary got the SAME hairline + the SAME s3(24px) gap,
+   the identical move repeated eight times down one page — which is itself a "typed, not
+   designed" tell (the fix for that complaint cannot be the same repeated device with a bigger
+   number). Checked against tailscale.com and 1password.com directly: neither draws a rule
+   between ordinary sections at all — the separation is whitespace alone, substantial (~60-80px),
+   and a rule is reserved (if used anywhere) for something genuinely structural, not for every
+   paragraph break. This site keeps that discipline: the DEFAULT is whitespace only, at --s6
+   (64px, a real step up from the s1-s5 range used everywhere else, not a bigger version of the
+   same gap); `.section-break` (below) is the one exception, used exactly once per page at most,
+   for the single transition on each page that is actually a change of subject, not just the next
+   paragraph — see how it is used in the page source before adding a second one anywhere. */
+section { margin-top: var(--s6); }
+section:first-of-type { margin-top: 0; }
+.section-break {
+  padding-top: var(--s6);
+  border-top: 1px solid var(--line);
+}
+/* ⚠ ROUND 3, second pass: weight bumped 650 -> 700 (matching h1) and given h1's own tight
+   tracking. An adversarial "does this look proud, or stopped-when-it-worked" review (not a rules
+   check) found that section headings and card h3s read as the SAME tier — h2 was only 1-4px
+   larger than h3 at the same weight, which a scanning eye does not register as two levels. Weight
+   is the cheaper, more reliable signal than a few more pixels (both reference sites lean on
+   weight+size together, never size alone — see the type-scale note in :root). h3 stays at 650,
+   unchanged, so the gap is now real at every width, not just at the widest one. */
+h2 { font-size: var(--h2); line-height: 1.25; letter-spacing: -0.01em; margin-bottom: var(--s2); font-weight: 700; }
 h2.sub { font-size: var(--h2-sub); margin-top: var(--s4); color: var(--muted); }
-h3 { font-size: 1.05rem; line-height: 1.3; margin-bottom: var(--s1); font-weight: 650; }
+h3 { font-size: var(--h3); line-height: 1.3; margin-bottom: var(--s1); font-weight: 650; }
+
+/* -------------------------------------------------------------------------------------------
+   PROSE RHYTHM. Consecutive body-level elements had no defined gap between them outside a
+   handful of one-off classes (.warnbox p + p, etc.) — most paragraphs on Privacy and Terms were
+   relying on line-height alone to separate them, which reads as typed rather than composed once
+   there is more than one paragraph in a row. One rule, applied broadly, fixes every page at once
+   rather than adding a one-off margin per page as each gap was noticed by eye.
+   ------------------------------------------------------------------------------------------- */
+p + p, p + ul, p + ol, p + dl, ul + p, ol + p, dl + p, p + .feature-grid, .feature-grid + p {
+  margin-top: var(--s3);
+}
 
 ol.steps { list-style: none; counter-reset: step; }
 ol.steps li { counter-increment: step; display: flex; gap: var(--s2); align-items: baseline; padding: var(--s1) 0; }
@@ -336,6 +396,35 @@ a:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; border-ra
 .download:focus-visible, .send-link:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; }
 
 /* -------------------------------------------------------------------------------------------
+   STATEMENT — a single elevated sentence, no card, no border. Added after an adversarial review
+   ("does this look like a product someone is proud of, or a page that stopped when it worked")
+   found How-it-works, Privacy and FAQ were the same card component repeated end to end with no
+   visual break — every scroll was card, card, card, at one size and one weight, which reads as
+   the same div copy-pasted with new text even where the WORDS are genuinely good (and the review
+   said explicitly they are — this component exists to give strong copy a visual moment worthy of
+   it, not to add decoration). Used ONCE per inner page, on the single sentence already doing the
+   most trust-building work there — never for anything invented to fill space. Plain text, no
+   background, no icon: the size and weight alone carry it, matching this site's own rule that a
+   state or a moment is signalled by weight/size/space, not by adding a new visual device per use.
+   ------------------------------------------------------------------------------------------- */
+.statement {
+  font-size: clamp(1.5rem, 1.3rem + 1vw, 2rem);
+  line-height: 1.35;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  max-width: 36rem;
+  /* ⚠ Caught by screenshot, not by eye at the CSS: .statement sits directly before the page's
+     FIRST <section>, and `section:first-of-type { margin-top: 0 }` exists so a section that is
+     the very first thing on the page (true on every page before this component existed) does not
+     get a redundant gap on top of .lead's own margin. Once .statement sits between them, that
+     same rule zeroed the gap AFTER .statement too, and the two collided with no space at all.
+     .statement supplies its own bottom margin so it is never dependent on what happens to follow
+     it. */
+  margin-bottom: var(--s6);
+}
+
+/* -------------------------------------------------------------------------------------------
    REUSABLE CARD — a surfaced block for grouped content on the new pages (how-it-works' feature
    list, the FAQ's questions). Same technique as .decision and .quote: --surface + a hairline
    border + the one shared radius, never a shadow.
@@ -351,15 +440,6 @@ a:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; border-ra
 /* how-it-works: the "what it does not do" list gets a visually distinct, quieter card so it
    never competes with what it does do, which is the actual sales pitch. */
 .not-list { background: var(--surface-2); }
-
-/* FAQ: each question is a card; the question itself is the h3, the answer is body text. */
-.faq-item { }
-
-/* privacy/terms: a small data-style list (term + value), used for "what is kept / where / who
-   can see it." */
-dl.facts { display: grid; grid-template-columns: max-content 1fr; gap: var(--s1) var(--s3); }
-dl.facts dt { color: var(--muted); font-weight: 600; }
-dl.facts dd { margin: 0; }
 
 /* -------------------------------------------------------------------------------------------
    THREE WIDTH BREAKPOINTS, each earned by something the CONTENT does at that width — see the
@@ -394,11 +474,41 @@ dl.facts dd { margin: 0; }
   .send-link { display: none; }
   .near-button { text-align: left; max-width: 32rem; margin-bottom: 0; margin-top: var(--s2); }
 
-  /* Prose keeps a readable measure even inside the wider frame — a line of body text is readable
-     to about 70 characters and no further, so the reading column stays narrow and the space
-     beside it is left for the frame's own margin, not filled just because it is there. */
-  main > section { max-width: 42rem; }
+  /* ---------------------------------------------------------------------------------------
+     ⚠ ROUND 3 FIX (2026-09-04) — THIS WAS THE ACTUAL BUG BEHIND "45% empty on the right."
+     The frame itself was already centred (round 2), but this rule capped every section's width
+     to 42rem and left it at the block default of margin-left/right: 0 — i.e. LEFT-ALIGNED inside
+     the frame, not centred in it. The hero fills the frame edge to edge, so it has no such gap;
+     every section below the hero does, and the page's optical centre visibly jumps at that
+     boundary. `margin-inline: auto` is the entire fix — it was simply missing.
+
+     Centring the column (not a two-column label+content split) was the deliberate choice over
+     Conor's stated instinct for the two-column option, checked against real evidence rather than
+     taste: tailscale.com and 1password.com were fetched and read directly, and BOTH revert to a
+     single centred text column below their hero, at a bounded measure, with the leftover width
+     left as genuine negative space — neither uses a label-left/content-right body layout
+     anywhere. Centring is also the only mechanism that satisfies "share ONE optical centre" by
+     mathematical construction: a centred box's midpoint equals its parent's midpoint at any
+     width, so the hero and every section below it share the frame's own centre exactly, not
+     approximately — see the measurement table in the design report for the proof, not just the
+     claim. Content that genuinely has width to use (parallel short items - features, facts) goes
+     into `.feature-grid` instead, tagged `.wide` on its `<section>` — that's the site's real
+     equivalent of 1Password's card-grid pattern, not an invented one.
+     --------------------------------------------------------------------------------------- */
+  main > section { max-width: 42rem; margin-inline: auto; }
+  main > section.wide { max-width: none; margin-inline: 0; }
   .feature-grid { max-width: none; }
+  /* A `.wide` section can still carry an intro/closing SENTENCE alongside its grid (Privacy's
+     "What is never recorded" does) — that sentence stays at reading measure like any other
+     paragraph even though its section is not centred, rather than stretching edge to edge just
+     because the section around it is wide. Targets direct children only, so a <p> inside a .card
+     inside the grid (two levels down) is untouched. */
+  .wide > p { max-width: 42rem; }
+  /* Same reasoning, for a lone .card sitting directly in a .wide section with no feature-grid
+     (FAQ) — without this a wide section's card would stretch to the full 1136px frame width
+     instead of staying at reading measure. Kept separate from feature-grid's own cards, which
+     size themselves within their grid track instead. */
+  .wide > .card { max-width: 42rem; }
 }
 @media (min-width: 900px) and (pointer: coarse) {
   .send-link { display: inline-block; }

@@ -233,31 +233,41 @@
     </div>
   </section>
 
-  <section>
+  <!-- ⚠ ROUND 3 (2026-09-04): this was a 9-item bullet list, most of which now duplicates
+       /how-it-works in more detail. Trimmed to the five things that matter for the decision
+       being made ON THIS PAGE right now (should I download this), each short enough to be one
+       card — the file-access, program-naming and multi-monitor detail moved to /how-it-works
+       entirely rather than being said twice. Tagged .wide so the grid actually uses the frame's
+       width instead of being centred at reading measure like a paragraph — see .wide in
+       site.css. -->
+  <section class="wide">
     <h2>What this does — and what it does not</h2>
-    <ul class="plain">
-      <li>It lets your helper see and control your screen — <strong>while you watch everything they do</strong>.</li>
-      <li><strong>Nobody can connect unless you press Accept</strong>, every single time. If you do
-        nothing, nobody gets in.</li>
-      <li><strong>Letting someone in once does not let them in again.</strong> The next time they
-        try, you are asked again.</li>
-      <li>While someone is connected, <strong>a band across the top of the window turns orange</strong>
-        and stays that way for the whole time. You cannot miss it, and they cannot turn it off.</li>
-      <li>You can <strong>end it at any moment</strong> with one click.</li>
-      <li>It <strong>does not run when you close it</strong>. Close the window and it is gone, and
-        nothing was installed.</li>
-      <li>Both people run the same file. If you are the one <em>helping</em>, type the other
-        person's number into your own copy and press Connect.</li>
-      <li>Files can be sent either way — your helper can send you a file, or copy one off your
-        computer, but only after you separately agree to that too. Nothing moves without being
-        asked about first, and every file is written to your log.</li>
-      <li>If your computer has more than one screen, your helper can switch between them.
-        <strong>This has not yet been tested on a real second monitor</strong> — if anything looks
-        wrong when they switch, tell them, and they can stay on the one screen for the rest of the
-        session.</li>
-    </ul>
-    <!-- The full story — what a session can and can't do, in detail — now has its own page. -->
-    <p class="note"><a href="/how-it-works/">Read the full story of how a session works &rarr;</a></p>
+    <div class="feature-grid">
+      <div class="card">
+        <h3>You watch everything</h3>
+        <p>Your helper sees and controls your screen — while you watch everything they do.</p>
+      </div>
+      <div class="card">
+        <h3>Accept every time</h3>
+        <p>Nobody can connect unless you press Accept. If you do nothing, nobody gets in.</p>
+      </div>
+      <div class="card">
+        <h3>Can't be hidden</h3>
+        <p>While someone is connected, a band across the top of the window turns orange and stays
+        that way. You cannot miss it, and they cannot turn it off.</p>
+      </div>
+      <div class="card">
+        <h3>End it any time</h3>
+        <p>One click, at any moment, ends the session immediately.</p>
+      </div>
+      <div class="card">
+        <h3>Nothing left behind</h3>
+        <p>It does not run when you close it. Close the window and it is gone — nothing was
+        installed.</p>
+      </div>
+    </div>
+    <p class="note"><a href="/how-it-works/">Read the full story of how a session works — file
+    access, multiple screens, what is logged &rarr;</a></p>
   </section>
 
   <section>
@@ -272,7 +282,11 @@
        against the person reading it, and it is quoted verbatim in CLAUDE.md. Move it, restyle it,
        but do not rewrite it. It sits here, immediately before "Who is behind this", because that
        pairing is the one a wary person actually wants: what to be careful of, then who I am. -->
-  <section class="safety">
+  <!-- The one deliberate hairline on this page (see .section-break in site.css) — everywhere else
+       relies on whitespace alone. This is the single subject change on the page that earns it: the
+       preceding sections explain what to do; this one exists purely to protect the reader from the
+       scam this tool enables. -->
+  <section class="safety section-break">
     <h2>Before you let anyone in</h2>
     <p class="scam">If someone phoned you out of the blue and told you to come here,
     <strong>hang up</strong>. Only download this if you contacted us yourself.</p>
