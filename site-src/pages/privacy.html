@@ -1,0 +1,82 @@
+<!--PAGE
+SLUG: privacy
+TITLE: FlashDesk — privacy
+DESCRIPTION: What FlashDesk stores, where it lives, and what is never recorded — checked against the actual code, not a template.
+CANONICAL: https://flashdesk.org/privacy/
+-->
+  <h1>Privacy</h1>
+  <p class="lead">This page describes what the code actually does, checked directly against the
+  source rather than written from a template. Conor Honor is not a lawyer, and this is not a legal
+  document — it is a plain description, kept honest by being checkable.</p>
+
+  <section>
+    <h2>What is kept, and where</h2>
+    <div class="feature-grid">
+      <div class="card">
+        <h3>Session log</h3>
+        <p>A plain text file on <strong>your own computer</strong>, nowhere else. It records who
+        connected, when, and what was decided — accepted, refused, or timed out. It never leaves
+        your machine; FlashDesk has no server it reports session history to.</p>
+      </div>
+      <div class="card">
+        <h3>Your FlashDesk number</h3>
+        <p>Stored on your own computer. The relay that connects two numbers together knows your
+        number and a separate private value your computer proves ownership with — it does not know
+        your name, and nothing about who you are is attached to it.</p>
+      </div>
+      <div class="card">
+        <h3>This website</h3>
+        <p>Loads nothing from any other server, sets no cookies, and runs no analytics of any kind.
+        There is no script on this site at all — unusual, since most sites load fonts, trackers or
+        analytics from somewhere else, and this one deliberately does not.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>What is never recorded</h2>
+    <p>During a session, your screen is sent live to whoever you accepted — that is the product.
+    What the code does <strong>not</strong> do is keep a copy of any of it:</p>
+    <div class="feature-grid">
+      <div class="card">
+        <h3>Screen contents</h3>
+        <p>Nothing captured from your screen is written to disk. It exists only for as long as it
+        takes to send it during a live session, then it is gone.</p>
+      </div>
+      <div class="card">
+        <h3>Keystrokes</h3>
+        <p>What is typed during a session is not logged anywhere, by either side.</p>
+      </div>
+      <div class="card">
+        <h3>File contents</h3>
+        <p>If a file is copied during a session, its name is written to your session log — its
+        contents are not.</p>
+      </div>
+    </div>
+    <p class="note">The program's own internal diagnostics — a capture-health log and a diagnostics
+    report, both for troubleshooting — record only technical numbers (timings, counts, which capture
+    method was used) and never anything you saw or typed.</p>
+  </section>
+
+  <section>
+    <h2>Who this is shared with</h2>
+    <p>The only computer outside your own that FlashDesk ever talks to is the relay that connects
+    two sessions together — there is no other server, no analytics company, and no third party
+    anywhere in the path. What that relay itself retains about a connection, beyond the moment of
+    connecting two numbers, is not yet documented on this page — see the note below.</p>
+  </section>
+
+  <section>
+    <h2>Being honest about what is still open</h2>
+    <p>This page describes the client program with real confidence, checked against its source. The
+    relay side of the system — the small server that introduces two FlashDesk numbers to each other
+    — has not yet had the same documentation pass written for exactly what it logs and for how long.
+    Nothing found while checking suggests it does anything beyond what connecting two numbers
+    requires, but "nothing found yet" is not the same promise as a page that has been written and
+    checked line by line the way the rest of this one has. That will be corrected here once it has.</p>
+  </section>
+
+  <section>
+    <h2>Questions</h2>
+    <p><a href="mailto:support@flashdesk.org">support@flashdesk.org</a></p>
+  </section>

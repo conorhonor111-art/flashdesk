@@ -193,129 +193,125 @@ if (-not $buttonUrl) {
     }
 }
 
-# The live page's HTML, kept for the asset sweep in section 6.
-$livePage = $null
-
-# ------------------------------------------------------- 5. is the PAGE current?
-# Added after being caught a SECOND time by the same class of problem: the exe was current and the
-# page was not, so the site told people the download was "about 65 MB" when it was 68.5. Everything
-# a stranger reads lives on that page, so a stale page is as bad as a stale file.
+# --------------------------------------------------- 5. every page, not just the home page
+# ⚠ REWRITTEN 2026-09-04 when the site grew from one page to five (home, how-it-works, privacy,
+# faq, terms). The old section 5+6 only ever checked https://flashdesk.org itself; a new page that
+# 404s live is exactly the class of failure this script exists to catch (see the 2026-08-06 note
+# below, which is the same lesson applying to a whole PAGE now instead of one image). So this walks
+# EVERY generated page found locally under site\, not a hardcoded list — add a page under
+# site-src\pages\, run Build-Site.ps1, and this script picks it up on the next run with no edit
+# here required.
+#
+# ⚠ THE 2026-08-06 LESSON THIS BUILDS ON, KEPT VERBATIM SO IT IS NOT LOST: the page had just gained
+# its first two files that are not index.html - a screenshot and a font - and only index.html was
+# uploaded. The old section 5 compared the HTML and found it identical, section 3 found the exe
+# current, so the check reported READY while every visitor saw the alt text where the picture
+# should have been. A page that is byte-identical to the repository can still be broken, because
+# being correct is not the same as being complete - so every URL every page asks the browser to
+# fetch is fetched, for every page, not only the one that used to be the only page.
 Say ''
-Say '5. Is the download page the one in this repository'
-$localPage = Join-Path $RepoRoot 'site\index.html'
-if (-not (Test-Path $localPage)) {
-    Bad "Cannot find $localPage to compare against."
-} else {
-    try {
-        # Fetched to a file and read back as UTF-8 rather than using .Content: when the server sends
-        # no charset, Windows PowerShell decodes the body as ISO-8859-1, which mangles every em-dash
-        # and reported a page full of differences that did not exist.
-        $pageTmp = Join-Path $env:TEMP ("flashdesk-page-{0}.html" -f (Get-Date -Format 'HHmmss'))
-        Invoke-WebRequest -Uri $Site -OutFile $pageTmp -UseBasicParsing -TimeoutSec 60 -Headers @{ 'Cache-Control' = 'no-cache' }
-        $livePage = Get-Content -Raw -Encoding UTF8 -Path $pageTmp
-        Remove-Item $pageTmp -Force -ErrorAction SilentlyContinue
-        # -Encoding UTF8 matters: Windows PowerShell reads a BOM-less UTF-8 file as ANSI, which turned
-        # every em-dash into a different string on one side and produced a page full of imaginary
-        # differences the first time this ran.
-        $repoPage = Get-Content -Raw -Encoding UTF8 -Path $localPage
+Say '5. Every page: is it the one in this repository, and does everything it asks for exist'
 
-        # Compared after normalising line endings and trailing spaces: a web server may serve either,
-        # and that difference is not staleness.
+$localPages = @(Get-ChildItem -Path (Join-Path $RepoRoot 'site') -Recurse -Filter 'index.html' -File |
+    Sort-Object FullName)
+if ($localPages.Count -eq 0) {
+    Bad "No index.html files found under $(Join-Path $RepoRoot 'site') - nothing to check."
+}
+
+# Assets are checked once each, even if five pages all reference /site.css - five identical fetches
+# would just be slow, not more thorough.
+$checkedAssets = @{}
+
+function Test-OnePage($localPath, $liveUrl) {
+    Note ("Page: {0}" -f $liveUrl)
+    try {
+        $pageTmp = Join-Path $env:TEMP ("flashdesk-page-{0}-{1}.html" -f (Get-Date -Format 'HHmmssfff'), (Get-Random))
+        Invoke-WebRequest -Uri $liveUrl -OutFile $pageTmp -UseBasicParsing -TimeoutSec 60 -Headers @{ 'Cache-Control' = 'no-cache' }
+        # -Encoding UTF8 matters on BOTH reads: Windows PowerShell reads a BOM-less UTF-8 file (or a
+        # server response with no charset header) as ANSI/ISO-8859-1 otherwise, which mangles every
+        # em-dash and reports a page full of differences that do not exist.
+        $live = Get-Content -Raw -Encoding UTF8 -Path $pageTmp
+        Remove-Item $pageTmp -Force -ErrorAction SilentlyContinue
+        $repo = Get-Content -Raw -Encoding UTF8 -Path $localPath
+
         $lf = [string][char]10
         $norm = {
             param($t)
             ($t -replace ([string][char]13), '') -split $lf | ForEach-Object { $_.TrimEnd() } | Where-Object { $_ -ne '' }
         }
-        $liveLines = @(& $norm $livePage)
-        $repoLines = @(& $norm $repoPage)
-
+        $liveLines = @(& $norm $live)
+        $repoLines = @(& $norm $repo)
         $missing = @(Compare-Object -ReferenceObject $liveLines -DifferenceObject $repoLines |
                      Where-Object { $_.SideIndicator -eq '=>' } | Select-Object -ExpandProperty InputObject)
         $extra   = @(Compare-Object -ReferenceObject $liveLines -DifferenceObject $repoLines |
                      Where-Object { $_.SideIndicator -eq '<=' } | Select-Object -ExpandProperty InputObject)
 
         if ($missing.Count -eq 0 -and $extra.Count -eq 0) {
-            Good 'The live page is exactly the one in this repository.'
+            Good "  matches this repository exactly."
         } else {
-            Bad ("The live page is NOT the one in this repository - {0} line(s) missing from the server, {1} line(s) on the server that are not in the repo." -f $missing.Count, $extra.Count)
+            Bad ("{0} - NOT the page in this repository ({1} line(s) missing from the server, {2} line(s) on the server not in the repo)." -f $liveUrl, $missing.Count, $extra.Count)
             if ($missing.Count -gt 0) {
-                Note 'In the repo but NOT on the server (these changes are not live):'
-                foreach ($l in ($missing | Select-Object -First 5)) { Note ("  + " + $l.Trim()) }
-                if ($missing.Count -gt 5) { Note ("  ... and {0} more" -f ($missing.Count - 5)) }
+                Note '  In the repo but NOT on the server:'
+                foreach ($l in ($missing | Select-Object -First 3)) { Note ("    + " + $l.Trim()) }
+                if ($missing.Count -gt 3) { Note ("    ... and {0} more" -f ($missing.Count - 3)) }
             }
             if ($extra.Count -gt 0) {
-                Note 'On the server but NOT in the repo (the server has older or hand-edited text):'
-                foreach ($l in ($extra | Select-Object -First 5)) { Note ("  - " + $l.Trim()) }
-                if ($extra.Count -gt 5) { Note ("  ... and {0} more" -f ($extra.Count - 5)) }
+                Note '  On the server but NOT in the repo:'
+                foreach ($l in ($extra | Select-Object -First 3)) { Note ("    - " + $l.Trim()) }
+                if ($extra.Count -gt 3) { Note ("    ... and {0} more" -f ($extra.Count - 3)) }
             }
-            Note ''
-            Note ("Fix: upload {0} to the web root as index.html." -f $localPage)
-        }
-    } catch {
-        Bad "Could not fetch the live page to compare: $($_.Exception.Message)"
-    }
-}
-
-# -------------------------------------------- 6. does everything the page asks for actually exist?
-# ⚠ ADDED 2026-08-06, AFTER THIS SCRIPT SAID "READY" WHILE THE PAGE WAS VISIBLY BROKEN.
-# The page had just gained its first two files that are not index.html - a screenshot and a font -
-# and only index.html was uploaded. Section 5 compared the HTML and found it identical, section 3
-# found the exe current, so the check reported READY while every visitor saw the alt text
-# "The FlashDesk window: a large 9-digit number..." where the picture should have been.
-#
-# THE LESSON, and it is the same one this whole script exists for: a page that is byte-identical to
-# the repository can still be broken, because being correct is not the same as being complete. So
-# now every URL the page asks the browser to fetch is fetched.
-Say ''
-Say '6. Everything the page asks the browser to load'
-if (-not $livePage) {
-    Bad 'The live page was not readable, so its images and fonts could not be checked.'
-} else {
-    $refs = New-Object System.Collections.Generic.List[string]
-    foreach ($m in [regex]::Matches($livePage, '(?i)\ssrc\s*=\s*"([^"]+)"'))          { $refs.Add($m.Groups[1].Value) }
-    foreach ($m in [regex]::Matches($livePage, '(?i)url\(\s*[''"]?([^''")]+)[''"]?\s*\)')) { $refs.Add($m.Groups[1].Value) }
-    foreach ($m in [regex]::Matches($livePage, '(?i)<link[^>]+href\s*=\s*"([^"]+)"'))  { $refs.Add($m.Groups[1].Value) }
-
-    # data: URIs are already inside the page, and #anchors and mail links fetch nothing.
-    $assets = $refs | Where-Object { $_ -notmatch '^(data:|#|mailto:|tel:)' } | Sort-Object -Unique
-
-    if ($assets.Count -eq 0) {
-        Good 'The page loads nothing but itself.'
-    }
-    foreach ($a in $assets) {
-        if ($a -match '^https?://') {
-            $assetHost = ([uri]$a).Host
-            if ($assetHost -notlike '*flashdesk.org') {
-                # CLAUDE.md records that this page fetches NOTHING from anywhere else, which is what
-                # makes it survive a GitHub takedown. An external asset silently ends that property.
-                Bad "The page loads an asset from another site: $a"
-                Note 'This page is supposed to fetch nothing external - that is what keeps it working'
-                Note 'if GitHub ever removes the repository. Host the file on flashdesk.org instead.'
-                continue
-            }
-            $full = $a
-        } else {
-            $full = ($Site.TrimEnd('/')) + '/' + $a.TrimStart('/')
         }
 
-        try {
-            $r = Invoke-WebRequest -Uri $full -UseBasicParsing -TimeoutSec 60 -Method Get
-            if ($r.StatusCode -eq 200) {
-                Good ("{0}  ({1:N0} bytes)" -f $a, $r.RawContentLength)
+        # Every asset THIS page's live HTML asks the browser to load.
+        $refs = New-Object System.Collections.Generic.List[string]
+        foreach ($m in [regex]::Matches($live, '(?i)\ssrc\s*=\s*"([^"]+)"'))          { $refs.Add($m.Groups[1].Value) }
+        foreach ($m in [regex]::Matches($live, '(?i)url\(\s*[''"]?([^''")]+)[''"]?\s*\)')) { $refs.Add($m.Groups[1].Value) }
+        foreach ($m in [regex]::Matches($live, '(?i)<link[^>]+href\s*=\s*"([^"]+)"'))  { $refs.Add($m.Groups[1].Value) }
+        $assets = $refs | Where-Object { $_ -notmatch '^(data:|#|mailto:|tel:)' } | Sort-Object -Unique
+
+        foreach ($a in $assets) {
+            if ($a -match '^https?://') {
+                $assetHost = ([uri]$a).Host
+                if ($assetHost -notlike '*flashdesk.org') {
+                    Bad "  loads an asset from another site: $a"
+                    Note '  This site is supposed to fetch nothing external - that is what keeps it'
+                    Note '  working if GitHub ever removes the repository. Host it on flashdesk.org.'
+                    continue
+                }
+                $full = $a
             } else {
-                Bad ("{0} answered with status {1}." -f $a, $r.StatusCode)
+                $full = ($Site.TrimEnd('/')) + '/' + $a.TrimStart('/')
             }
-        } catch {
-            $code = $null
-            if ($_.Exception.Response) { $code = [int]$_.Exception.Response.StatusCode }
-            if ($code) { Bad ("{0} is MISSING from the server (HTTP {1})." -f $a, $code) }
-            else       { Bad ("{0} could not be fetched: {1}" -f $a, $_.Exception.Message) }
-            Note ("Upload it to the same folder as index.html. In this repository it is site\{0}" -f ($a -replace '^/',''))
+
+            if ($checkedAssets.ContainsKey($full)) { continue }
+            $checkedAssets[$full] = $true
+
+            try {
+                $r = Invoke-WebRequest -Uri $full -UseBasicParsing -TimeoutSec 60 -Method Get
+                if ($r.StatusCode -eq 200) { Good ("  {0}  ({1:N0} bytes)" -f $a, $r.RawContentLength) }
+                else { Bad ("  {0} answered with status {1}." -f $a, $r.StatusCode) }
+            } catch {
+                $code = $null
+                if ($_.Exception.Response) { $code = [int]$_.Exception.Response.StatusCode }
+                if ($code) { Bad ("  {0} is MISSING from the server (HTTP {1})." -f $a, $code) }
+                else       { Bad ("  {0} could not be fetched: {1}" -f $a, $_.Exception.Message) }
+                Note ("  Upload it to the web root. In this repository it is site\{0}" -f ($a -replace '^/',''))
+            }
         }
+        if ($assets.Count -eq 0) { Good "  loads nothing but itself." }
+    } catch {
+        Bad ("{0} - could not be fetched: {1}" -f $liveUrl, $_.Exception.Message)
     }
+    Say ''
 }
 
-# --------------------------------------------------------------- 7. the verdict
+foreach ($lp in $localPages) {
+    $rel = $lp.DirectoryName.Substring((Join-Path $RepoRoot 'site').Length).Trim('\') -replace '\\', '/'
+    $liveUrl = if ($rel -eq '') { $Site.TrimEnd('/') + '/' } else { $Site.TrimEnd('/') + '/' + $rel + '/' }
+    Test-OnePage -localPath $lp.FullName -liveUrl $liveUrl
+}
+
+# --------------------------------------------------------------- 6. the verdict
 Remove-Item $temp -Force -ErrorAction SilentlyContinue
 Say ''
 Say '================================================================'

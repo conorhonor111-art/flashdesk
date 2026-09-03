@@ -1,0 +1,425 @@
+/*
+  FlashDesk site stylesheet — the ONE shared CSS file for every page (site.css itself, referenced
+  by an absolute /site.css path so it resolves the same from any page depth). Extracted 2026-09-03
+  when the site grew from one page to five, per Conor's own rule: "Shared CSS in its own file is
+  fine: same origin, same rule respected." Nothing here is loaded from another host; this file and
+  everything it references (inter.woff2, the data: URI favicon) lives on flashdesk.org itself.
+
+  PALETTE LOCK with src/RemoteDesktop.UI/Theme.cs (must never drift — see the comment there):
+    background = Theme.BrandTile  #17191E
+    the ONE clickable green = Theme.BrandGreen  #2BD16B
+    text = Theme.OperatorHeaderText  #ECEFF3
+
+  This file is HAND-MAINTAINED (unlike the generated pages under site\, each one an index.html
+  produced by scripts\Build-Site.ps1 from site-src\ — see that script's header comment for why the
+  pages are templated but the CSS is not: one shared file already satisfies "no duplication" on
+  its own, without needing a build step).
+
+  ⚠ CSS COMMENTS DO NOT NEST, AND THIS FILE ALREADY BIT ITSELF ONCE: a comment here described a
+  page path using a wildcard between two slashes — the three characters SLASH, STAR, SLASH, written
+  with no space between them — and that three-character sequence is the CSS close-comment token.
+  It silently truncated THIS ENTIRE COMMENT right there, mid-sentence, and everything after it (the
+  rest of this note, plus real prose further down) was then fed to the CSS parser as garbage,
+  dropping the whole :root block — every custom property (tile colour, green, spacing, radius, type
+  scale) evaluated to nothing, with no error anywhere, only a page that rendered in the browser's
+  unstyled defaults. Caught by asking WHY a freshly-built page had zero applied styling, not by any
+  error message. NEVER write STAR immediately followed by SLASH inside a comment for any reason —
+  not in a path, a code sample, or a URL — even quoting the broken example safely requires spacing
+  the three characters apart the way this paragraph just did.
+*/
+
+:root {
+  color-scheme: dark;
+
+  /* Locked to Theme.cs — see the palette-lock comment above. Do not change these three. */
+  --tile: #17191E;      /* Theme.BrandTile */
+  --green: #2BD16B;     /* Theme.BrandGreen */
+  --text: #ECEFF3;      /* Theme.OperatorHeaderText */
+
+  --muted: #A9B1BC;
+  --line: #2E3440;
+  /* Neutral raised surface, NOT a palette colour and carries no meaning — it exists only so a
+     filled panel can sit a step above the page background. This is the ONLY depth technique this
+     site uses: a tonal step plus a hairline border, never a shadow or a glow (those cost contrast,
+     and contrast is what a page like this actually sells). */
+  --surface: #22262E;
+  /* One step further again, for a surface that sits ON a surface (e.g. the quoted-dialog boxes
+     inside the warnings card). Same technique, one more step, never a shadow. */
+  --surface-2: #282D37;
+
+  /* Spacing scale — base 0.5rem, steps x1 x2 x3 x4 x6. Mirrors Theme.S1..S5 on the C# side.
+     Every margin and padding on every page comes from here; nothing is eyeballed. */
+  --s1: 0.5rem;
+  --s2: 1rem;
+  --s3: 1.5rem;
+  --s4: 2rem;
+  --s5: 3rem;
+
+  /* ONE corner radius for every surface this site owns. The only other radius is
+     --radius-depiction below, and it belongs to somebody else's software, not to us. */
+  --radius: 14px;
+  --radius-depiction: 8px;
+
+  /* -----------------------------------------------------------------------------------------
+     FLUID TYPE (built 2026-09-03, round 1). clamp(MIN, PREFERRED, MAX) so type grows smoothly
+     with viewport width instead of jumping at a breakpoint. Each PREFERRED term is derived from
+     two real endpoints — a 360px floor (narrowest phone this site is reasonably measured on) and
+     a 1300px ceiling (where growth stops) — never hand-tuned:
+       slope     = (max_px - min_px) / (1300 - 360)      -- rem of vw
+       intercept = min_px - slope * 360                   -- the "+ Nrem" constant term
+     Re-derive with this formula if either endpoint changes.
+     ----------------------------------------------------------------------------------------- */
+  --h1: clamp(1.7rem, 1.13rem + 2.55vw, 3.2rem);   /* 27.2px @360 -> 51.2px @1300 */
+  --h2: clamp(1.4rem, 1.32rem + 0.34vw, 1.6rem);   /* 22.4px @360 -> 25.6px @1300 */
+  /* Deliberately NOT fluid: a "sub" heading is meant to sit quietly below the section it belongs
+     to (muted colour, already smaller) — not a reading anchor the way h1/h2 are. */
+  --h2-sub: 1.1rem;
+  --body-font: clamp(1.2rem, 1.14rem + 0.29vw, 1.25rem);
+  --cta-font: clamp(1.35rem, 1.16rem + 0.86vw, 1.5rem);
+
+  /* -----------------------------------------------------------------------------------------
+     THE FRAME. One outer width, shared by the header, every page's content, and the footer, so
+     they share one optical centre by CONSTRUCTION (all three are children of the same .frame
+     element with the same box) rather than by three separately hand-matched numbers that could
+     drift. Grows once, at 900px, then holds — see the comment on .frame below for the arithmetic
+     and the measured numbers this fixed.
+     ----------------------------------------------------------------------------------------- */
+  --frame-max: 40rem;
+}
+
+/* ONE downloaded typeface, self-hosted from this domain — no third-party request, no tracking,
+   nothing that breaks if a font CDN disappears. Latin plus the punctuation this site uses:
+   24.2 KB measured, non-blocking because of font-display: swap. Subset BY UNICODE RANGE, never by
+   "the characters currently on the page" — that dropped the ellipsis, en dash and non-breaking
+   space once already. */
+@font-face {
+  font-family: 'Inter';
+  src: url('/inter.woff2') format('woff2');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+/* Metric-matched fallback, so no page reflows when Inter arrives. Inter's average lowercase
+   advance is 1.0860x Segoe UI's at the same size, so the fallback is scaled to 108.6%. */
+@font-face {
+  font-family: 'Inter fallback';
+  src: local('Segoe UI'), local('Helvetica Neue'), local('Arial');
+  size-adjust: 108.6%;
+  ascent-override: 96.9%;
+  descent-override: 24.1%;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { color-scheme: dark; }
+body {
+  background: var(--tile);
+  color: var(--text);
+  font-family: 'Inter', 'Inter fallback', system-ui, "Segoe UI", Arial, sans-serif;
+  font-size: var(--body-font);
+  line-height: 1.55;
+}
+
+/* ⚠ THE QUOTED WINDOWS AND CHROME SCREENS STAY IN THE SYSTEM FONT, AND THIS IS NOT AN OVERSIGHT.
+   A frightened person compares these words, character for character, against the real box on
+   their own screen — drawn by Windows in Segoe UI. Setting the QUOTE in Inter would make the
+   page's copy and the real dialog look like two different things at the one moment they must
+   look the same. */
+.quote, .btn-dark, .btn-pale {
+  font-family: system-ui, "Segoe UI", Arial, sans-serif;
+}
+
+/* -------------------------------------------------------------------------------------------
+   THE FRAME — fixes the "45% empty on one side" complaint. header, main and footer are all
+   direct children of ONE .frame element, so a single max-width + margin: 0 auto centres all
+   three identically; there is no way for them to drift apart the way three separately-styled
+   elements could. Padding lives here too (not on body), so the frame owns its own gutters.
+
+   Width: 40rem (640px) up to 900px — matches the original single-page phone/small-tablet measure,
+   untouched. At 900px the frame widens to 75rem (1200px) and holds — a real, if arbitrary,
+   "sensible max width" in the sense every mainstream site picks one (roughly what a 1280px
+   Tailwind-style container or Bootstrap's xl breakpoint uses): wide enough that the two-column
+   hero and multi-column footer have real room, capped well short of stretching edge-to-edge on
+   an ultrawide monitor. Measured before/after at 1440 and 1890 in the design report — this is the
+   rule that produces those numbers, not a per-breakpoint guess.
+   ------------------------------------------------------------------------------------------- */
+.frame {
+  max-width: var(--frame-max);
+  margin: 0 auto;
+  padding: var(--s3) var(--s3) var(--s5);
+}
+@media (min-width: 640px) {
+  .frame { padding-top: var(--s5); }
+}
+@media (min-width: 900px) {
+  :root { --frame-max: 75rem; }
+  .frame { padding-inline: var(--s4); }
+}
+
+/* -------------------------------------------------------------------------------------------
+   HEADER + NAVIGATION. Present on every generated page (site-src\partials\header.html), so it
+   cannot drift between pages — there is only one copy, stamped by the build script.
+   ------------------------------------------------------------------------------------------- */
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--s2) var(--s4);
+  padding-bottom: var(--s3);
+  border-bottom: 1px solid var(--line);
+  margin-bottom: var(--s4);
+}
+.brand { display: flex; align-items: center; gap: var(--s1); text-decoration: none; color: var(--text); }
+.brand svg { width: 2rem; height: 2rem; flex: none; }
+.brand span { font-weight: 600; font-size: 1.1rem; letter-spacing: 0.01em; }
+
+.site-nav { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s3); list-style: none; }
+.site-nav a {
+  display: inline-block;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: var(--s1) 0;
+  border-bottom: 2px solid transparent;
+}
+.site-nav a:hover, .site-nav a:focus-visible { color: var(--text); }
+/* The current page — NOT signalled by colour alone (the border does the real work; colour is the
+   reinforcement), and deliberately not green: green means "the one clickable action on this
+   page," never "you are here." */
+.site-nav a[aria-current="page"] {
+  color: var(--text);
+  border-bottom-color: var(--muted);
+}
+
+/* -------------------------------------------------------------------------------------------
+   FOOTER. Present on every page, one copy, stamped by the build script.
+   ------------------------------------------------------------------------------------------- */
+.site-footer {
+  border-top: 1px solid var(--line);
+  padding-top: var(--s4);
+  margin-top: var(--s5);
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+.site-footer .site-nav { margin-bottom: var(--s3); }
+.site-footer .site-nav a { font-size: 0.9rem; }
+.footer-meta { line-height: 1.6; }
+.footer-meta a { color: var(--muted); }
+.footer-meta a:hover, .footer-meta a:focus-visible { color: var(--text); }
+/* The line that matters more than the rest of the footer (Conor's own words) — full-strength
+   text and real weight, not a caption, the same treatment every other safety line on this site
+   gets (.near-button, .scam). */
+.footer-warning {
+  color: var(--text);
+  font-weight: 650;
+  margin-top: var(--s3);
+  padding-top: var(--s3);
+  border-top: 1px solid var(--line);
+}
+
+main { display: block; }
+
+/* Tightened tracking on display type only — large type needs NEGATIVE tracking to stop looking
+   loose; the generous kind belongs to small labels, which this site barely has. */
+h1 { font-size: var(--h1); line-height: 1.2; letter-spacing: -0.02em; margin-bottom: var(--s2); font-weight: 700; }
+/* The sentence directly under an h1 — the SECOND thing a visitor reads, so it earns its own
+   slightly larger-than-body treatment rather than reading as just another paragraph. */
+.lead { font-size: 1.15em; color: var(--muted); margin-bottom: var(--s4); max-width: 42rem; }
+.phone-note { color: var(--muted); margin-bottom: var(--s4); }
+
+/* -------------------------------------------------------------------------------------------
+   THE DECISION — the download button plus the sentence that protects people from the exact scam
+   this tool enables, grouped into ONE surfaced card so neither reads as louder than the other.
+   Before this round the button was a large solid slab of green in open black space with a small
+   grey caption trailing after it; the button visually announced itself as the only thing that
+   mattered on the page, and the warning was easy to skip past on the way to it. A shared card
+   with a real background and a border makes both parts of the SAME decision, read at the SAME
+   moment — the visual unit is "should I do this," not "here is a button." The warning's WORDS
+   are unchanged; only the weight around it changed, and the button itself is smaller too
+   (narrower horizontal padding at every width, and a max-width so it can never stretch into a
+   wall the way "~500x78 of saturated green" did).
+   ------------------------------------------------------------------------------------------- */
+.decision {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--s3);
+  margin-bottom: var(--s4);
+}
+.decision .download, .decision .send-link { margin-bottom: var(--s2); max-width: 26rem; }
+.decision .download-meta { text-align: left; }
+.decision .near-button {
+  margin-bottom: 0;
+  margin-top: var(--s2);
+  font-weight: 650;
+  font-size: 1.05em;
+}
+
+/* DEVICE-AWARE PRIMARY ACTION (round 1, 2026-09-03). FlashDesk is a Windows .exe; on a touch
+   device that cannot run it, offering the same "Download" button as the primary action is a
+   promise the page cannot keep. Detected with (pointer: coarse) — a CSS media feature the
+   platform itself reports, never a User-Agent sniff. .download and .send-link share one shape so
+   the swap changes only WHICH is filled, never their size or position — green appears in exactly
+   one filled block at a time, it just is not always the same block. */
+.download, .send-link {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+  font-size: var(--cta-font);
+  font-weight: 650;
+  padding: var(--s2) var(--s3);
+  border-radius: var(--radius);
+  margin-bottom: var(--s1);
+}
+.download { background: var(--green); color: var(--tile); }
+.send-link, .touch-note, .send-link-fallback { display: none; }
+.download-meta { text-align: center; color: var(--muted); font-size: 1rem; margin-bottom: var(--s4); }
+.quiet-link { color: var(--muted); }
+.touch-note { color: var(--text); margin-bottom: var(--s2); }
+.send-link-fallback { color: var(--muted); font-size: 1rem; margin-bottom: var(--s4); }
+
+@media (pointer: coarse) {
+  .touch-note, .send-link, .send-link-fallback { display: block; }
+  .send-link { background: var(--green); color: var(--tile); border: none; }
+  .download { background: transparent; color: var(--text); border: 1px solid var(--muted); }
+}
+
+/* A hairline above each section, so the page reads as built rather than typed. Depth from a 1px
+   rule and a tonal step, never a shadow or a glow. */
+section { margin-bottom: var(--s3); padding-top: var(--s3); border-top: 1px solid var(--line); }
+section:first-of-type { border-top: 0; padding-top: 0; }
+h2 { font-size: var(--h2); line-height: 1.25; margin-bottom: var(--s2); font-weight: 650; }
+h2.sub { font-size: var(--h2-sub); margin-top: var(--s4); color: var(--muted); }
+h3 { font-size: 1.05rem; line-height: 1.3; margin-bottom: var(--s1); font-weight: 650; }
+
+ol.steps { list-style: none; counter-reset: step; }
+ol.steps li { counter-increment: step; display: flex; gap: var(--s2); align-items: baseline; padding: var(--s1) 0; }
+/* The step numbers are text-coloured, not green — green is "the one clickable green," and a
+   number that does nothing when tapped teaches the eye that green is decoration. */
+ol.steps li::before {
+  content: counter(step);
+  color: var(--text);
+  font-weight: 700;
+  font-size: 1.35rem;
+  min-width: 1.4rem;
+  text-align: center;
+}
+.note { color: var(--muted); margin-top: var(--s1); }
+
+.shot { margin: 0 0 var(--s4); }
+.shot img { display: block; width: 100%; max-width: 22rem; height: auto; margin: 0 auto; border: 1px solid var(--line); border-radius: var(--radius); }
+.shot figcaption { text-align: center; color: var(--muted); font-size: 1rem; margin-top: var(--s1); }
+
+.plain li { margin: var(--s1) 0 var(--s1) var(--s3); }
+
+.warnbox { border: 1px solid var(--line); border-left: 4px solid var(--muted); border-radius: var(--radius); padding: var(--s2); background: var(--surface); }
+.warnbox p + p { margin-top: var(--s2); }
+
+.quote { background: var(--surface-2); border-left: 4px solid var(--muted); border-radius: var(--radius); padding: var(--s1) var(--s2); line-height: 1.5; }
+.btn-dark, .btn-pale { display: inline-block; border-radius: var(--radius-depiction); padding: 0.15rem 0.7rem; font-size: 0.95rem; margin-top: var(--s1); white-space: nowrap; }
+.btn-dark { background: #1A73E8; color: #FFFFFF; }
+.btn-pale { background: transparent; color: var(--text); border: 1px solid var(--muted); }
+.link-look { color: var(--muted); text-decoration: underline; }
+
+.scam-inline { background: var(--surface-2); border-left: 4px solid var(--text); border-radius: var(--radius); padding: var(--s2); }
+
+.near-button { margin-bottom: var(--s4); }
+
+/* ⚠ THE WORDING IN .scam IS FIXED — quoted verbatim in CLAUDE.md, do not rewrite it. Restyled
+   2026-08-06 to read as information rather than as a threat; unchanged since. */
+.scam { line-height: 1.5; background: var(--surface); border-left: 4px solid var(--text); border-radius: var(--radius); padding: var(--s2); }
+
+.who p { margin-bottom: var(--s1); }
+a { color: var(--text); }
+a:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; border-radius: var(--radius); }
+.download:focus-visible, .send-link:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; }
+
+/* -------------------------------------------------------------------------------------------
+   REUSABLE CARD — a surfaced block for grouped content on the new pages (how-it-works' feature
+   list, the FAQ's questions). Same technique as .decision and .quote: --surface + a hairline
+   border + the one shared radius, never a shadow.
+   ------------------------------------------------------------------------------------------- */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: var(--s3); margin-bottom: var(--s3); }
+.card h3 { margin-bottom: var(--s1); }
+.card p:last-child { margin-bottom: 0; }
+
+/* how-it-works: a two-column-at-width grid of small feature cards. */
+.feature-grid { display: grid; gap: var(--s3); grid-template-columns: 1fr; margin-bottom: var(--s4); }
+@media (min-width: 640px) { .feature-grid { grid-template-columns: 1fr 1fr; } }
+
+/* how-it-works: the "what it does not do" list gets a visually distinct, quieter card so it
+   never competes with what it does do, which is the actual sales pitch. */
+.not-list { background: var(--surface-2); }
+
+/* FAQ: each question is a card; the question itself is the h3, the answer is body text. */
+.faq-item { }
+
+/* privacy/terms: a small data-style list (term + value), used for "what is kept / where / who
+   can see it." */
+dl.facts { display: grid; grid-template-columns: max-content 1fr; gap: var(--s1) var(--s3); }
+dl.facts dt { color: var(--muted); font-weight: 600; }
+dl.facts dd { margin: 0; }
+
+/* -------------------------------------------------------------------------------------------
+   THREE WIDTH BREAKPOINTS, each earned by something the CONTENT does at that width — see the
+   .frame comment above for the outer width; what follows here is what changes ABOVE that shared
+   frame width, for the home page's hero specifically (the only place a genuinely different
+   layout, not just a wider gutter, is needed).
+   ------------------------------------------------------------------------------------------- */
+@media (min-width: 640px) {
+  .download, .send-link { padding: var(--s3) var(--s4); }
+}
+
+@media (min-width: 900px) {
+  /* Two columns for the home page's hero. The figure is placed by GRID, not moved in the markup,
+     so the phone's reading order (scam warning, then picture) survives untouched. */
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: var(--s5);
+    align-items: start;
+    margin-bottom: var(--s5);
+    padding-bottom: var(--s5);
+    border-bottom: 1px solid var(--line);
+  }
+  .hero-main { grid-column: 1; min-width: 0; }
+  .hero .shot { grid-column: 2; grid-row: 1; margin: 0; align-self: center; }
+  .hero .shot img { max-width: 25rem; }
+
+  h1 { margin-bottom: var(--s2); }
+  .phone-note, .touch-note, .send-link-fallback { max-width: 30rem; }
+
+  .download, .send-link { display: inline-block; padding: var(--s2) var(--s4); margin-bottom: var(--s2); }
+  .send-link { display: none; }
+  .near-button { text-align: left; max-width: 32rem; margin-bottom: 0; margin-top: var(--s2); }
+
+  /* Prose keeps a readable measure even inside the wider frame — a line of body text is readable
+     to about 70 characters and no further, so the reading column stays narrow and the space
+     beside it is left for the frame's own margin, not filled just because it is there. */
+  main > section { max-width: 42rem; }
+  .feature-grid { max-width: none; }
+}
+@media (min-width: 900px) and (pointer: coarse) {
+  .send-link { display: inline-block; }
+}
+
+@media (min-width: 1300px) {
+  .hero { column-gap: 4rem; }
+  .hero .shot img { max-width: 28rem; }
+}
+
+/* -------------------------------------------------------------------------------------------
+   POINTER — the second, independent axis. WIDTH decides layout; POINTER decides size. See the
+   round-1 design report for the full reasoning (44px Apple floor on real buttons, WCAG's 24px
+   floor via padding on genuinely inline links).
+   ------------------------------------------------------------------------------------------- */
+@media (pointer: coarse) {
+  .download, .send-link { min-height: 44px; }
+  .site-nav a { min-height: 44px; display: inline-flex; align-items: center; }
+  .quiet-link, .fallback-link, .who a, .footer-meta a {
+    display: inline-block;
+    padding: 0.3em 0.15em;
+    margin: -0.3em -0.15em;
+  }
+}

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>FlashDesk — privacy</title>
+<!--
+  GENERATED FILE — do not hand-edit. Source: site-src\pages\privacy.html, assembled by
+  scripts\Build-Site.ps1 from site-src\layout.html + site-src\partials\. Edit the source files and
+  re-run the build script; a hand edit here will be silently overwritten by the next build.
+
+  PALETTE LOCK with src/RemoteDesktop.UI/Theme.cs (must never drift — see the comment there):
+    background = Theme.BrandTile  #17191E
+    the ONE clickable green = Theme.BrandGreen  #2BD16B
+    text = Theme.OperatorHeaderText  #ECEFF3
+  Rules from CLAUDE.md "The download site": phone-first, no JS, no tracking, nothing loaded from
+  another host.
+-->
+
+<!-- Link preview: these URLs get pasted into WhatsApp/Telegram to a nervous stranger. A preview
+     with no title or description reads as a scam link. No og:image — this site hosts none. -->
+<meta name="description" content="What FlashDesk stores, where it lives, and what is never recorded — checked against the actual code, not a template.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="en_GB">
+<meta property="og:url" content="https://flashdesk.org/privacy/">
+<meta property="og:title" content="FlashDesk — privacy">
+<meta property="og:description" content="What FlashDesk stores, where it lives, and what is never recorded — checked against the actual code, not a template.">
+<meta name="twitter:card" content="summary">
+
+<!-- MARK GEOMETRY IS LOCKED to assets\make-icon.ps1 and to the header partial's <svg> — see
+     site-src\partials\header.html for the full note. scripts\Check-MarkGeometry.ps1 checks this
+     favicon and the header SVG in the generated site\index.html against the canonical points. -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Crect%20x='1'%20y='1'%20width='14'%20height='14'%20rx='3.5'%20fill='%2317191E'/%3E%3Cpolyline%20points='4.631,2.512%209.387,11.495%2011.325,7.620'%20fill='none'%20stroke='%232BD16B'%20stroke-width='2.6'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/site.css">
+</head>
+<body>
+<div class="frame">
+<!-- ONE copy of the header, stamped onto every generated page by scripts\Build-Site.ps1. Editing
+     this file changes every page's header at once — that is the whole point of templating it.
+
+     MARK GEOMETRY IS LOCKED TO assets\make-icon.ps1 AND TO THE FAVICON IN site-src\layout.html.
+     All three draw the same polyline on the same 16-unit grid; scripts\Check-MarkGeometry.ps1
+     checks the generated site\index.html and site\holding.html against the canonical points in
+     make-icon.ps1 — if you change the points here, re-run Build-Site.ps1 and Check-MarkGeometry.ps1
+     in the same commit. -->
+<header class="site-header">
+  <a class="brand" href="/">
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      <rect x="1" y="1" width="14" height="14" rx="3.5" fill="#17191E"/>
+      <polyline points="4.631,2.512 9.387,11.495 11.325,7.620" fill="none" stroke="#2BD16B" stroke-width="2.6"/>
+    </svg>
+    <span>FlashDesk</span>
+  </a>
+  <nav class="site-nav" aria-label="Site">
+    <a href="/" data-nav="home">Home</a>
+    <a href="/how-it-works/" data-nav="how-it-works">How it works</a>
+    <a href="/privacy/" data-nav="privacy" aria-current="page">Privacy</a>
+    <a href="/faq/" data-nav="faq">FAQ</a>
+    <a href="/terms/" data-nav="terms">Terms</a>
+  </nav>
+</header>
+
+<main>
+  <h1>Privacy</h1>
+  <p class="lead">This page describes what the code actually does, checked directly against the
+  source rather than written from a template. Conor Honor is not a lawyer, and this is not a legal
+  document — it is a plain description, kept honest by being checkable.</p>
+
+  <section>
+    <h2>What is kept, and where</h2>
+    <div class="feature-grid">
+      <div class="card">
+        <h3>Session log</h3>
+        <p>A plain text file on <strong>your own computer</strong>, nowhere else. It records who
+        connected, when, and what was decided — accepted, refused, or timed out. It never leaves
+        your machine; FlashDesk has no server it reports session history to.</p>
+      </div>
+      <div class="card">
+        <h3>Your FlashDesk number</h3>
+        <p>Stored on your own computer. The relay that connects two numbers together knows your
+        number and a separate private value your computer proves ownership with — it does not know
+        your name, and nothing about who you are is attached to it.</p>
+      </div>
+      <div class="card">
+        <h3>This website</h3>
+        <p>Loads nothing from any other server, sets no cookies, and runs no analytics of any kind.
+        There is no script on this site at all — unusual, since most sites load fonts, trackers or
+        analytics from somewhere else, and this one deliberately does not.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>What is never recorded</h2>
+    <p>During a session, your screen is sent live to whoever you accepted — that is the product.
+    What the code does <strong>not</strong> do is keep a copy of any of it:</p>
+    <div class="feature-grid">
+      <div class="card">
+        <h3>Screen contents</h3>
+        <p>Nothing captured from your screen is written to disk. It exists only for as long as it
+        takes to send it during a live session, then it is gone.</p>
+      </div>
+      <div class="card">
+        <h3>Keystrokes</h3>
+        <p>What is typed during a session is not logged anywhere, by either side.</p>
+      </div>
+      <div class="card">
+        <h3>File contents</h3>
+        <p>If a file is copied during a session, its name is written to your session log — its
+        contents are not.</p>
+      </div>
+    </div>
+    <p class="note">The program's own internal diagnostics — a capture-health log and a diagnostics
+    report, both for troubleshooting — record only technical numbers (timings, counts, which capture
+    method was used) and never anything you saw or typed.</p>
+  </section>
+
+  <section>
+    <h2>Who this is shared with</h2>
+    <p>The only computer outside your own that FlashDesk ever talks to is the relay that connects
+    two sessions together — there is no other server, no analytics company, and no third party
+    anywhere in the path. What that relay itself retains about a connection, beyond the moment of
+    connecting two numbers, is not yet documented on this page — see the note below.</p>
+  </section>
+
+  <section>
+    <h2>Being honest about what is still open</h2>
+    <p>This page describes the client program with real confidence, checked against its source. The
+    relay side of the system — the small server that introduces two FlashDesk numbers to each other
+    — has not yet had the same documentation pass written for exactly what it logs and for how long.
+    Nothing found while checking suggests it does anything beyond what connecting two numbers
+    requires, but "nothing found yet" is not the same promise as a page that has been written and
+    checked line by line the way the rest of this one has. That will be corrected here once it has.</p>
+  </section>
+
+  <section>
+    <h2>Questions</h2>
+    <p><a href="mailto:support@flashdesk.org">support@flashdesk.org</a></p>
+  </section>
+
+</main>
+<!-- ONE copy of the footer, stamped onto every generated page by scripts\Build-Site.ps1. -->
+<footer class="site-footer">
+  <nav class="site-nav" aria-label="Site">
+    <a href="/" data-nav="home">Home</a>
+    <a href="/how-it-works/" data-nav="how-it-works">How it works</a>
+    <a href="/privacy/" data-nav="privacy" aria-current="page">Privacy</a>
+    <a href="/faq/" data-nav="faq">FAQ</a>
+    <a href="/terms/" data-nav="terms">Terms</a>
+  </nav>
+  <p class="footer-meta">&copy; 2026 FlashDesk. All rights reserved.<br>
+  Made in Kyiv by Conor Honor &mdash; <a href="mailto:support@flashdesk.org">support@flashdesk.org</a></p>
+  <!-- This line matters more than the rest of the footer (Conor's own words, 2026-09-03) — see
+       .footer-warning in site.css for why it gets full-strength text and its own hairline rule,
+       the same treatment as .near-button and .scam elsewhere on the site. -->
+  <p class="footer-warning">FlashDesk will never telephone you. If someone calls claiming to be us, hang up.</p>
+</footer>
+
+</div>
+</body>
+</html>

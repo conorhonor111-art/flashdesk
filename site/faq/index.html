@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>FlashDesk — frequently asked questions</title>
+<!--
+  GENERATED FILE — do not hand-edit. Source: site-src\pages\faq.html, assembled by
+  scripts\Build-Site.ps1 from site-src\layout.html + site-src\partials\. Edit the source files and
+  re-run the build script; a hand edit here will be silently overwritten by the next build.
+
+  PALETTE LOCK with src/RemoteDesktop.UI/Theme.cs (must never drift — see the comment there):
+    background = Theme.BrandTile  #17191E
+    the ONE clickable green = Theme.BrandGreen  #2BD16B
+    text = Theme.OperatorHeaderText  #ECEFF3
+  Rules from CLAUDE.md "The download site": phone-first, no JS, no tracking, nothing loaded from
+  another host.
+-->
+
+<!-- Link preview: these URLs get pasted into WhatsApp/Telegram to a nervous stranger. A preview
+     with no title or description reads as a scam link. No og:image — this site hosts none. -->
+<meta name="description" content="Real questions people actually ask before letting someone use FlashDesk — is it safe, why Windows warns you, what to do if someone phones claiming to be us.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="en_GB">
+<meta property="og:url" content="https://flashdesk.org/faq/">
+<meta property="og:title" content="FlashDesk — frequently asked questions">
+<meta property="og:description" content="Real questions people actually ask before letting someone use FlashDesk — is it safe, why Windows warns you, what to do if someone phones claiming to be us.">
+<meta name="twitter:card" content="summary">
+
+<!-- MARK GEOMETRY IS LOCKED to assets\make-icon.ps1 and to the header partial's <svg> — see
+     site-src\partials\header.html for the full note. scripts\Check-MarkGeometry.ps1 checks this
+     favicon and the header SVG in the generated site\index.html against the canonical points. -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Crect%20x='1'%20y='1'%20width='14'%20height='14'%20rx='3.5'%20fill='%2317191E'/%3E%3Cpolyline%20points='4.631,2.512%209.387,11.495%2011.325,7.620'%20fill='none'%20stroke='%232BD16B'%20stroke-width='2.6'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/site.css">
+</head>
+<body>
+<div class="frame">
+<!-- ONE copy of the header, stamped onto every generated page by scripts\Build-Site.ps1. Editing
+     this file changes every page's header at once — that is the whole point of templating it.
+
+     MARK GEOMETRY IS LOCKED TO assets\make-icon.ps1 AND TO THE FAVICON IN site-src\layout.html.
+     All three draw the same polyline on the same 16-unit grid; scripts\Check-MarkGeometry.ps1
+     checks the generated site\index.html and site\holding.html against the canonical points in
+     make-icon.ps1 — if you change the points here, re-run Build-Site.ps1 and Check-MarkGeometry.ps1
+     in the same commit. -->
+<header class="site-header">
+  <a class="brand" href="/">
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      <rect x="1" y="1" width="14" height="14" rx="3.5" fill="#17191E"/>
+      <polyline points="4.631,2.512 9.387,11.495 11.325,7.620" fill="none" stroke="#2BD16B" stroke-width="2.6"/>
+    </svg>
+    <span>FlashDesk</span>
+  </a>
+  <nav class="site-nav" aria-label="Site">
+    <a href="/" data-nav="home">Home</a>
+    <a href="/how-it-works/" data-nav="how-it-works">How it works</a>
+    <a href="/privacy/" data-nav="privacy">Privacy</a>
+    <a href="/faq/" data-nav="faq" aria-current="page">FAQ</a>
+    <a href="/terms/" data-nav="terms">Terms</a>
+  </nav>
+</header>
+
+<main>
+  <h1>Frequently asked questions</h1>
+  <p class="lead">Not the questions a product page usually answers — the ones a person actually
+  has, sitting in front of the download.</p>
+
+  <section>
+    <div class="card faq-item">
+      <h3>Is this safe?</h3>
+      <p>The download itself is unsigned software from a small, one-person project, so Windows and
+      your browser both warn you about it — that part is normal and explained on the
+      <a href="/">home page</a>. Once it is running, the session itself has real limits built in:
+      nobody can connect without you pressing Accept, a coloured strip stays on your screen for as
+      long as anyone is connected and cannot be hidden by the other side, and you can end it with
+      one click at any moment. Read <a href="/how-it-works/">how a session actually works</a> for
+      the full list of what is and is not possible.</p>
+      <p>The one thing no software can protect you from is being talked into pressing Accept for
+      someone who should not have it. That is what the warning on the <a href="/">home page</a> and
+      the line at the bottom of every page are for.</p>
+    </div>
+
+    <div class="card faq-item">
+      <h3>Why does Windows warn me when I open it?</h3>
+      <p>Windows Defender SmartScreen warns about software it has not seen many people run before,
+      and it has not been paid to attach a verified publisher name to the file (that costs money
+      every year and buys reputation over time, not on day one — it has not been bought). New and
+      unrecognised are not the same thing as dangerous, but Windows cannot tell the difference from
+      the file alone, so it warns about both. The exact screens you will see, word for word, are on
+      the <a href="/#warnings">home page</a>.</p>
+    </div>
+
+    <div class="card faq-item">
+      <h3>Can they see my screen when nobody is connected?</h3>
+      <p>No. FlashDesk only captures and sends your screen while a session is live — after someone
+      has connected and you have pressed Accept. There is no background service and nothing runs
+      after you close the program.</p>
+    </div>
+
+    <div class="card faq-item">
+      <h3>Can someone get in without me agreeing?</h3>
+      <p>No. Every incoming connection shows a dialog with the caller's number and an Accept /
+      Reject choice, and it defaults to Reject if left alone. There is no remote way to answer that
+      dialog for you.</p>
+    </div>
+
+    <div class="card faq-item">
+      <h3>How do I stop it?</h3>
+      <p>Click Disconnect on the strip that stays on your screen the whole time someone is
+      connected, or just close the FlashDesk window. Either one ends the session immediately.</p>
+    </div>
+
+    <div class="card faq-item">
+      <h3>Does it install anything?</h3>
+      <p>No. It is one file you double-click. Nothing is added to Windows, no admin password is
+      asked for to run it, and closing the window removes it from memory completely — the next time
+      you want to use it, you open the same file again.</p>
+    </div>
+
+    <div class="card faq-item">
+      <h3>Is it free?</h3>
+      <p>Yes.</p>
+    </div>
+
+    <div class="card faq-item">
+      <h3>What do I do if someone phones claiming to be from FlashDesk?</h3>
+      <p><strong>Hang up.</strong> FlashDesk does not make outbound calls to anyone, ever. There is
+      no support line that calls you, no "security team" that reaches out first. If a call like that
+      happens, it is not us — see the line at the bottom of every page on this site.</p>
+    </div>
+  </section>
+
+</main>
+<!-- ONE copy of the footer, stamped onto every generated page by scripts\Build-Site.ps1. -->
+<footer class="site-footer">
+  <nav class="site-nav" aria-label="Site">
+    <a href="/" data-nav="home">Home</a>
+    <a href="/how-it-works/" data-nav="how-it-works">How it works</a>
+    <a href="/privacy/" data-nav="privacy">Privacy</a>
+    <a href="/faq/" data-nav="faq" aria-current="page">FAQ</a>
+    <a href="/terms/" data-nav="terms">Terms</a>
+  </nav>
+  <p class="footer-meta">&copy; 2026 FlashDesk. All rights reserved.<br>
+  Made in Kyiv by Conor Honor &mdash; <a href="mailto:support@flashdesk.org">support@flashdesk.org</a></p>
+  <!-- This line matters more than the rest of the footer (Conor's own words, 2026-09-03) — see
+       .footer-warning in site.css for why it gets full-strength text and its own hairline rule,
+       the same treatment as .near-button and .scam elsewhere on the site. -->
+  <p class="footer-warning">FlashDesk will never telephone you. If someone calls claiming to be us, hang up.</p>
+</footer>
+
+</div>
+</body>
+</html>
