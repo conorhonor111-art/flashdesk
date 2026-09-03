@@ -35,10 +35,34 @@ public static class SelfTest
     }
 
     /// <summary>
-    /// Runs every self-check there is. Today that is the unfinished-file cleanup; anything added
-    /// later goes here so there stays exactly one thing to press.
+    /// A control MainForm actually has, read on the UI thread before the self-test runs — <c>Run</c>
+    /// itself executes on a background thread (see MainForm.RunSelfTest), and WinForms control
+    /// properties are not safe to read from there. Plain data by the time it reaches here, so it can
+    /// be evaluated from any thread.
+    ///
+    /// <para><b>Why this exists.</b> Added 2026-09-03, after a real report of a missing connect field
+    /// on a live machine that could not be confirmed after the fact — nothing had ever checked, AT
+    /// THE TIME, whether the controls a stranger actually needs to make a connection were present,
+    /// visible, and sized to be seen. The self-test already proves the housekeeping works even when
+    /// the main window would be unusable; this is the same idea aimed at the window itself. No UI
+    /// test framework, no automation library — just the same <c>Visible</c>/<c>Width</c>/<c>Height</c>
+    /// /<c>Text</c> properties Windows itself paints from, read directly off the real controls.</para>
     /// </summary>
-    public static Result Run()
+    public readonly record struct ControlSnapshot(
+        string Name, bool Exists, bool Visible, int Width, int Height, string? ExpectedText, string ActualText)
+    {
+        public static ControlSnapshot Of(string name, System.Windows.Forms.Control? control, string? expectedText = null) =>
+            control is null
+                ? new ControlSnapshot(name, false, false, 0, 0, expectedText, "")
+                : new ControlSnapshot(name, true, control.Visible, control.Width, control.Height, expectedText, control.Text);
+    }
+
+    /// <summary>
+    /// Runs every self-check there is. Today that is the unfinished-file cleanup and, if
+    /// <paramref name="controls"/> is given, whether the controls a person needs to connect are
+    /// actually on screen. Anything added later goes here so there stays exactly one thing to press.
+    /// </summary>
+    public static Result Run(IReadOnlyList<ControlSnapshot>? controls = null)
     {
         var report = new StringBuilder();
         report.AppendLine("FlashDesk self-test");
@@ -54,6 +78,13 @@ public static class SelfTest
         report.AppendLine("finished file, or the one exit that cleans up after a failure, were broken, this");
         report.AppendLine("would still say PASS. Those are covered by the test suite, not from in here.");
         report.AppendLine();
+        if (controls is not null)
+        {
+            report.AppendLine("Also: the controls a person actually needs to connect - present, visible, and");
+            report.AppendLine("sized to be seen, not merely constructed off screen or behind another control.");
+            report.AppendLine("This does not prove Connect WORKS, only that a stranger has something to click.");
+            report.AppendLine();
+        }
 
         var checks = new List<(string What, bool Passed, string Detail)>();
         string root = Path.Combine(Path.GetTempPath(), "FlashDesk-selftest-" + Guid.NewGuid().ToString("N"));
@@ -79,6 +110,10 @@ public static class SelfTest
         {
             try { if (Directory.Exists(root)) Directory.Delete(root, recursive: true); } catch { }
         }
+
+        if (controls is not null)
+            foreach (var control in controls)
+                checks.Add(CheckControl(control));
 
         foreach (var (what, passed, detail) in checks)
         {
@@ -189,6 +224,24 @@ public static class SelfTest
         TryDelete(partial);
         return ("a transfer still in progress is not swept away, and is cleaned up afterwards", passed,
             passed ? "" : $"survived while open: {survivedWhileOpen}, removed afterwards: {after.Removed}");
+    }
+
+    /// <summary>
+    /// Present, visible, sized to be seen — not exact pixels. Width/height floors are deliberately
+    /// loose: they catch a control that vanished or collapsed to nothing, not one that is merely
+    /// smaller than some specific target, which DPI scaling and theming change legitimately. Text is
+    /// only checked when <see cref="ControlSnapshot.ExpectedText"/> is given — a field a person types
+    /// into (the peer number) or a value that is empty before first registration (the hero number)
+    /// have no fixed text to check, only presence and size.
+    /// </summary>
+    private static (string, bool, string) CheckControl(ControlSnapshot c)
+    {
+        if (!c.Exists) return (c.Name, false, "the control does not exist");
+        if (!c.Visible) return (c.Name, false, "exists but is not visible");
+        if (c.Width < 20 || c.Height < 10) return (c.Name, false, $"collapsed to {c.Width}x{c.Height}");
+        if (c.ExpectedText is not null && c.ActualText != c.ExpectedText)
+            return (c.Name, false, $"reads \"{c.ActualText}\", expected \"{c.ExpectedText}\"");
+        return (c.Name, true, $"{c.Width}x{c.Height}" + (c.ExpectedText is not null ? $", reads \"{c.ActualText}\"" : ""));
     }
 
     private static void TryDelete(string path)

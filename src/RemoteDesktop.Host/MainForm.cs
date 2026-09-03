@@ -838,10 +838,20 @@ public sealed class MainForm : Form
         _selfTest.Text = "Running…";
         _selfTestResult.Text = "Self-test: running…";
 
+        // Read on THIS thread, before handing off — SelfTest.Run executes on a background thread
+        // below, and WinForms control properties are not safe to read from there. Plain data by the
+        // time it crosses over. See SelfTest.ControlSnapshot for why this exists.
+        var controls = new[]
+        {
+            SelfTest.ControlSnapshot.Of("your FlashDesk number", _hero),
+            SelfTest.ControlSnapshot.Of("the field for someone else's number", _peerBox),
+            SelfTest.ControlSnapshot.Of("the Connect button", _connect, expectedText: "Connect"),
+        };
+
         SelfTest.Result result;
         try
         {
-            result = await Task.Run(SelfTest.Run);
+            result = await Task.Run(() => SelfTest.Run(controls));
         }
         catch (Exception ex)
         {
