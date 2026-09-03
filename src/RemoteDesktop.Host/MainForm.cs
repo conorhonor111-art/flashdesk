@@ -138,6 +138,7 @@ public sealed class MainForm : Form
     {
         _knownCallers = new KnownCallers(_identityStore.Folder);
         _sessionLog = new SessionLog(_identityStore.Folder);
+        _server.SessionLogPath = _sessionLog.FilePath;
         _partialFiles = new PartialFiles(_identityStore.Folder);
 
         string version = (System.Attribute.GetCustomAttribute(
@@ -541,6 +542,16 @@ public sealed class MainForm : Form
         if (_identity?.HasUsableId != true)
         {
             SetConnectNote("Wait until your own number appears above, then try again.");
+            return;
+        }
+
+        // Found live 2026-09-03: nothing stopped this, and the result was a screen showing itself
+        // showing itself — no error, no useful signal, just a session that could never mean anything.
+        // Nobody dials their own number on purpose, so this is always a mistake, never a real intent
+        // to guard against.
+        if (digits == _identity.Id)
+        {
+            SetConnectNote("That is this computer's own number. Type the OTHER person's number instead.");
             return;
         }
 

@@ -95,6 +95,14 @@ public sealed class HostServer : IDisposable
     public PartialFiles Partials { get; set; } =
         new(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "FlashDesk"));
 
+    /// <summary>
+    /// This machine's own session log file — set once by MainForm right after constructing its
+    /// SessionLog, so HostFileService can answer the reserved "give me your own session log"
+    /// request without the operator ever needing to know or type the path. See
+    /// FileGetRequest.SessionLogPath.
+    /// </summary>
+    public string? SessionLogPath { get; set; }
+
     /// <summary>Called with the caller's number when a session actually begins and when it ends.</summary>
     public Action<string, bool>? SessionLogged;
 
@@ -506,7 +514,8 @@ public sealed class HostServer : IDisposable
                 // having on disk even if nothing else ever is — see EmitTransferCheckpoint.
                 EmitTransferCheckpoint();
             },
-            fileBytesTransferred: n => { FileMeter.Record(1, n); _recorder?.RecordFileBytes(n); });
+            fileBytesTransferred: n => { FileMeter.Record(1, n); _recorder?.RecordFileBytes(n); },
+            sessionLogPath: SessionLogPath);
 
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct);
         var inbound = InboundLoopAsync(channel, files, linked.Token);

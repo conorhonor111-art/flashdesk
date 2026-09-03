@@ -67,7 +67,7 @@ public class HostFileServiceTests : IAsyncLifetime
     private ReplaceChoice _replaceAnswer = ReplaceChoice.Refuse;
     private string _configFolder = string.Empty;
 
-    private HostFileService NewService(bool consent, bool withUpload = true)
+    private HostFileService NewService(bool consent, bool withUpload = true, string? sessionLogPath = null)
     {
         _configFolder = Path.Combine(_folder, "..", "config-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_configFolder);
@@ -90,7 +90,8 @@ public class HostFileServiceTests : IAsyncLifetime
             {
                 lock (_arrived) _arrived.Add((name, bytes, folder, isProgram, replaced));
             }
-            : null);
+            : null,
+            sessionLogPath: sessionLogPath);
     }
 
     /// <summary>Pushes one message in the way the inbound loop does, then waits for the answer.</summary>
@@ -303,6 +304,51 @@ public class HostFileServiceTests : IAsyncLifetime
         Assert.Equal("Invoice March.pdf", line.Name);
         Assert.Equal(original.Length, line.Bytes);
         Assert.Equal(_folder, line.Folder);
+    }
+
+    [Fact]
+    public async Task The_reserved_session_log_request_serves_the_hosts_own_log_not_a_typed_path()
+    {
+        // Deliberately OUTSIDE _folder (the normal, operator-browsable area) and never resolved
+        // through RemotePath/LocalDrives — this is the whole point: the operator cannot reach this
+        // path by typing, only by the reserved request, and the host answers it from its own known
+        // location regardless of what the operator's own listing folder is.
+        // Path.GetFullPath, not a bare Path.Combine with "..": OpenedPath's handle re-check compares
+        // this string against the file handle's own REAL, normalised path, and an un-normalised ".."
+        // segment fails that comparison even though it points at the identical file on disk.
+        string logFolder = Path.GetFullPath(Path.Combine(_folder, "..", "appdata-" + Guid.NewGuid().ToString("N")));
+        Directory.CreateDirectory(logFolder);
+        string logPath = Path.Combine(logFolder, "sessions.txt");
+        byte[] original = System.Text.Encoding.UTF8.GetBytes("CONNECTED  418 205 793 accepted and connected\r\n");
+        File.WriteAllBytes(logPath, original);
+
+        var service = NewService(consent: true, sessionLogPath: logPath);
+        await ExchangeAsync(service, MessageType.FileAccessRequest, new FileAccessRequest(1).ToBytes());
+
+        Assert.True(service.TryHandle(MessageType.FileGetRequest,
+            new FileGetRequest(2, FileGetRequest.SessionLogPath, 0).ToBytes(), CancellationToken.None));
+
+        var (received, end) = await CollectTransferAsync(2);
+
+        Assert.Equal(FileStatus.Ok, end.Status);
+        Assert.Equal(original, received);
+    }
+
+    [Fact]
+    public async Task The_reserved_session_log_request_fails_plainly_when_there_is_no_log_yet()
+    {
+        // No sessionLogPath configured at all — the state on a brand-new install before any
+        // session has ever completed.
+        var service = NewService(consent: true, sessionLogPath: null);
+        await ExchangeAsync(service, MessageType.FileAccessRequest, new FileAccessRequest(1).ToBytes());
+
+        Assert.True(service.TryHandle(MessageType.FileGetRequest,
+            new FileGetRequest(2, FileGetRequest.SessionLogPath, 0).ToBytes(), CancellationToken.None));
+
+        var msg = await NextAsync();
+        Assert.Equal(MessageType.FileGetEnd, msg.Type);
+        var end = FileGetEnd.FromBytes(msg.Payload);
+        Assert.Equal(FileStatus.NotFound, end.Status);
     }
 
     [Fact]

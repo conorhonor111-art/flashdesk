@@ -226,6 +226,16 @@ public sealed record DirListReply(
 /// </summary>
 public readonly record struct FileGetRequest(int RequestId, string Path, long StartOffset)
 {
+    /// <summary>
+    /// A reserved <see cref="Path"/> value meaning "your own session log" — not a real path, and
+    /// never typed by anyone. Control characters make it unreachable by ordinary typing, and the
+    /// host resolves it to the real, username-specific path entirely on its own side (see
+    /// <c>HostFileService.StreamFileAsync</c>). Added 2026-09-03 so fetching the one file every
+    /// tester and every real support session needs never again means typing a hidden path from
+    /// memory, with a username in the middle, into a text box.
+    /// </summary>
+    public const string SessionLogPath = "session-log";
+
     public byte[] ToBytes()
     {
         var b = new List<byte>(64);

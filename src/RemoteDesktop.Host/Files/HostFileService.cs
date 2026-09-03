@@ -85,6 +85,14 @@ internal sealed class HostFileService : IDisposable
     /// <summary>The transfer the operator has asked to stop, or int.MinValue for none.</summary>
     private volatile int _cancelledRequestId = int.MinValue;
 
+    /// <summary>
+    /// Where THIS machine's own session log lives — known only here, on the host, because it is
+    /// under the host's own username-specific profile folder. Backs <see cref="FileGetRequest.
+    /// SessionLogPath"/>: a fixed, reserved request that fetches this file without the operator ever
+    /// needing to know or type the path. Added 2026-09-03 after a real tester mistyped it by hand.
+    /// </summary>
+    private readonly string? _sessionLogPath;
+
     internal HostFileService(
         MessageChannel channel,
         BandwidthGovernor governor,
@@ -97,7 +105,8 @@ internal sealed class HostFileService : IDisposable
         FileArrived? fileArrived = null,
         Action? transferStarted = null,
         Action? transferEnded = null,
-        Action<int>? fileBytesTransferred = null)
+        Action<int>? fileBytesTransferred = null,
+        string? sessionLogPath = null)
     {
         _channel = channel;
         _governor = governor;
@@ -111,6 +120,7 @@ internal sealed class HostFileService : IDisposable
         _transferStarted = transferStarted;
         _transferEnded = transferEnded;
         _fileBytesTransferred = fileBytesTransferred;
+        _sessionLogPath = sessionLogPath;
     }
 
     /// <summary>
@@ -313,7 +323,12 @@ internal sealed class HostFileService : IDisposable
         }
         catch (DirectoryNotFoundException)
         {
-            return Failed(requestId, skip, FileStatus.NotFound, "That folder is not there any more.");
+            // NOT "any more" — that claims a history this code cannot know. A typed path that never
+            // existed (a missing folder segment, a misspelling) hits this exact branch, and "not
+            // there any more" tells a person their own typing was fine and something changed
+            // underneath them, which sends them looking in the wrong place. Found live 2026-09-03.
+            return Failed(requestId, skip, FileStatus.NotFound,
+                "That folder does not exist. Check the path, or use Up and double-click folders instead of typing one.");
         }
         catch (UnauthorizedAccessException)
         {
@@ -388,7 +403,24 @@ internal sealed class HostFileService : IDisposable
 
     private async Task StreamFileAsync(FileGetRequest request, CancellationToken ct)
     {
-        if (!RemotePath.TryResolve(request.Path, out string? path, out string? problem)
+        string? path;
+
+        // The reserved "give me your own session log" request — resolved here, on the host, from
+        // this machine's own known path, never from anything the operator typed or could type. Skips
+        // RemotePath/LocalDrives entirely: those checks exist to police an OPERATOR-SUPPLIED path,
+        // and this one is not that. The open, the handle re-check and the streaming below are
+        // unchanged and still apply — this only replaces how the path is chosen.
+        if (request.Path == FileGetRequest.SessionLogPath)
+        {
+            if (_sessionLogPath is null || !File.Exists(_sessionLogPath))
+            {
+                await EndAsync(request.RequestId, FileStatus.NotFound,
+                    0, "There is no session log on this computer yet.", ct).ConfigureAwait(false);
+                return;
+            }
+            path = _sessionLogPath;
+        }
+        else if (!RemotePath.TryResolve(request.Path, out path, out string? problem)
             || !LocalDrives.IsOnLocalDrive(path!, out problem))
         {
             await EndAsync(request.RequestId, FileStatus.NotAllowed, 0, problem!, ct).ConfigureAwait(false);

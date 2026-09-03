@@ -53,6 +53,7 @@ public sealed class FilePanel : UserControl
     private readonly Button _refresh = Theme.MakeButton("Refresh", ButtonKind.Neutral);
     private readonly ListView _list = new();
     private readonly Button _get = Theme.MakeButton("Copy to my computer", ButtonKind.Primary);
+    private readonly Button _getSessionLog = Theme.MakeButton("Copy their session log to my computer", ButtonKind.Neutral);
     private readonly Button _send = Theme.MakeButton("Send a file…", ButtonKind.Neutral);
     private readonly Button _more = Theme.MakeButton("Show more", ButtonKind.Neutral);
     private readonly Button _stop = Theme.MakeButton("Stop", ButtonKind.Destructive);
@@ -123,9 +124,14 @@ public sealed class FilePanel : UserControl
         // _status against this panel's own background, just never applied to the list itself.
         _list.BackColor = Theme.OperatorHeader;
         _list.ForeColor = Theme.OperatorHeaderText;
-        _list.Columns.Add("Name", 220);
-        _list.Columns.Add("Size", 80, HorizontalAlignment.Right);
-        _list.Columns.Add("Changed", 100);
+        // Widths sized to fit inside the panel's own 420 px width (minus padding and the list's own
+        // scrollbar) — found live 2026-09-03: the old total (220+80+100=400) left no real margin,
+        // and at the panel's actual on-screen width the header truncated to "me", the tail end of
+        // "Name" scrolled into view instead of the start. Sized with real headroom this time, not
+        // just under the same tight number.
+        _list.Columns.Add("Name", 180);
+        _list.Columns.Add("Size", 70, HorizontalAlignment.Right);
+        _list.Columns.Add("Changed", 90);
         _list.DoubleClick += (_, _) => OpenSelected();
         _list.KeyDown += (_, e) =>
         {
@@ -139,6 +145,7 @@ public sealed class FilePanel : UserControl
         _refresh.Click += (_, _) => _ = ShowFolderAsync(_folder, 0);
         _more.Click += (_, _) => _ = ShowFolderAsync(_folder, _shown);
         _get.Click += (_, _) => { if (Selected is { } entry) _ = DownloadEntryAsync(entry); else _status.Text = "Choose a file first."; };
+        _getSessionLog.Click += (_, _) => _ = DownloadSessionLogAsync();
         _send.Click += (_, _) => _ = UploadAsync();
         _stop.Click += (_, _) => _transfer?.Cancel();
 
@@ -205,7 +212,7 @@ public sealed class FilePanel : UserControl
             AutoSizeMode = AutoSizeMode.GrowAndShrink,
             Margin = new Padding(0, Theme.S2, 0, 0),
         };
-        foreach (Control c in new Control[] { _get, _send, _more, _stop })
+        foreach (Control c in new Control[] { _get, _getSessionLog, _send, _more, _stop })
         {
             c.Margin = new Padding(0, 0, Theme.S2, Theme.S2);
             actions.Controls.Add(c);
@@ -385,6 +392,68 @@ public sealed class FilePanel : UserControl
             {
                 _settings.LastDownloadFolder = destination; // only remembered once it actually worked
                 _status.Text = $"Copied {entry.Name} ({Readable(end.TotalBytes)}) to {destination}.";
+            }
+            else
+            {
+                _status.Text = end.Message.Length > 0 ? end.Message : "It did not finish.";
+            }
+        }
+        catch (Exception ex) { _status.Text = ex.Message; }
+        finally
+        {
+            _progress.Value = 0;
+            EndTransferTracking();
+            _transfer?.Dispose();
+            _transfer = null;
+            SetBusy(false);
+        }
+    }
+
+    /// <summary>
+    /// Fetches the other machine's OWN session log — the plain-text record of who has connected to
+    /// it and what moved — without the operator ever needing to know or type where it lives on that
+    /// machine. Added 2026-09-03, after a real tester (who built this program) mistyped the path by
+    /// hand on the first try: it is a hidden, username-specific folder, and asking anyone to type it
+    /// from memory was always going to fail this exact way, for a tester and for a real client alike.
+    ///
+    /// <para>Uses the SAME reserved request (<see cref="FileGetRequest.SessionLogPath"/>) and the
+    /// same consent already granted for looking at files — this is not a new permission, it is one
+    /// fixed file reached without a path.</para>
+    /// </summary>
+    private async Task DownloadSessionLogAsync()
+    {
+        if (_busy) return;
+
+        string? destination = _settings.LastDownloadFolder;
+        if (destination is null || !Directory.Exists(destination))
+        {
+            using var pick = new FolderBrowserDialog
+            {
+                Description = "Where should their session log be saved? (Remembered for next time.)",
+            };
+            if (pick.ShowDialog(this) != DialogResult.OK) return;
+            destination = pick.SelectedPath;
+        }
+
+        // Timestamped so fetching it again later in the same session — to see what has happened
+        // since — never collides with the first copy.
+        string saveAs = $"FlashDesk-session-log-{DateTime.Now:yyyyMMdd-HHmmss}.txt";
+
+        _transfer = new CancellationTokenSource();
+        SetBusy(true);
+        _progress.Value = 0;
+        _status.Text = "Fetching their session log…";
+
+        try
+        {
+            var end = await _files.DownloadAsync(
+                FileGetRequest.SessionLogPath, destination, saveAs,
+                Progress(0, "Fetching their session log…"), _transfer.Token);
+
+            if (end.Status == FileStatus.Ok)
+            {
+                _settings.LastDownloadFolder = destination;
+                _status.Text = $"Saved their session log ({Readable(end.TotalBytes)}) to {Path.Combine(destination, saveAs)}.";
             }
             else
             {
@@ -605,7 +674,7 @@ public sealed class FilePanel : UserControl
     private void SetBusy(bool busy)
     {
         _busy = busy;
-        _go.Enabled = _up.Enabled = _refresh.Enabled = _get.Enabled = _send.Enabled = !busy;
+        _go.Enabled = _up.Enabled = _refresh.Enabled = _get.Enabled = _getSessionLog.Enabled = _send.Enabled = !busy;
         _more.Enabled = !busy && _hasMore;
         // Stop is the one control that is only useful WHILE something is happening, and it must
         // never be the harder button to reach when it is.
