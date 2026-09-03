@@ -205,6 +205,33 @@
 > say. That check is not overhead on the real work; on this project, it has repeatedly BEEN the
 > real work.
 
+## Local tooling note (2026-09-03) — outside the FlashDesk work itself, but keep this current
+
+The `ui-ux-pro-max` design-reference skill is installed globally, at
+`C:\Users\PC\.claude\skills\ui-ux-pro-max\` — not inside this repository (`.claude/skills/` is
+already in `.gitignore` for exactly this reason).
+
+**On this machine, `python3` resolves to the Windows Store's execution-alias stub and fails with
+"Python was not found," even though a real interpreter is installed and working**
+(`C:\Python314\python.exe`, reachable as `python` and as `py`, confirmed: `Python 3.14.6`). The
+skill's own `SKILL.md` calls `python3` in every documented command, so every search fails on its
+first run unless this is fixed.
+
+**⚠ RUN `scripts\Fix-UiUxProMaxPython.cmd` (double-click) AFTER EVERY `uipro update` OR
+`uipro init --global`.** Both regenerate `SKILL.md` from a template and silently undo the fix —
+proven twice today by forcing the regeneration on purpose and watching `python3` come back both
+times. The script is idempotent (safe to run even if nothing needs fixing) and touches nothing in
+this repository or on the system PATH — deliberately not a PATH-level `python3` shim, which would
+be a machine-wide change for a problem that is really just one file's wording. See the script's own
+header comment for the full reasoning, including why it is written in plain ASCII (an em dash in a
+UTF-8-without-BOM `.ps1` is exactly the kind of thing Windows PowerShell 5.1 misreads as ANSI and
+turns into a parse error — hit once while writing this very script, fixed by removing the character
+the trap depends on rather than fighting the encoding).
+
+Confirmed working end to end, 2026-09-03: real search output both before and after a forced
+`uipro update --global` (skill version `v2.15.0`, data `verifiedAt: 2026-08-13` — unchanged by the
+update; only the template file was rewritten, which is exactly what the fix now survives).
+
 > # HANDOVER — 2026-08-06. READ THIS BEFORE ANYTHING ELSE.
 >
 > Written because a session was about to be cleared and everything not in a file would have been
