@@ -75,9 +75,16 @@
     <div class="feature-grid">
       <div class="card">
         <h3>Session log</h3>
+        <!-- ⚠ HOTFIX 2026-09-04, minimal and surgical, OUTSIDE the round-4 v1/v2 rollout scope on
+             purpose: an independent fact-check for the round-4 redesign found "It never leaves
+             your machine" is false here too — the file panel's "copy their session log" button
+             (FilePanel.cs:412-457) lets a helper with file-access consent copy it off, the same as
+             any other file. The safety-accuracy rule outranks "don't touch untouched pages" for a
+             claim already committed to this file; nothing else on this page was touched. -->
         <p>A plain text file on <strong>your own computer</strong>, nowhere else. It records who
-        connected, when, and what was decided — accepted, refused, or timed out. It never leaves
-        your machine; FlashDesk has no server it reports session history to.</p>
+        connected, when, and what was decided — accepted, refused, or timed out. It stays there
+        unless you separately let your helper copy files off your computer; FlashDesk has no server
+        it reports session history to either way.</p>
       </div>
       <div class="card">
         <h3>Your FlashDesk number</h3>

@@ -1,0 +1,26 @@
+<!-- v2 header — light, sticky (position, not motion), and per Conor's instruction "a header that
+     carries the download action": the download link is present in the header on every page, not
+     only in the hero. The mark here is the single-colour ink version (assets\FlashDesk-mark-mono.svg
+     — built last round specifically for light surfaces the dark tile was never meant for; this is
+     that asset's first real use). MARK GEOMETRY IS LOCKED to assets\make-icon.ps1 — if the points
+     change there, they must change here too, in the same commit; scripts\Check-MarkGeometry.ps1
+     checks this file. -->
+<header class="site-header">
+  <a class="brand" href="/">
+    <svg viewBox="0 0 16 16" aria-hidden="true" width="28" height="28">
+      <polyline points="4.631,2.512 9.387,11.495 11.325,7.620" fill="none" stroke="#17191E" stroke-width="2.6"/>
+    </svg>
+    <span>FlashDesk</span>
+  </a>
+  <nav class="site-nav" aria-label="Site">
+    <a href="/" data-nav="home">Home</a>
+    <a href="/how-it-works/" data-nav="how-it-works">How it works</a>
+    <a href="/privacy/" data-nav="privacy">Privacy</a>
+    <a href="/faq/" data-nav="faq">FAQ</a>
+    <a href="/terms/" data-nav="terms">Terms</a>
+  </nav>
+  <a class="header-cta" href="https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe">
+    <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+    Download
+  </a>
+</header>

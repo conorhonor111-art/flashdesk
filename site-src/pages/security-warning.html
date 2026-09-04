@@ -1,0 +1,108 @@
+<!--PAGE
+SLUG: security-warning
+LAYOUT: v2
+TITLE: FlashDesk — the Windows warning, exactly as you'll see it
+DESCRIPTION: Windows and some browsers warn about FlashDesk because it is new, unsigned software — exactly what you'll see, word for word, and what to do.
+CANONICAL: https://flashdesk.org/security-warning/
+-->
+<!-- ============================================================================================
+     NEW PAGE, round 4 (2026-09-04). This is word-for-word the content that used to sit directly
+     on the home page — moved, not rewritten, because Conor's own diagnosis was that three screens
+     of quoted-dialog prose on a landing page is what made it read as "a landing page, an
+     instruction manual and a security guide at once." The TEXT below is unchanged from the
+     previous round (already verified against real Chrome/Windows screenshots on 2026-08-03/05 —
+     see the original warnings in CLAUDE.md); only its address and its container changed. Not in
+     the main nav — reached from Home's download meta line and (once that page is rebuilt in this
+     language) FAQ's "why does Windows warn me" answer, the same way it was reachable via #warnings
+     before.
+     ============================================================================================ -->
+
+<section class="band band-paper">
+  <div class="contained prose">
+    <span class="kicker">Before you run it</span>
+    <h1>Windows will warn you when you open it.</h1>
+    <p class="lead">Exactly what you'll see, word for word — so it's recognised, not
+    frightening, when it happens.</p>
+  </div>
+</section>
+
+<section class="band band-alt">
+  <div class="contained prose">
+    <p>A blue box appears. It says:</p>
+
+    <p class="quote"><strong>Windows protected your PC</strong><br>
+    Microsoft Defender SmartScreen prevented an unrecognized app from starting.
+    Running this app might put your PC at risk.<br>
+    <span class="link-look">More info</span><br>
+    <span class="btn-dark">Don&rsquo;t run</span></p>
+
+    <p><strong>There is no way forward on this screen.</strong> The only button is
+    <strong>Don&rsquo;t run</strong>. The button you need does not exist yet.</p>
+
+    <p>Click the small grey words <strong>More&nbsp;info</strong>. They are a link, not a button,
+    and they are easy to miss. The box then grows and shows:</p>
+
+    <p class="quote">App:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FlashDesk.exe<br>
+    Publisher:&nbsp;<strong>Unknown publisher</strong><br>
+    <span class="btn-pale">Run anyway</span>
+    <span class="btn-dark">Don&rsquo;t run</span></p>
+
+    <p>The name beside <strong>App:</strong> is whatever your browser saved the file as. If you
+    have downloaded it before it may read <em>FlashDesk&nbsp;(1).exe</em> or
+    <em>FlashDesk&nbsp;(2).exe</em>. It is the same file.</p>
+
+    <p>This screen has two buttons. Press <strong>Run&nbsp;anyway</strong>, on the
+    <strong>left</strong>.</p>
+
+    <p class="scam-inline">If nobody you telephoned yourself asked you to do this,
+    <strong>press Don&rsquo;t run</strong> and close this page. Somebody who phoned you out of the
+    blue and talked you as far as a security warning is not helping you.</p>
+
+    <p><strong>What &ldquo;Unknown publisher&rdquo; means.</strong> A publisher is the name of
+    whoever made the file. Mine is not shown because I have not paid a company to attach a
+    verified name to it. If I had, that line would read <em>Publisher: Conor Honor</em>. It would
+    be the same file either way.</p>
+
+    <p><strong>Why the warning appears.</strong> Windows trusts software it has seen many people
+    run before, and treats everything else as unrecognised. FlashDesk is new, so it is
+    unrecognised. Your computer cannot tell new software from bad software, so it warns about
+    both.</p>
+  </div>
+</section>
+
+<section class="band band-paper">
+  <div class="contained prose">
+    <span class="kicker">If your browser blocks the download</span>
+    <h2>Most browsers let this download through.</h2>
+    <p>If yours stops it, you will see this in the downloads box at the top right:</p>
+
+    <p class="quote">FlashDesk.exe<br>
+    <strong>Suspicious download blocked</strong></p>
+
+    <p>Click the small arrow <strong>&rsaquo;</strong> at the end of that line. It opens:</p>
+
+    <p class="quote"><strong>This file isn&rsquo;t commonly downloaded and it may be
+    dangerous</strong><br>
+    Learn why Chrome blocks some downloads<br>
+    <span class="btn-dark">Delete from history</span>
+    <span class="btn-pale">Download suspicious file</span></p>
+
+    <p>To continue, press <strong>Download suspicious file</strong> &mdash; the <strong>pale</strong>
+    button on the right. The solid dark blue one says <strong>Delete from history</strong> and
+    throws the file away.</p>
+
+    <p class="scam-inline">Again: if nobody you telephoned yourself asked you to do this,
+    <strong>press Delete from history</strong>. That is what the dark button is for.</p>
+  </div>
+</section>
+
+<section class="band band-alt">
+  <div class="contained prose">
+    <span class="kicker">If the download button on the home page doesn't work</span>
+    <p>The same file is also here:
+    <a class="inline-link" href="https://flashdesk.org/dl/FlashDesk.exe">flashdesk.org/dl/FlashDesk.exe</a>
+    &mdash; identical in every way. Browsers are more suspicious of it there, so the button on the
+    <a class="inline-link" href="/">home page</a> is the easier route, but if that one fails for
+    any reason this one will still work.</p>
+  </div>
+</section>

@@ -3,52 +3,145 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="dark">
+<meta name="color-scheme" content="light">
 <title>FlashDesk — remote support for your computer</title>
 <!--
   GENERATED FILE — do not hand-edit. Source: site-src\pages\home.html, assembled by
-  scripts\Build-Site.ps1 from site-src\layout.html + site-src\partials\. Edit the source files and
-  re-run the build script; a hand edit here will be silently overwritten by the next build.
+  scripts\Build-Site.ps1 from site-src\layout-v2.html + site-src\partials\*-v2.html.
 
-  PALETTE LOCK with src/RemoteDesktop.UI/Theme.cs (must never drift — see the comment there):
-    background = Theme.BrandTile  #17191E
-    the ONE clickable green = Theme.BrandGreen  #2BD16B
-    text = Theme.OperatorHeaderText  #ECEFF3
-  Rules from CLAUDE.md "The download site": phone-first, no JS, no tracking, nothing loaded from
-  another host.
+  ⚠ THIS IS THE ROUND-4 REDESIGN TRACK, NOT THE WHOLE SITE. Conor's own build order: design the
+  system, build Home completely in it, build ONE inner page to prove it scales, then WAIT — do not
+  roll out the rest until he has seen these two. Privacy, FAQ and Terms are UNTOUCHED and still
+  render from layout.html / site.css (see scripts\Build-Site.ps1's LAYOUT front-matter key — pages
+  without a LAYOUT key, or LAYOUT: v1, get the old track; LAYOUT: v2 gets this one). Two designs
+  coexist in this repository on purpose, for exactly as long as it takes to get a verdict.
+
+  WHY THE PALETTE CHANGED FROM DARK+GREEN TO LIGHT: see site-v2.css's own header comment for the
+  full argument (research-backed, not taste) — six real competitor/trust-product sites were fetched
+  and read directly, six of six are light-dominant, and dark+acid-green reads as the hacking/crypto
+  genre to exactly the frightened non-technical visitor this page exists for.
+
+  Nothing on this page loads from another host — same rule as the v1 track, unchanged.
 -->
-
-<!-- Link preview: these URLs get pasted into WhatsApp/Telegram to a nervous stranger. A preview
-     with no title or description reads as a scam link. No og:image — this site hosts none. -->
-<meta name="description" content="Remote support for your computer. One file, nothing installs. You see everything your helper does, and you can end the session at any moment.">
+<meta name="description" content="Remote support for your computer. One file, nothing installs. You watch everything, the whole time, and you can end it with one click.">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="en_GB">
 <meta property="og:url" content="https://flashdesk.org/">
 <meta property="og:title" content="FlashDesk — remote support for your computer">
-<meta property="og:description" content="Remote support for your computer. One file, nothing installs. You see everything your helper does, and you can end the session at any moment.">
+<meta property="og:description" content="Remote support for your computer. One file, nothing installs. You watch everything, the whole time, and you can end it with one click.">
 <meta name="twitter:card" content="summary">
 
-<!-- MARK GEOMETRY IS LOCKED to assets\make-icon.ps1 and to the header partial's <svg> — see
-     site-src\partials\header.html for the full note. scripts\Check-MarkGeometry.ps1 checks this
-     favicon and the header SVG in the generated site\index.html against the canonical points. -->
+<!-- MARK GEOMETRY IS LOCKED to assets\make-icon.ps1 — see site-src\partials\header-v2.html for the
+     full note. The mark's SHAPE is unchanged this round (Conor: "it took seven rounds and it is
+     earned"); only where and in what colour it appears changed. -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Crect%20x='1'%20y='1'%20width='14'%20height='14'%20rx='3.5'%20fill='%2317191E'/%3E%3Cpolyline%20points='4.631,2.512%209.387,11.495%2011.325,7.620'%20fill='none'%20stroke='%232BD16B'%20stroke-width='2.6'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="/site.css">
+<link rel="stylesheet" href="/site-v2.css">
 </head>
 <body>
-<div class="frame">
-<!-- ONE copy of the header, stamped onto every generated page by scripts\Build-Site.ps1. Editing
-     this file changes every page's header at once — that is the whole point of templating it.
+<!-- -----------------------------------------------------------------------------------------
+     THE ICON SET — one sprite, defined once, used everywhere via <svg class="icon"><use
+     href="#i-NAME"/></svg>. Built round 4 (2026-09-04) per Conor's instruction: "a coherent icon
+     set in the mark's own language — same stroke weight, same angles." Design rules, applied to
+     every icon below with no exception:
+       - 24x24 viewBox, stroke-width 2, stroke="currentColor" (tints via CSS `color`), fill: none
+       - stroke-linecap: butt, stroke-linejoin: miter — the mark uses flat caps and a sharp miter
+         join (that sharp corner is exactly what nearly clipped the mark itself once — see
+         make-icon.ps1's own history — so it is treated with the same care here)
+       - straight lines and rectangles ONLY. No circles, no curves anywhere in this set. The mark
+         itself is two straight segments and nothing else; every icon here is built from the same
+         restricted vocabulary so the family reads as one language, not eleven separate ideas that
+         happen to share a stroke width
+       - icon-screen's inner mark deliberately echoes the brand mark's own descending-then-rising
+         proportion (long stroke down, short stroke up) at a smaller scale — the one icon allowed
+         to directly quote the mark, because it depicts the one thing only the mark's own shape
+         means: a cursor moving on a screen that is not physically yours
+     ----------------------------------------------------------------------------------------- -->
+<svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+  <defs>
+    
+      <symbol id="i-screen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <rect x="2" y="3" width="20" height="14"/>
+        <line x1="8" y1="21" x2="16" y2="21"/>
+        <line x1="12" y1="17" x2="12" y2="21"/>
+        <polyline points="9,7 13,15 15.5,10.5"/>
+      </symbol>
+      <!-- ⚠ REDESIGNED — an independent review found this too similar to i-band (both were "a
+           rectangle with a line near the top"). Now a smaller, centred dialog with two actual
+           button RECTANGLES (not lines) at the bottom, reading unambiguously as "a decision with
+           two buttons" rather than "a window with a divider." -->
+      <symbol id="i-dialog" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <rect x="4" y="5" width="16" height="13"/>
+        <line x1="4" y1="9" x2="20" y2="9"/>
+        <rect x="7" y="12.5" width="4" height="3"/>
+        <rect x="13" y="12.5" width="4" height="3"/>
+      </symbol>
+      <symbol id="i-band" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <rect x="2" y="3" width="20" height="16"/>
+        <line x1="2" y1="7.5" x2="22" y2="7.5" stroke-width="3"/>
+      </symbol>
+      <symbol id="i-log" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <rect x="5" y="2" width="14" height="20"/>
+        <line x1="8" y1="7" x2="16" y2="7"/>
+        <line x1="8" y1="11" x2="16" y2="11"/>
+        <line x1="8" y1="15" x2="14" y2="15"/>
+      </symbol>
+      <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <polyline points="6,2 6,22 18,22 18,8 12,2 6,2"/>
+        <polyline points="12,2 12,8 18,8"/>
+      </symbol>
+      <!-- ⚠ REDESIGNED — an independent review found the original (three separate small blocks)
+           read ambiguously as a "more options" ellipsis or a loading indicator. Now ONE field
+           divided by two internal dividers — reads specifically as "one number, grouped in
+           three," matching the actual 9-digit-in-three-groups format, not a generic UI glyph. -->
+      <symbol id="i-address" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <rect x="2" y="8" width="20" height="8"/>
+        <line x1="9.33" y1="8" x2="9.33" y2="16"/>
+        <line x1="16.67" y1="8" x2="16.67" y2="16"/>
+      </symbol>
+      <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <polyline points="2,6 2,20 22,20 22,8 11,8 9,6 2,6"/>
+      </symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <rect x="7" y="7" width="14" height="14"/>
+        <polyline points="17,7 17,3 3,3 3,17 7,17"/>
+      </symbol>
+      <symbol id="i-arrival" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <rect x="3" y="9" width="12" height="12"/>
+        <polyline points="14,4 21,4 21,11"/>
+        <line x1="21" y1="4" x2="10" y2="15"/>
+      </symbol>
+      <symbol id="i-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <line x1="4" y1="4" x2="20" y2="20"/>
+        <line x1="20" y1="4" x2="4" y2="20"/>
+      </symbol>
+      <symbol id="i-monitors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <rect x="2" y="4" width="12" height="9"/>
+        <rect x="12" y="8" width="10" height="8"/>
+      </symbol>
+      <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <line x1="12" y1="3" x2="12" y2="15"/>
+        <polyline points="6,10 12,16 18,10"/>
+        <line x1="4" y1="21" x2="20" y2="21"/>
+      </symbol>
+      <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <line x1="4" y1="12" x2="20" y2="12"/>
+        <polyline points="14,6 20,12 14,18"/>
+      </symbol>
+  </defs>
+</svg>
 
-     MARK GEOMETRY IS LOCKED TO assets\make-icon.ps1 AND TO THE FAVICON IN site-src\layout.html.
-     All three draw the same polyline on the same 16-unit grid; scripts\Check-MarkGeometry.ps1
-     checks the generated site\index.html and site\holding.html against the canonical points in
-     make-icon.ps1 — if you change the points here, re-run Build-Site.ps1 and Check-MarkGeometry.ps1
-     in the same commit. -->
+<div class="page">
+<!-- v2 header — light, sticky (position, not motion), and per Conor's instruction "a header that
+     carries the download action": the download link is present in the header on every page, not
+     only in the hero. The mark here is the single-colour ink version (assets\FlashDesk-mark-mono.svg
+     — built last round specifically for light surfaces the dark tile was never meant for; this is
+     that asset's first real use). MARK GEOMETRY IS LOCKED to assets\make-icon.ps1 — if the points
+     change there, they must change here too, in the same commit; scripts\Check-MarkGeometry.ps1
+     checks this file. -->
 <header class="site-header">
   <a class="brand" href="/">
-    <svg viewBox="0 0 16 16" aria-hidden="true">
-      <rect x="1" y="1" width="14" height="14" rx="3.5" fill="#17191E"/>
-      <polyline points="4.631,2.512 9.387,11.495 11.325,7.620" fill="none" stroke="#2BD16B" stroke-width="2.6"/>
+    <svg viewBox="0 0 16 16" aria-hidden="true" width="28" height="28">
+      <polyline points="4.631,2.512 9.387,11.495 11.325,7.620" fill="none" stroke="#17191E" stroke-width="2.6"/>
     </svg>
     <span>FlashDesk</span>
   </a>
@@ -59,262 +152,224 @@
     <a href="/faq/" data-nav="faq">FAQ</a>
     <a href="/terms/" data-nav="terms">Terms</a>
   </nav>
+  <a class="header-cta" href="https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe">
+    <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+    Download
+  </a>
 </header>
 
 <main>
-  <!-- The hero exists ONLY so the desktop layout has something to work with. On a phone it is a
-       plain block and everything inside it stacks exactly as it did before — the phone layout is
-       the one that matters and it must not get worse. On a wide screen it becomes two columns with
-       the screenshot beside the words instead of below them.
-       DOM ORDER IS LOAD-BEARING: everything a person must read before they download — headline,
-       what it runs on, the decision (button + warning) — is inside .hero-main, and the picture is
-       its sibling AFTER it. Do not move the figure above .hero-main to "fix" the desktop column
-       order; use grid placement, which is what the stylesheet does. -->
-  <div class="hero">
-   <div class="hero-main">
+<!-- ============================================================================================
+     ROUND 4 REDESIGN — restructured, not just restyled. The old home page was three documents in
+     one: a landing page, an installation manual (the full SmartScreen/Chrome-block walkthrough,
+     three screens of quoted dialog) and a security guide, stacked on top of each other (Conor's
+     own diagnosis, 2026-09-04). The walkthrough MOVED to its own page, /security-warning/ — same
+     words, verified once already, not rewritten, just relocated to where a page carrying that much
+     detail belongs. What stays on Home is the decision itself: what this is, why to trust it, what
+     to do, and the one warning that protects a reader from the exact scam this tool enables.
+     ============================================================================================ -->
 
-  <h1>Remote support for your computer.</h1>
-  <p class="phone-note">This runs on a Windows computer &mdash; not a phone or tablet.</p>
+<!-- ---- HERO --------------------------------------------------------------------------------- -->
+<section class="band band-paper">
+  <div class="contained hero-grid">
+    <div class="hero-copy">
+      <h1>Remote support for your computer.</h1>
+      <p class="lead">One file. Nothing installs. You watch everything, the whole time, and you
+      can end it with one click.</p>
 
-  <!-- DEVICE-AWARE PRIMARY ACTION (round 1, 2026-09-03). Shown ONLY on (pointer: coarse) devices
-       — see site.css for why that signal was chosen over a User-Agent check. Sits in the DOM
-       before .download so a coarse-pointer top-to-bottom read meets it FIRST; on a fine pointer
-       these three elements render nothing and .download is simply first. The download stays
-       reachable right below either way — demoted, never hidden, because someone here may be on a
-       Windows tablet, or downloading now for later. -->
-  <p class="touch-note">This device can't run it. Email yourself this page's link, and open it on
-  the computer that needs help.</p>
-  <a class="send-link" href="mailto:?subject=FlashDesk%20download%20link&amp;body=Open%20this%20on%20the%20Windows%20computer%20that%20needs%20help%3A%20https%3A%2F%2Fflashdesk.org%2F">Email yourself this link</a>
-  <p class="send-link-fallback">Or just remember: <strong>flashdesk.org</strong></p>
+      <!-- DEVICE-AWARE PRIMARY ACTION — unchanged mechanism since round 1, restyled. (pointer:
+           coarse) is a platform-reported signal, never a User-Agent sniff. On a touch device the
+           file is useless, so the primary action becomes emailing yourself the link instead. -->
+      <p class="touch-note">This device can't run it. Email yourself this page's link, and open
+      it on the computer that needs help.</p>
+      <a class="btn btn-primary send-link" href="mailto:?subject=FlashDesk%20download%20link&amp;body=Open%20this%20on%20the%20Windows%20computer%20that%20needs%20help%3A%20https%3A%2F%2Fflashdesk.org%2F">Email yourself this link</a>
+      <p class="send-link-fallback">Or just remember: <strong>flashdesk.org</strong></p>
 
-  <!-- ---------------------------------------------------------------------------------------
-       THE DECISION (round 2, 2026-09-03). Button + warning share one surfaced card so neither
-       reads louder than the other — see .decision in site.css for the full reasoning. Before this
-       round the button was "roughly 500x78 of saturated green" shouting over the one sentence
-       that protects people from the exact scam this tool enables (Conor's own words). The
-       warning's WORDS are unchanged; only the weight and container around it changed.
-       --------------------------------------------------------------------------------------- -->
-  <div class="decision">
+      <!-- ⚠ THE BUTTON POINTS AT GITHUB ON PURPOSE — unchanged reasoning since round 1. The
+           identical file served from flashdesk.org was BLOCKED by Chrome (measured 2026-08-05);
+           served from a GitHub release, it downloads cleanly. Keep the /releases/latest/download/
+           form — a tag-specific URL throws away earned reputation. -->
+      <a class="btn btn-primary download-btn" href="https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe">
+        <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+        Download FlashDesk for Windows
+      </a>
+      <p class="meta">Free &middot; about 70&nbsp;MB &middot; Windows 10 and 11 &middot;
+      <a class="inline-link" href="/security-warning/">Windows will warn you once — here's exactly
+      what you'll see</a></p>
 
-  <!-- ⚠ THE BUTTON POINTS AT GITHUB ON PURPOSE, AND THIS MUST NOT BE "TIDIED" BACK.
-       The identical file served from flashdesk.org was BLOCKED by Chrome — downloaded in full and
-       then withheld as "Suspicious download blocked". Measured 2026-08-05: same bytes, same
-       SHA-256, same unsigned file, served from a GitHub release instead, downloaded cleanly with no
-       warning at all. The host was what mattered, not the file.
-       The link MUST keep the /releases/latest/download/ form: a tag-specific URL would change with
-       every release and throw away whatever reputation the address has earned.
-       Size is a slight OVER-estimate on purpose — a download that finishes early never worries
-       anyone, one that runs past its stated size looks stuck. Actual size 2026-08-05: 68.5 MB. -->
-  <a class="download" href="https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe">Download FlashDesk for Windows</a>
-  <p class="download-meta">Free &middot; about 70&nbsp;MB &middot; Windows 10 and 11<br>
-  Windows will warn you once when you open it &mdash;
-  <a class="quiet-link" href="#warnings">here is exactly what you will see</a>.</p>
-
-  <!-- The wording of this sentence is unchanged from before either round; only its container and
-       weight changed (see the .decision comment above). -->
-  <p class="near-button">Only download this if you contacted us yourself.</p>
-
-  </div><!-- /.decision -->
-
-   </div><!-- /.hero-main -->
-
-  <!-- ⚠ THE SCREENSHOT SITS BELOW THE SAFETY WARNING, NOT ABOVE IT, AND THAT ORDER IS DELIBERATE.
-       Putting a picture between the button and the warning would demote the single most important
-       sentence on the page below a photograph of a grey window. The warning stays the first thing
-       revealed on any scroll; the picture is the second.
-       The image is a real capture of the program. The ONLY thing altered is the 9-digit number,
-       replaced with the example 418 205 793 so that a real machine's address is not published on
-       the internet — same font, same size, same position, nothing else touched and no claim
-       changed. If the simple view is redesigned, this file must be regenerated or the page starts
-       advertising a window that no longer exists. -->
-  <figure class="shot">
-    <img src="/flashdesk-window.png" width="500" height="500" alt="The FlashDesk window: a large
-      9-digit number with a Copy button, and one button to stop sharing.">
-    <figcaption>This is the whole program. Your number will be different.</figcaption>
-  </figure>
-  </div><!-- /.hero -->
-
-  <section>
-    <!-- Called "Three steps" until the safety check was added as a fourth. A heading that counts
-         wrongly is the kind of small dishonesty this page cannot afford, so it no longer counts. -->
-    <h2>What to do</h2>
-    <!-- Each step's text is wrapped in a <span> on purpose. The list item is a flex container (the
-         counter is one item, the text the other), so an inline <strong> at the start of a step
-         became a SECOND flex item and split that step into two columns — which is exactly how
-         step 4 rendered before this wrapper was added. Caught by looking at the page, not by
-         reading the markup. -->
-    <ol class="steps">
-      <li><span>Download the file and open it. Nothing installs.</span></li>
-      <li><span>It shows you a 9-digit number. It is like a phone number for this computer &mdash;
-        it is how your helper finds it. It is not a password.</span></li>
-      <li><span>Read that number to the person helping you.</span></li>
-      <li><span><strong>Ask them to read you their number too</strong>, and check it matches the
-        one that appears on your screen when they connect. If it does not match, press
-        Reject.</span></li>
-    </ol>
-    <!-- This is a SECURITY line, not a nicety. The consent dialog shows the caller's number and
-         asks the person to decide on it — but nothing anywhere told them to obtain that number in
-         advance, so there was nothing to compare it against and the check was decoration. Two
-         independent reviews found this same hole. -->
-  </section>
-
-  <!-- The exact strings below were read off a real Chrome download on 2026-08-05, not paraphrased.
-       They MUST stay identical to what appears on screen: a frightened person is comparing this page
-       with their own display, and a page that softens the frightening words looks like a page with
-       something to hide. If Chrome's wording changes, change it here the same day.
-       ⚠ The Windows wording in step 2 comes from Conor's own live test on 2026-08-03 and has NOT
-       been re-verified since; SmartScreen would not reproduce on the development machine. -->
-  <section id="warnings">
-    <div class="warnbox">
-      <h2>Windows will warn you when you open it</h2>
-
-      <p>A blue box appears. It says:</p>
-
-      <p class="quote"><strong>Windows protected your PC</strong><br>
-      Microsoft Defender SmartScreen prevented an unrecognized app from starting.
-      Running this app might put your PC at risk.<br>
-      <span class="link-look">More info</span><br>
-      <span class="btn-dark">Don&rsquo;t run</span></p>
-
-      <p><strong>There is no way forward on this screen.</strong> The only button is
-      <strong>Don&rsquo;t run</strong>. The button you need does not exist yet.</p>
-
-      <p>Click the small grey words <strong>More&nbsp;info</strong>. They are a link, not a button,
-      and they are easy to miss. The box then grows and shows:</p>
-
-      <p class="quote">App:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FlashDesk.exe<br>
-      Publisher:&nbsp;<strong>Unknown publisher</strong><br>
-      <span class="btn-pale">Run anyway</span>
-      <span class="btn-dark">Don&rsquo;t run</span></p>
-
-      <p>The name beside <strong>App:</strong> is whatever your browser saved the file as. If you
-      have downloaded it before it may read <em>FlashDesk&nbsp;(1).exe</em> or
-      <em>FlashDesk&nbsp;(2).exe</em>. It is the same file.</p>
-
-      <p>This screen has two buttons. Press <strong>Run&nbsp;anyway</strong>, on the
-      <strong>left</strong>.</p>
-
-      <p class="scam-inline">If nobody you telephoned yourself asked you to do this,
-      <strong>press Don&rsquo;t run</strong> and close this page. Somebody who phoned you out of the
-      blue and talked you as far as a security warning is not helping you.</p>
-
-      <p><strong>What &ldquo;Unknown publisher&rdquo; means.</strong> A publisher is the name of
-      whoever made the file. Mine is not shown because I have not paid a company to attach a
-      verified name to it. If I had, that line would read <em>Publisher: Conor Honor</em>. It would
-      be the same file either way.</p>
-
-      <p><strong>Why the warning appears.</strong> Windows trusts software it has seen many people
-      run before, and treats everything else as unrecognised. FlashDesk is new, so it is
-      unrecognised. Your computer cannot tell new software from bad software, so it warns about
-      both.</p>
-
-      <h2 class="sub">If your browser blocks the download</h2>
-
-      <p>Most browsers let this download through. If yours stops it, you will see this in the
-      downloads box at the top right:</p>
-
-      <p class="quote">FlashDesk.exe<br>
-      <strong>Suspicious download blocked</strong></p>
-
-      <p>Click the small arrow <strong>&rsaquo;</strong> at the end of that line. It opens:</p>
-
-      <p class="quote"><strong>This file isn&rsquo;t commonly downloaded and it may be
-      dangerous</strong><br>
-      Learn why Chrome blocks some downloads<br>
-      <span class="btn-dark">Delete from history</span>
-      <span class="btn-pale">Download suspicious file</span></p>
-
-      <p>To continue, press <strong>Download suspicious file</strong> &mdash; the <strong>pale</strong>
-      button on the right. The solid dark blue one says <strong>Delete from history</strong> and
-      throws the file away.</p>
-
-      <p class="scam-inline">Again: if nobody you telephoned yourself asked you to do this,
-      <strong>press Delete from history</strong>. That is what the dark button is for.</p>
+      <!-- Wording unchanged since round 1; only the container around it has ever changed. -->
+      <p><strong>Only download this if you contacted us yourself.</strong></p>
     </div>
-  </section>
 
-  <!-- ⚠ ROUND 3 (2026-09-04): this was a 9-item bullet list, most of which now duplicates
-       /how-it-works in more detail. Trimmed to the five things that matter for the decision
-       being made ON THIS PAGE right now (should I download this), each short enough to be one
-       card — the file-access, program-naming and multi-monitor detail moved to /how-it-works
-       entirely rather than being said twice. Tagged .wide so the grid actually uses the frame's
-       width instead of being centred at reading measure like a paragraph — see .wide in
-       site.css. -->
-  <section class="wide">
-    <h2>What this does — and what it does not</h2>
-    <div class="feature-grid">
+    <!-- ⚠ THE ONE SCREENSHOT ON THIS PAGE — Conor's instruction this round: "one screenshot is
+         our best asset and it appears once... annotated." The annotations below label three
+         things that are GENUINELY IN this real screenshot (the number, Copy, Stop sharing) —
+         nothing about the consent dialog, the live amber band, or the file panel is shown here,
+         because no real screenshot of those exists to annotate and this page does not fabricate
+         one; see the design report for why, and where those states ARE described instead
+         (in words, on /how-it-works/, checked against source rather than illustrated). -->
+    <figure class="hero-shot">
+      <div class="shot-frame">
+        <img src="/flashdesk-window.png" width="500" height="500" alt="The FlashDesk window: a large
+          9-digit number with a Copy button, and one button to stop sharing.">
+        <!-- ⚠ Positions checked against a real render, not guessed: the first callout used to sit
+             directly over the last digits of the 9-digit number, making the one thing on this page
+             a stressed reader most needs to read aloud PARTIALLY ILLEGIBLE — caught by screenshot,
+             fixed by moving both labels into the actual whitespace between UI elements rather than
+             on top of them. -->
+        <svg class="callouts" viewBox="0 0 500 500" aria-hidden="true">
+          <line x1="420" y1="230" x2="440" y2="290" stroke="#1B1F24" stroke-width="1.5"/>
+          <circle cx="420" cy="230" r="3" fill="#1B1F24"/>
+          <line x1="220" y1="325" x2="110" y2="400" stroke="#1B1F24" stroke-width="1.5"/>
+          <circle cx="220" cy="325" r="3" fill="#1B1F24"/>
+        </svg>
+        <span class="callout-label" style="top:58%; right:2%;">Your number — read this to your helper, not a password</span>
+        <!-- ⚠ Nudged up from bottom:2% — at that position the label box sat on top of the real
+           screenshot's own "Technical details" text, partially obscuring genuine app UI (caught
+           by an independent review). bottom:16% clears it while the leader line still points at
+           the same real target (the Stop-sharing button). -->
+        <span class="callout-label" style="bottom:16%; left:0%;">One button ends the session</span>
+      </div>
+      <figcaption>This is the whole program. Your number will be different.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ---- STEPS -------------------------------------------------------------------------------- -->
+<section class="band band-alt">
+  <div class="contained">
+    <span class="kicker">What to do</span>
+    <h2>Four steps, read over the phone.</h2>
+    <ol class="steps prose">
+      <li><span class="num">1</span><span>Download the file and open it. Nothing installs.</span></li>
+      <li><span class="num">2</span><span>It shows you a 9-digit number — like a phone number for
+        this computer. It is not a password.</span></li>
+      <li><span class="num">3</span><span>Read that number to the person helping you.</span></li>
+      <li><span class="num">4</span><span><strong>Ask them to read you their number too</strong>,
+        and check it matches the one on your screen when they connect. If it does not match,
+        press Reject.</span></li>
+    </ol>
+  </div>
+</section>
+
+<!-- ---- THE ARGUMENT --------------------------------------------------------------------------
+     Conor's instruction: "Today it reads as a list of caveats. Make it the argument." Every fact
+     below is unchanged from the previous round (already verified against source, file:line in the
+     design report) — what changed is the frame around them: a real headline claim, stated once,
+     then the five facts that back it, instead of a bare bullet list. -->
+<section class="band band-paper">
+  <div class="contained">
+    <span class="kicker">What no competitor can say</span>
+    <!-- ⚠ CORRECTED — an independent fact-check (2026-09-04) caught this pull-quote as FALSE
+         AS WORDED before it shipped: HostServer.cs:64,319-327 gives a caller who was already
+         accepted a 90-second window to reconnect after a dropped connection WITHOUT a new Accept
+         click (`resuming` -> `allowed = true`, ConsentAsk skipped entirely) — a real, deliberate
+         feature (surviving a network blip), not a bug, but "not once, not ever" was still an
+         absolute claim the code does not support. Rewritten to state the true rule, including the
+         one real exception, rather than removing the caveat to keep the sentence punchy. -->
+    <p class="statement">The first time anyone connects, a human has to press Accept. There is no
+    way around it, and no way to do it for them.</p>
+
+    <div class="grid cols-3 mt-6">
       <div class="card">
+        <div class="icon-tile"><svg class="icon-lg" aria-hidden="true"><use href="#i-screen"/></svg></div>
         <h3>You watch everything</h3>
         <p>Your helper sees and controls your screen — while you watch everything they do.</p>
       </div>
       <div class="card">
-        <h3>Accept every time</h3>
-        <p>Nobody can connect unless you press Accept. If you do nothing, nobody gets in.</p>
+        <div class="icon-tile"><svg class="icon-lg" aria-hidden="true"><use href="#i-dialog"/></svg></div>
+        <h3>Accept, the first time</h3>
+        <p>The first connection always shows an Accept / Reject dialog — nothing gets in until you
+        press it. If your connection briefly drops, reconnecting within 90 seconds doesn't ask
+        again; that is the same session resuming, not a new one.</p>
       </div>
       <div class="card">
+        <div class="icon-tile"><svg class="icon-lg" aria-hidden="true"><use href="#i-band"/></svg></div>
         <h3>Can't be hidden</h3>
-        <p>While someone is connected, a band across the top of the window turns orange and stays
-        that way. You cannot miss it, and they cannot turn it off.</p>
+        <p>A band across the top of the window turns amber while anyone is connected. They
+        cannot turn it off.</p>
       </div>
       <div class="card">
+        <div class="icon-tile"><svg class="icon-lg" aria-hidden="true"><use href="#i-close"/></svg></div>
         <h3>End it any time</h3>
         <p>One click, at any moment, ends the session immediately.</p>
       </div>
       <div class="card">
+        <div class="icon-tile"><svg class="icon-lg" aria-hidden="true"><use href="#i-file"/></svg></div>
         <h3>Nothing left behind</h3>
         <p>It does not run when you close it. Close the window and it is gone — nothing was
         installed.</p>
       </div>
+      <div class="card">
+        <div class="icon-tile"><svg class="icon-lg" aria-hidden="true"><use href="#i-arrow-right"/></svg></div>
+        <h3>Read the full story</h3>
+        <p><a class="inline-link" href="/how-it-works/">File access, multiple screens, what is
+        logged &rarr;</a></p>
+      </div>
     </div>
-    <p class="note"><a href="/how-it-works/">Read the full story of how a session works — file
-    access, multiple screens, what is logged &rarr;</a></p>
-  </section>
+  </div>
+</section>
 
-  <section>
-    <h2>If the download button does not work</h2>
-    <p>The same file is also here:
-    <a class="fallback-link" href="https://flashdesk.org/dl/FlashDesk.exe">flashdesk.org/dl/FlashDesk.exe</a> &mdash;
-    identical in every way. Browsers are more suspicious of it there, so the button above is the
-    easier route, but if that one fails for any reason this one will still work.</p>
-  </section>
-
-  <!-- ⚠ THE WORDING OF THIS WARNING IS FIXED. It is the reason this tool cannot easily be used
-       against the person reading it, and it is quoted verbatim in CLAUDE.md. Move it, restyle it,
-       but do not rewrite it. It sits here, immediately before "Who is behind this", because that
-       pairing is the one a wary person actually wants: what to be careful of, then who I am. -->
-  <!-- The one deliberate hairline on this page (see .section-break in site.css) — everywhere else
-       relies on whitespace alone. This is the single subject change on the page that earns it: the
-       preceding sections explain what to do; this one exists purely to protect the reader from the
-       scam this tool enables. -->
-  <section class="safety section-break">
-    <h2>Before you let anyone in</h2>
+<!-- ---- BEFORE YOU LET ANYONE IN — ⚠ WORDING FIXED, quoted verbatim in CLAUDE.md. Do not
+     rewrite it; only its container has ever changed, every round. -->
+<section class="band band-alt">
+  <div class="contained prose">
+    <span class="kicker">Before you let anyone in</span>
     <p class="scam">If someone phoned you out of the blue and told you to come here,
     <strong>hang up</strong>. Only download this if you contacted us yourself.</p>
-  </section>
-
-  <section class="who">
-    <h2>Who is behind this</h2>
-    <p>FlashDesk is made and run by Conor Honor, an independent computer specialist in Kyiv.</p>
-    <p>If you want to check who you are talking to, write to me at
-    <a href="mailto:support@flashdesk.org">support@flashdesk.org</a></p>
-  </section>
+    <p class="mt-4">FlashDesk is made and run by Conor Honor, an independent
+    computer specialist in Kyiv. Write to
+    <a class="inline-link" href="mailto:support@flashdesk.org">support@flashdesk.org</a> if you
+    want to check who you're talking to.</p>
+  </div>
+</section>
 
 </main>
-<!-- ONE copy of the footer, stamped onto every generated page by scripts\Build-Site.ps1. -->
+<!-- v2 footer — the one deliberately DARK moment on an otherwise light page. Not a leftover of the
+     old dark theme: the mark's native tile colour (#17191E) belongs here on purpose, bookending the
+     page the way it bookends the brand everywhere else (the app icon, the favicon) — the light
+     pages are where a visitor reads and decides; the dark footer is where the mark gets to be fully
+     itself, in its own colour, once the deciding is done. See site-v2.css's palette comment for the
+     full reasoning on why the REST of the page went light. -->
 <footer class="site-footer">
-  <nav class="site-nav" aria-label="Site">
-    <a href="/" data-nav="home" aria-current="page">Home</a>
-    <a href="/how-it-works/" data-nav="how-it-works">How it works</a>
-    <a href="/privacy/" data-nav="privacy">Privacy</a>
-    <a href="/faq/" data-nav="faq">FAQ</a>
-    <a href="/terms/" data-nav="terms">Terms</a>
-  </nav>
-  <p class="footer-meta">&copy; 2026 FlashDesk. All rights reserved.<br>
-  Made in Kyiv by Conor Honor &mdash; <a href="mailto:support@flashdesk.org">support@flashdesk.org</a></p>
-  <!-- This line matters more than the rest of the footer (Conor's own words, 2026-09-03) — see
-       .footer-warning in site.css for why it gets full-strength text and its own hairline rule,
-       the same treatment as .near-button and .scam elsewhere on the site. -->
-  <p class="footer-warning">FlashDesk will never telephone you. If someone calls claiming to be us, hang up.</p>
+  <div class="footer-top">
+    <div class="footer-brand">
+      <a class="brand" href="/">
+        <svg viewBox="0 0 16 16" aria-hidden="true" width="28" height="28">
+          <rect x="1" y="1" width="14" height="14" rx="3.5" fill="#17191E"/>
+          <polyline points="4.631,2.512 9.387,11.495 11.325,7.620" fill="none" stroke="#2BD16B" stroke-width="2.6"/>
+        </svg>
+        <span>FlashDesk</span>
+      </a>
+      <p>Remote support for your computer. One file, nothing installs.</p>
+    </div>
+
+    <nav class="footer-col" aria-label="Product">
+      <h3>Product</h3>
+      <a href="/" data-nav="home" aria-current="page">Home</a>
+      <a href="/how-it-works/" data-nav="how-it-works">How it works</a>
+      <a href="https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe">Download</a>
+    </nav>
+
+    <nav class="footer-col" aria-label="Legal">
+      <h3>Legal</h3>
+      <a href="/privacy/" data-nav="privacy">Privacy</a>
+      <a href="/terms/" data-nav="terms">Terms</a>
+    </nav>
+
+    <nav class="footer-col" aria-label="Help">
+      <h3>Help</h3>
+      <a href="/faq/" data-nav="faq">FAQ</a>
+      <a href="mailto:support@flashdesk.org">support@flashdesk.org</a>
+    </nav>
+  </div>
+
+  <div class="footer-bottom">
+    <p class="footer-meta">&copy; 2026 FlashDesk. All rights reserved. Made in Kyiv by Conor Honor.</p>
+    <!-- Wording unchanged from the last two rounds — this line matters more than the rest of the
+         footer (Conor's own words). -->
+    <p class="footer-warning">FlashDesk will never telephone you. If someone calls claiming to be us, hang up.</p>
+  </div>
 </footer>
 
 </div>

@@ -52,9 +52,32 @@ Write-Host ' FlashDesk site -- building site\ from site-src\'
 Write-Host '================================================================'
 Write-Host ''
 
-$layout = Get-Content -Raw -Encoding UTF8 -Path (Join-Path $SrcDir 'layout.html')
-$headerSrc = Get-Content -Raw -Encoding UTF8 -Path (Join-Path $SrcDir 'partials\header.html')
-$footerSrc = Get-Content -Raw -Encoding UTF8 -Path (Join-Path $SrcDir 'partials\footer.html')
+# ------------------------------------------------------------------------------------------------
+# TWO LAYOUT TRACKS (added round 4, 2026-09-04). Conor's own build order for the redesign: "design
+# the system, then build the HOME PAGE completely in the new language, then ONE inner page... Do
+# not roll out the remaining pages until I have seen them." Privacy/FAQ/Terms must render EXACTLY
+# as they do today while Home/How-it-works move to the new visual language -- one shared build
+# script serving two coexisting designs, selected per PAGE via a `LAYOUT` front-matter key, rather
+# than a second script (which would just be this same substitution logic copied once, the exact
+# mistake this file exists to prevent). Omit LAYOUT (or set `v1`) to get the original
+# layout.html/header.html/footer.html/site.css unchanged; set `LAYOUT: v2` to get
+# layout-v2.html/header-v2.html/footer-v2.html/site-v2.css. When the redesign is approved and rolled
+# out to the remaining pages, the v1 files retire and this fork collapses back to one track.
+$layouts = @{
+    v1 = @{
+        Layout = Get-Content -Raw -Encoding UTF8 -Path (Join-Path $SrcDir 'layout.html')
+        Header = Get-Content -Raw -Encoding UTF8 -Path (Join-Path $SrcDir 'partials\header.html')
+        Footer = Get-Content -Raw -Encoding UTF8 -Path (Join-Path $SrcDir 'partials\footer.html')
+    }
+}
+$layoutV2Path = Join-Path $SrcDir 'layout-v2.html'
+if (Test-Path $layoutV2Path) {
+    $layouts['v2'] = @{
+        Layout = Get-Content -Raw -Encoding UTF8 -Path $layoutV2Path
+        Header = Get-Content -Raw -Encoding UTF8 -Path (Join-Path $SrcDir 'partials\header-v2.html')
+        Footer = Get-Content -Raw -Encoding UTF8 -Path (Join-Path $SrcDir 'partials\footer-v2.html')
+    }
+}
 
 $pageFiles = Get-ChildItem -Path (Join-Path $SrcDir 'pages') -Filter '*.html' | Sort-Object Name
 if ($pageFiles.Count -eq 0) { throw "No page source files found under $SrcDir\pages" }
@@ -84,6 +107,14 @@ foreach ($pf in $pageFiles) {
 
     $content = $raw.Substring($fmMatch.Length).TrimStart("`r", "`n")
     $slug = $fm['SLUG']
+
+    $layoutKey = if ($fm.ContainsKey('LAYOUT')) { $fm['LAYOUT'] } else { 'v1' }
+    if (-not $layouts.ContainsKey($layoutKey)) {
+        throw "$($pf.Name): LAYOUT '$layoutKey' has no matching layout-$layoutKey.html / partials\header-$layoutKey.html / footer-$layoutKey.html under $SrcDir."
+    }
+    $layout = $layouts[$layoutKey].Layout
+    $headerSrc = $layouts[$layoutKey].Header
+    $footerSrc = $layouts[$layoutKey].Footer
 
     # Stamp aria-current="page" onto the matching nav link, in a fresh copy of each partial --
     # header/footer stay otherwise byte-identical across every page, which is the property that
@@ -123,11 +154,11 @@ foreach ($pf in $pageFiles) {
     # existing site pages do not carry, so write it the same way make-icon.ps1's siblings do).
     [System.IO.File]::WriteAllText($outPath, $out, (New-Object System.Text.UTF8Encoding($false)))
     $relOut = $outPath.Substring($RepoRoot.Length).TrimStart('\')
-    Write-Host "  built $relOut  (from site-src\pages\$($pf.Name))"
-    $built += [pscustomobject]@{ Slug = $slug; Path = $outPath; RelPath = $relOut }
+    Write-Host "  built $relOut  (from site-src\pages\$($pf.Name), layout $layoutKey)"
+    $built += [pscustomobject]@{ Slug = $slug; Layout = $layoutKey; Path = $outPath; RelPath = $relOut }
 }
 
 Write-Host ''
 Write-Host "Built $($built.Count) page(s)." -ForegroundColor Green
 Write-Host ''
-$built | Format-Table Slug, RelPath -AutoSize
+$built | Format-Table Slug, Layout, RelPath -AutoSize

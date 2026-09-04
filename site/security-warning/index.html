@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>FlashDesk — how it works</title>
+<title>FlashDesk — the Windows warning, exactly as you'll see it</title>
 <!--
-  GENERATED FILE — do not hand-edit. Source: site-src\pages\how-it-works.html, assembled by
+  GENERATED FILE — do not hand-edit. Source: site-src\pages\security-warning.html, assembled by
   scripts\Build-Site.ps1 from site-src\layout-v2.html + site-src\partials\*-v2.html.
 
   ⚠ THIS IS THE ROUND-4 REDESIGN TRACK, NOT THE WHOLE SITE. Conor's own build order: design the
@@ -23,12 +23,12 @@
 
   Nothing on this page loads from another host — same rule as the v1 track, unchanged.
 -->
-<meta name="description" content="What a FlashDesk session actually does, in plain language, and what it deliberately cannot do — read from the source, not marketing copy.">
+<meta name="description" content="Windows and some browsers warn about FlashDesk because it is new, unsigned software — exactly what you'll see, word for word, and what to do.">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="en_GB">
-<meta property="og:url" content="https://flashdesk.org/how-it-works/">
-<meta property="og:title" content="FlashDesk — how it works">
-<meta property="og:description" content="What a FlashDesk session actually does, in plain language, and what it deliberately cannot do — read from the source, not marketing copy.">
+<meta property="og:url" content="https://flashdesk.org/security-warning/">
+<meta property="og:title" content="FlashDesk — the Windows warning, exactly as you'll see it">
+<meta property="og:description" content="Windows and some browsers warn about FlashDesk because it is new, unsigned software — exactly what you'll see, word for word, and what to do.">
 <meta name="twitter:card" content="summary">
 
 <!-- MARK GEOMETRY IS LOCKED to assets\make-icon.ps1 — see site-src\partials\header-v2.html for the
@@ -147,7 +147,7 @@
   </a>
   <nav class="site-nav" aria-label="Site">
     <a href="/" data-nav="home">Home</a>
-    <a href="/how-it-works/" data-nav="how-it-works" aria-current="page">How it works</a>
+    <a href="/how-it-works/" data-nav="how-it-works">How it works</a>
     <a href="/privacy/" data-nav="privacy">Privacy</a>
     <a href="/faq/" data-nav="faq">FAQ</a>
     <a href="/terms/" data-nav="terms">Terms</a>
@@ -160,137 +160,104 @@
 
 <main>
 <!-- ============================================================================================
-     ROUND 4 REDESIGN — Conor's own build order names this page explicitly: "build the home page
-     completely in the new language, then ONE inner page to prove the language scales." Content
-     below is UNCHANGED from the previous round (every claim already verified against src\ with
-     file:line citations in the design report) — only the visual system is new: icon tiles instead
-     of bare cards, a full-bleed statement band, and the "what it does not do" list kept
-     deliberately quieter and icon-free, the same contrast the previous round already established.
+     NEW PAGE, round 4 (2026-09-04). This is word-for-word the content that used to sit directly
+     on the home page — moved, not rewritten, because Conor's own diagnosis was that three screens
+     of quoted-dialog prose on a landing page is what made it read as "a landing page, an
+     instruction manual and a security guide at once." The TEXT below is unchanged from the
+     previous round (already verified against real Chrome/Windows screenshots on 2026-08-03/05 —
+     see the original warnings in CLAUDE.md); only its address and its container changed. Not in
+     the main nav — reached from Home's download meta line and (once that page is rebuilt in this
+     language) FAQ's "why does Windows warn me" answer, the same way it was reachable via #warnings
+     before.
      ============================================================================================ -->
 
 <section class="band band-paper">
   <div class="contained prose">
-    <span class="kicker">How it works</span>
-    <h1>Every claim here is checked against the code.</h1>
-    <p class="lead">Not something the program is meant to do — something it actually does. If a
-    claim could not be verified against the source, it is not on this page.</p>
-  </div>
-</section>
-
-<section class="band band-alt">
-  <div class="contained">
-    <p class="statement">The file panel can copy a file. It cannot delete, rename or move
-    anything.</p>
-  </div>
-</section>
-
-<section class="band band-paper">
-  <div class="contained">
-    <span class="kicker">What a session can do</span>
-    <h2>Eight things, each one checkable.</h2>
-    <div class="grid cols-3 mt-6">
-      <div class="card">
-        <div class="icon-tile"><svg class="icon-lg" aria-hidden="true"><use href="#i-file"/></svg></div>
-        <h3>Nothing installs</h3>
-        <p>It is one file. There is no installer step, and no administrator password is asked for
-        to run it — the program starts with the same permissions as any other window you open.
-        (A separate, optional "install it properly" mode has been talked about but does not exist
-        yet — today, everyone runs the same portable file.)</p>
-      </div>
-      <div class="card">
-        <div class="icon-tile"><svg class="icon-lg" aria-hidden="true"><use href="#i-address"/></svg></div>
-        <h3>The number is an address, not a password</h3>
-        <p>Your 9-digit FlashDesk number is generated on your machine and identifies it to the
-        relay that connects two computers together — it is how a helper finds you, the way a phone
-        number finds a house. A separate, private value your computer never displays is what
-        actually proves ownership of that number, and the relay checks it on every connection.</p>
-      </div>
-      <div class="card">
-        <div class="icon-tile"><svg class="icon-lg" aria-hidden="true"><use href="#i-dialog"/></svg></div>
-        <h3>Every new session is accepted by hand</h3>
-        <!-- ⚠ CORRECTED — see the .statement comment on home.html for the full citation
-             (HostServer.cs:64,319-327: a 90-second same-caller reconnect grace skips this dialog).
-             The dialog itself, and the injected-input block on it, are both verified exactly as
-             described; only "every session" needed the one honest exception added. -->
-        <p>An incoming connection shows a dialog with the caller's number and two buttons, Accept
-        and Reject. While that dialog is open, FlashDesk's own remote-control input is blocked from
-        reaching it — the program asking for control cannot also be the thing that presses Accept.
-        If a connection drops and the same caller reconnects within 90 seconds, that resumes
-        without asking again; a different caller is always asked.</p>
-      </div>
-      <div class="card">
-        <div class="icon-tile"><svg class="icon-lg" aria-hidden="true"><use href="#i-band"/></svg></div>
-        <h3>A strip stays on screen, and cannot be hidden</h3>
-        <p>While anyone is connected, a coloured band stays on your screen for the whole session.
-        It belongs entirely to the window running on your own computer — there is nothing the
-        connected helper can send that touches it. It disappears when the session ends, not before.</p>
-      </div>
-      <div class="card">
-        <div class="icon-tile"><svg class="icon-lg" aria-hidden="true"><use href="#i-log"/></svg></div>
-        <h3>A log stays on your computer</h3>
-        <!-- ⚠ CORRECTED — "It never leaves it" was false as written: the log is an ordinary file,
-             and the file panel's "copy their session log" button (FilePanel.cs:412-457,
-             HostFileService.cs:408-421) lets a helper who already has file-access consent copy it
-             to their own machine, the same as any other file. Rewritten to say that plainly rather
-             than claim an absolute the code does not enforce — it is still true that the log
-             cannot leave WITHOUT that separate consent, which is the actually-true, actually-useful
-             version of this promise. -->
-        <p>Every connection — who asked, when, whether you accepted or refused — is written to a
-        plain text file on your own machine. It stays there unless you separately let your helper
-        copy files off your computer — the same permission that protects everything else there. It
-        does not record your screen, anything you typed, or the contents of any file.</p>
-      </div>
-      <div class="card">
-        <div class="icon-tile"><svg class="icon-lg" aria-hidden="true"><use href="#i-folder"/></svg></div>
-        <h3>File access is a second, separate question</h3>
-        <p>Accepting a session lets a helper see your screen; it does not by itself let them open
-        your files. Looking at your files needs its own, separate permission, asked for the first
-        time it is needed.</p>
-      </div>
-      <div class="card">
-        <div class="icon-tile"><svg class="icon-lg" aria-hidden="true"><use href="#i-copy"/></svg></div>
-        <h3>Copy, never delete or rename</h3>
-        <p>Once file access is granted, a helper can look through your files and copy one to their
-        own computer, or send you one of theirs. There is no delete, rename or move — those simply
-        do not exist as things the file panel can ask your computer to do, by design.</p>
-      </div>
-      <div class="card">
-        <div class="icon-tile"><svg class="icon-lg" aria-hidden="true"><use href="#i-arrival"/></svg></div>
-        <h3>An arriving program is named every time</h3>
-        <p>If a helper sends you a program rather than an ordinary file, you are asked about it by
-        name — the file's name and where it would be saved — every single time, even after you
-        have already agreed to file access generally.</p>
-      </div>
-    </div>
+    <span class="kicker">Before you run it</span>
+    <h1>Windows will warn you when you open it.</h1>
+    <p class="lead">Exactly what you'll see, word for word — so it's recognised, not
+    frightening, when it happens.</p>
   </div>
 </section>
 
 <section class="band band-alt">
   <div class="contained prose">
-    <span class="kicker">What it does not do</span>
-    <div class="card">
-      <ul class="plain">
-        <li>No background service. FlashDesk only runs while its window is open.</li>
-        <li>No autostart. It does not add itself to Windows' startup list or run when you log in.</li>
-        <li>Closing the window ends everything — the session, the capture, the connection. There is
-          nothing left running afterward.</li>
-        <!-- ⚠ CORRECTED — the previous wording framed this as a working, merely-unverified feature.
-             An independent fact-check found no such mechanism exists in the wired code at all: no
-             protocol message for it (MessageType.cs), no control in the Viewer's session window
-             (grep for "monitor" across RemoteDesktop.Viewer returns nothing), and the one method
-             that could switch capture to a different monitor (DxgiScreenCapture.SwitchTo) is never
-             called from anywhere — dead code, not a shipped feature. Rewritten as what it honestly
-             is: not built yet, not "built but untested." -->
-        <li>If your computer has more than one screen, your helper currently sees and controls only
-          the one you're on. Switching between screens for them is planned but not built yet.</li>
-      </ul>
-    </div>
+    <p>A blue box appears. It says:</p>
+
+    <p class="quote"><strong>Windows protected your PC</strong><br>
+    Microsoft Defender SmartScreen prevented an unrecognized app from starting.
+    Running this app might put your PC at risk.<br>
+    <span class="link-look">More info</span><br>
+    <span class="btn-dark">Don&rsquo;t run</span></p>
+
+    <p><strong>There is no way forward on this screen.</strong> The only button is
+    <strong>Don&rsquo;t run</strong>. The button you need does not exist yet.</p>
+
+    <p>Click the small grey words <strong>More&nbsp;info</strong>. They are a link, not a button,
+    and they are easy to miss. The box then grows and shows:</p>
+
+    <p class="quote">App:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FlashDesk.exe<br>
+    Publisher:&nbsp;<strong>Unknown publisher</strong><br>
+    <span class="btn-pale">Run anyway</span>
+    <span class="btn-dark">Don&rsquo;t run</span></p>
+
+    <p>The name beside <strong>App:</strong> is whatever your browser saved the file as. If you
+    have downloaded it before it may read <em>FlashDesk&nbsp;(1).exe</em> or
+    <em>FlashDesk&nbsp;(2).exe</em>. It is the same file.</p>
+
+    <p>This screen has two buttons. Press <strong>Run&nbsp;anyway</strong>, on the
+    <strong>left</strong>.</p>
+
+    <p class="scam-inline">If nobody you telephoned yourself asked you to do this,
+    <strong>press Don&rsquo;t run</strong> and close this page. Somebody who phoned you out of the
+    blue and talked you as far as a security warning is not helping you.</p>
+
+    <p><strong>What &ldquo;Unknown publisher&rdquo; means.</strong> A publisher is the name of
+    whoever made the file. Mine is not shown because I have not paid a company to attach a
+    verified name to it. If I had, that line would read <em>Publisher: Conor Honor</em>. It would
+    be the same file either way.</p>
+
+    <p><strong>Why the warning appears.</strong> Windows trusts software it has seen many people
+    run before, and treats everything else as unrecognised. FlashDesk is new, so it is
+    unrecognised. Your computer cannot tell new software from bad software, so it warns about
+    both.</p>
   </div>
 </section>
 
 <section class="band band-paper">
   <div class="contained prose">
-    <p><a class="inline-link" href="/">&larr; Back to the download page</a></p>
+    <span class="kicker">If your browser blocks the download</span>
+    <h2>Most browsers let this download through.</h2>
+    <p>If yours stops it, you will see this in the downloads box at the top right:</p>
+
+    <p class="quote">FlashDesk.exe<br>
+    <strong>Suspicious download blocked</strong></p>
+
+    <p>Click the small arrow <strong>&rsaquo;</strong> at the end of that line. It opens:</p>
+
+    <p class="quote"><strong>This file isn&rsquo;t commonly downloaded and it may be
+    dangerous</strong><br>
+    Learn why Chrome blocks some downloads<br>
+    <span class="btn-dark">Delete from history</span>
+    <span class="btn-pale">Download suspicious file</span></p>
+
+    <p>To continue, press <strong>Download suspicious file</strong> &mdash; the <strong>pale</strong>
+    button on the right. The solid dark blue one says <strong>Delete from history</strong> and
+    throws the file away.</p>
+
+    <p class="scam-inline">Again: if nobody you telephoned yourself asked you to do this,
+    <strong>press Delete from history</strong>. That is what the dark button is for.</p>
+  </div>
+</section>
+
+<section class="band band-alt">
+  <div class="contained prose">
+    <span class="kicker">If the download button on the home page doesn't work</span>
+    <p>The same file is also here:
+    <a class="inline-link" href="https://flashdesk.org/dl/FlashDesk.exe">flashdesk.org/dl/FlashDesk.exe</a>
+    &mdash; identical in every way. Browsers are more suspicious of it there, so the button on the
+    <a class="inline-link" href="/">home page</a> is the easier route, but if that one fails for
+    any reason this one will still work.</p>
   </div>
 </section>
 
@@ -317,7 +284,7 @@
     <nav class="footer-col" aria-label="Product">
       <h3>Product</h3>
       <a href="/" data-nav="home">Home</a>
-      <a href="/how-it-works/" data-nav="how-it-works" aria-current="page">How it works</a>
+      <a href="/how-it-works/" data-nav="how-it-works">How it works</a>
       <a href="https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe">Download</a>
     </nav>
 

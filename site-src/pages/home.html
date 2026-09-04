@@ -1,242 +1,171 @@
 <!--PAGE
 SLUG: home
+LAYOUT: v2
 TITLE: FlashDesk — remote support for your computer
-DESCRIPTION: Remote support for your computer. One file, nothing installs. You see everything your helper does, and you can end the session at any moment.
+DESCRIPTION: Remote support for your computer. One file, nothing installs. You watch everything, the whole time, and you can end it with one click.
 CANONICAL: https://flashdesk.org/
 -->
-  <!-- The hero exists ONLY so the desktop layout has something to work with. On a phone it is a
-       plain block and everything inside it stacks exactly as it did before — the phone layout is
-       the one that matters and it must not get worse. On a wide screen it becomes two columns with
-       the screenshot beside the words instead of below them.
-       DOM ORDER IS LOAD-BEARING: everything a person must read before they download — headline,
-       what it runs on, the decision (button + warning) — is inside .hero-main, and the picture is
-       its sibling AFTER it. Do not move the figure above .hero-main to "fix" the desktop column
-       order; use grid placement, which is what the stylesheet does. -->
-  <div class="hero">
-   <div class="hero-main">
+<!-- ============================================================================================
+     ROUND 4 REDESIGN — restructured, not just restyled. The old home page was three documents in
+     one: a landing page, an installation manual (the full SmartScreen/Chrome-block walkthrough,
+     three screens of quoted dialog) and a security guide, stacked on top of each other (Conor's
+     own diagnosis, 2026-09-04). The walkthrough MOVED to its own page, /security-warning/ — same
+     words, verified once already, not rewritten, just relocated to where a page carrying that much
+     detail belongs. What stays on Home is the decision itself: what this is, why to trust it, what
+     to do, and the one warning that protects a reader from the exact scam this tool enables.
+     ============================================================================================ -->
 
-  <h1>Remote support for your computer.</h1>
-  <p class="phone-note">This runs on a Windows computer &mdash; not a phone or tablet.</p>
+<!-- ---- HERO --------------------------------------------------------------------------------- -->
+<section class="band band-paper">
+  <div class="contained hero-grid">
+    <div class="hero-copy">
+      <h1>Remote support for your computer.</h1>
+      <p class="lead">One file. Nothing installs. You watch everything, the whole time, and you
+      can end it with one click.</p>
 
-  <!-- DEVICE-AWARE PRIMARY ACTION (round 1, 2026-09-03). Shown ONLY on (pointer: coarse) devices
-       — see site.css for why that signal was chosen over a User-Agent check. Sits in the DOM
-       before .download so a coarse-pointer top-to-bottom read meets it FIRST; on a fine pointer
-       these three elements render nothing and .download is simply first. The download stays
-       reachable right below either way — demoted, never hidden, because someone here may be on a
-       Windows tablet, or downloading now for later. -->
-  <p class="touch-note">This device can't run it. Email yourself this page's link, and open it on
-  the computer that needs help.</p>
-  <a class="send-link" href="mailto:?subject=FlashDesk%20download%20link&amp;body=Open%20this%20on%20the%20Windows%20computer%20that%20needs%20help%3A%20https%3A%2F%2Fflashdesk.org%2F">Email yourself this link</a>
-  <p class="send-link-fallback">Or just remember: <strong>flashdesk.org</strong></p>
+      <!-- DEVICE-AWARE PRIMARY ACTION — unchanged mechanism since round 1, restyled. (pointer:
+           coarse) is a platform-reported signal, never a User-Agent sniff. On a touch device the
+           file is useless, so the primary action becomes emailing yourself the link instead. -->
+      <p class="touch-note">This device can't run it. Email yourself this page's link, and open
+      it on the computer that needs help.</p>
+      <a class="btn btn-primary send-link" href="mailto:?subject=FlashDesk%20download%20link&amp;body=Open%20this%20on%20the%20Windows%20computer%20that%20needs%20help%3A%20https%3A%2F%2Fflashdesk.org%2F">Email yourself this link</a>
+      <p class="send-link-fallback">Or just remember: <strong>flashdesk.org</strong></p>
 
-  <!-- ---------------------------------------------------------------------------------------
-       THE DECISION (round 2, 2026-09-03). Button + warning share one surfaced card so neither
-       reads louder than the other — see .decision in site.css for the full reasoning. Before this
-       round the button was "roughly 500x78 of saturated green" shouting over the one sentence
-       that protects people from the exact scam this tool enables (Conor's own words). The
-       warning's WORDS are unchanged; only the weight and container around it changed.
-       --------------------------------------------------------------------------------------- -->
-  <div class="decision">
+      <!-- ⚠ THE BUTTON POINTS AT GITHUB ON PURPOSE — unchanged reasoning since round 1. The
+           identical file served from flashdesk.org was BLOCKED by Chrome (measured 2026-08-05);
+           served from a GitHub release, it downloads cleanly. Keep the /releases/latest/download/
+           form — a tag-specific URL throws away earned reputation. -->
+      <a class="btn btn-primary download-btn" href="https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe">
+        <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+        Download FlashDesk for Windows
+      </a>
+      <p class="meta">Free &middot; about 70&nbsp;MB &middot; Windows 10 and 11 &middot;
+      <a class="inline-link" href="/security-warning/">Windows will warn you once — here's exactly
+      what you'll see</a></p>
 
-  <!-- ⚠ THE BUTTON POINTS AT GITHUB ON PURPOSE, AND THIS MUST NOT BE "TIDIED" BACK.
-       The identical file served from flashdesk.org was BLOCKED by Chrome — downloaded in full and
-       then withheld as "Suspicious download blocked". Measured 2026-08-05: same bytes, same
-       SHA-256, same unsigned file, served from a GitHub release instead, downloaded cleanly with no
-       warning at all. The host was what mattered, not the file.
-       The link MUST keep the /releases/latest/download/ form: a tag-specific URL would change with
-       every release and throw away whatever reputation the address has earned.
-       Size is a slight OVER-estimate on purpose — a download that finishes early never worries
-       anyone, one that runs past its stated size looks stuck. Actual size 2026-08-05: 68.5 MB. -->
-  <a class="download" href="https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe">Download FlashDesk for Windows</a>
-  <p class="download-meta">Free &middot; about 70&nbsp;MB &middot; Windows 10 and 11<br>
-  Windows will warn you once when you open it &mdash;
-  <a class="quiet-link" href="#warnings">here is exactly what you will see</a>.</p>
-
-  <!-- The wording of this sentence is unchanged from before either round; only its container and
-       weight changed (see the .decision comment above). -->
-  <p class="near-button">Only download this if you contacted us yourself.</p>
-
-  </div><!-- /.decision -->
-
-   </div><!-- /.hero-main -->
-
-  <!-- ⚠ THE SCREENSHOT SITS BELOW THE SAFETY WARNING, NOT ABOVE IT, AND THAT ORDER IS DELIBERATE.
-       Putting a picture between the button and the warning would demote the single most important
-       sentence on the page below a photograph of a grey window. The warning stays the first thing
-       revealed on any scroll; the picture is the second.
-       The image is a real capture of the program. The ONLY thing altered is the 9-digit number,
-       replaced with the example 418 205 793 so that a real machine's address is not published on
-       the internet — same font, same size, same position, nothing else touched and no claim
-       changed. If the simple view is redesigned, this file must be regenerated or the page starts
-       advertising a window that no longer exists. -->
-  <figure class="shot">
-    <img src="/flashdesk-window.png" width="500" height="500" alt="The FlashDesk window: a large
-      9-digit number with a Copy button, and one button to stop sharing.">
-    <figcaption>This is the whole program. Your number will be different.</figcaption>
-  </figure>
-  </div><!-- /.hero -->
-
-  <section>
-    <!-- Called "Three steps" until the safety check was added as a fourth. A heading that counts
-         wrongly is the kind of small dishonesty this page cannot afford, so it no longer counts. -->
-    <h2>What to do</h2>
-    <!-- Each step's text is wrapped in a <span> on purpose. The list item is a flex container (the
-         counter is one item, the text the other), so an inline <strong> at the start of a step
-         became a SECOND flex item and split that step into two columns — which is exactly how
-         step 4 rendered before this wrapper was added. Caught by looking at the page, not by
-         reading the markup. -->
-    <ol class="steps">
-      <li><span>Download the file and open it. Nothing installs.</span></li>
-      <li><span>It shows you a 9-digit number. It is like a phone number for this computer &mdash;
-        it is how your helper finds it. It is not a password.</span></li>
-      <li><span>Read that number to the person helping you.</span></li>
-      <li><span><strong>Ask them to read you their number too</strong>, and check it matches the
-        one that appears on your screen when they connect. If it does not match, press
-        Reject.</span></li>
-    </ol>
-    <!-- This is a SECURITY line, not a nicety. The consent dialog shows the caller's number and
-         asks the person to decide on it — but nothing anywhere told them to obtain that number in
-         advance, so there was nothing to compare it against and the check was decoration. Two
-         independent reviews found this same hole. -->
-  </section>
-
-  <!-- The exact strings below were read off a real Chrome download on 2026-08-05, not paraphrased.
-       They MUST stay identical to what appears on screen: a frightened person is comparing this page
-       with their own display, and a page that softens the frightening words looks like a page with
-       something to hide. If Chrome's wording changes, change it here the same day.
-       ⚠ The Windows wording in step 2 comes from Conor's own live test on 2026-08-03 and has NOT
-       been re-verified since; SmartScreen would not reproduce on the development machine. -->
-  <section id="warnings">
-    <div class="warnbox">
-      <h2>Windows will warn you when you open it</h2>
-
-      <p>A blue box appears. It says:</p>
-
-      <p class="quote"><strong>Windows protected your PC</strong><br>
-      Microsoft Defender SmartScreen prevented an unrecognized app from starting.
-      Running this app might put your PC at risk.<br>
-      <span class="link-look">More info</span><br>
-      <span class="btn-dark">Don&rsquo;t run</span></p>
-
-      <p><strong>There is no way forward on this screen.</strong> The only button is
-      <strong>Don&rsquo;t run</strong>. The button you need does not exist yet.</p>
-
-      <p>Click the small grey words <strong>More&nbsp;info</strong>. They are a link, not a button,
-      and they are easy to miss. The box then grows and shows:</p>
-
-      <p class="quote">App:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FlashDesk.exe<br>
-      Publisher:&nbsp;<strong>Unknown publisher</strong><br>
-      <span class="btn-pale">Run anyway</span>
-      <span class="btn-dark">Don&rsquo;t run</span></p>
-
-      <p>The name beside <strong>App:</strong> is whatever your browser saved the file as. If you
-      have downloaded it before it may read <em>FlashDesk&nbsp;(1).exe</em> or
-      <em>FlashDesk&nbsp;(2).exe</em>. It is the same file.</p>
-
-      <p>This screen has two buttons. Press <strong>Run&nbsp;anyway</strong>, on the
-      <strong>left</strong>.</p>
-
-      <p class="scam-inline">If nobody you telephoned yourself asked you to do this,
-      <strong>press Don&rsquo;t run</strong> and close this page. Somebody who phoned you out of the
-      blue and talked you as far as a security warning is not helping you.</p>
-
-      <p><strong>What &ldquo;Unknown publisher&rdquo; means.</strong> A publisher is the name of
-      whoever made the file. Mine is not shown because I have not paid a company to attach a
-      verified name to it. If I had, that line would read <em>Publisher: Conor Honor</em>. It would
-      be the same file either way.</p>
-
-      <p><strong>Why the warning appears.</strong> Windows trusts software it has seen many people
-      run before, and treats everything else as unrecognised. FlashDesk is new, so it is
-      unrecognised. Your computer cannot tell new software from bad software, so it warns about
-      both.</p>
-
-      <h2 class="sub">If your browser blocks the download</h2>
-
-      <p>Most browsers let this download through. If yours stops it, you will see this in the
-      downloads box at the top right:</p>
-
-      <p class="quote">FlashDesk.exe<br>
-      <strong>Suspicious download blocked</strong></p>
-
-      <p>Click the small arrow <strong>&rsaquo;</strong> at the end of that line. It opens:</p>
-
-      <p class="quote"><strong>This file isn&rsquo;t commonly downloaded and it may be
-      dangerous</strong><br>
-      Learn why Chrome blocks some downloads<br>
-      <span class="btn-dark">Delete from history</span>
-      <span class="btn-pale">Download suspicious file</span></p>
-
-      <p>To continue, press <strong>Download suspicious file</strong> &mdash; the <strong>pale</strong>
-      button on the right. The solid dark blue one says <strong>Delete from history</strong> and
-      throws the file away.</p>
-
-      <p class="scam-inline">Again: if nobody you telephoned yourself asked you to do this,
-      <strong>press Delete from history</strong>. That is what the dark button is for.</p>
+      <!-- Wording unchanged since round 1; only the container around it has ever changed. -->
+      <p><strong>Only download this if you contacted us yourself.</strong></p>
     </div>
-  </section>
 
-  <!-- ⚠ ROUND 3 (2026-09-04): this was a 9-item bullet list, most of which now duplicates
-       /how-it-works in more detail. Trimmed to the five things that matter for the decision
-       being made ON THIS PAGE right now (should I download this), each short enough to be one
-       card — the file-access, program-naming and multi-monitor detail moved to /how-it-works
-       entirely rather than being said twice. Tagged .wide so the grid actually uses the frame's
-       width instead of being centred at reading measure like a paragraph — see .wide in
-       site.css. -->
-  <section class="wide">
-    <h2>What this does — and what it does not</h2>
-    <div class="feature-grid">
+    <!-- ⚠ THE ONE SCREENSHOT ON THIS PAGE — Conor's instruction this round: "one screenshot is
+         our best asset and it appears once... annotated." The annotations below label three
+         things that are GENUINELY IN this real screenshot (the number, Copy, Stop sharing) —
+         nothing about the consent dialog, the live amber band, or the file panel is shown here,
+         because no real screenshot of those exists to annotate and this page does not fabricate
+         one; see the design report for why, and where those states ARE described instead
+         (in words, on /how-it-works/, checked against source rather than illustrated). -->
+    <figure class="hero-shot">
+      <div class="shot-frame">
+        <img src="/flashdesk-window.png" width="500" height="500" alt="The FlashDesk window: a large
+          9-digit number with a Copy button, and one button to stop sharing.">
+        <!-- ⚠ Positions checked against a real render, not guessed: the first callout used to sit
+             directly over the last digits of the 9-digit number, making the one thing on this page
+             a stressed reader most needs to read aloud PARTIALLY ILLEGIBLE — caught by screenshot,
+             fixed by moving both labels into the actual whitespace between UI elements rather than
+             on top of them. -->
+        <svg class="callouts" viewBox="0 0 500 500" aria-hidden="true">
+          <line x1="420" y1="230" x2="440" y2="290" stroke="#1B1F24" stroke-width="1.5"/>
+          <circle cx="420" cy="230" r="3" fill="#1B1F24"/>
+          <line x1="220" y1="325" x2="110" y2="400" stroke="#1B1F24" stroke-width="1.5"/>
+          <circle cx="220" cy="325" r="3" fill="#1B1F24"/>
+        </svg>
+        <span class="callout-label" style="top:58%; right:2%;">Your number — read this to your helper, not a password</span>
+        <!-- ⚠ Nudged up from bottom:2% — at that position the label box sat on top of the real
+           screenshot's own "Technical details" text, partially obscuring genuine app UI (caught
+           by an independent review). bottom:16% clears it while the leader line still points at
+           the same real target (the Stop-sharing button). -->
+        <span class="callout-label" style="bottom:16%; left:0%;">One button ends the session</span>
+      </div>
+      <figcaption>This is the whole program. Your number will be different.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ---- STEPS -------------------------------------------------------------------------------- -->
+<section class="band band-alt">
+  <div class="contained">
+    <span class="kicker">What to do</span>
+    <h2>Four steps, read over the phone.</h2>
+    <ol class="steps prose">
+      <li><span class="num">1</span><span>Download the file and open it. Nothing installs.</span></li>
+      <li><span class="num">2</span><span>It shows you a 9-digit number — like a phone number for
+        this computer. It is not a password.</span></li>
+      <li><span class="num">3</span><span>Read that number to the person helping you.</span></li>
+      <li><span class="num">4</span><span><strong>Ask them to read you their number too</strong>,
+        and check it matches the one on your screen when they connect. If it does not match,
+        press Reject.</span></li>
+    </ol>
+  </div>
+</section>
+
+<!-- ---- THE ARGUMENT --------------------------------------------------------------------------
+     Conor's instruction: "Today it reads as a list of caveats. Make it the argument." Every fact
+     below is unchanged from the previous round (already verified against source, file:line in the
+     design report) — what changed is the frame around them: a real headline claim, stated once,
+     then the five facts that back it, instead of a bare bullet list. -->
+<section class="band band-paper">
+  <div class="contained">
+    <span class="kicker">What no competitor can say</span>
+    <!-- ⚠ CORRECTED — an independent fact-check (2026-09-04) caught this pull-quote as FALSE
+         AS WORDED before it shipped: HostServer.cs:64,319-327 gives a caller who was already
+         accepted a 90-second window to reconnect after a dropped connection WITHOUT a new Accept
+         click (`resuming` -> `allowed = true`, ConsentAsk skipped entirely) — a real, deliberate
+         feature (surviving a network blip), not a bug, but "not once, not ever" was still an
+         absolute claim the code does not support. Rewritten to state the true rule, including the
+         one real exception, rather than removing the caveat to keep the sentence punchy. -->
+    <p class="statement">The first time anyone connects, a human has to press Accept. There is no
+    way around it, and no way to do it for them.</p>
+
+    <div class="grid cols-3 mt-6">
       <div class="card">
+        <div class="icon-tile"><svg class="icon-lg" aria-hidden="true"><use href="#i-screen"/></svg></div>
         <h3>You watch everything</h3>
         <p>Your helper sees and controls your screen — while you watch everything they do.</p>
       </div>
       <div class="card">
-        <h3>Accept every time</h3>
-        <p>Nobody can connect unless you press Accept. If you do nothing, nobody gets in.</p>
+        <div class="icon-tile"><svg class="icon-lg" aria-hidden="true"><use href="#i-dialog"/></svg></div>
+        <h3>Accept, the first time</h3>
+        <p>The first connection always shows an Accept / Reject dialog — nothing gets in until you
+        press it. If your connection briefly drops, reconnecting within 90 seconds doesn't ask
+        again; that is the same session resuming, not a new one.</p>
       </div>
       <div class="card">
+        <div class="icon-tile"><svg class="icon-lg" aria-hidden="true"><use href="#i-band"/></svg></div>
         <h3>Can't be hidden</h3>
-        <p>While someone is connected, a band across the top of the window turns orange and stays
-        that way. You cannot miss it, and they cannot turn it off.</p>
+        <p>A band across the top of the window turns amber while anyone is connected. They
+        cannot turn it off.</p>
       </div>
       <div class="card">
+        <div class="icon-tile"><svg class="icon-lg" aria-hidden="true"><use href="#i-close"/></svg></div>
         <h3>End it any time</h3>
         <p>One click, at any moment, ends the session immediately.</p>
       </div>
       <div class="card">
+        <div class="icon-tile"><svg class="icon-lg" aria-hidden="true"><use href="#i-file"/></svg></div>
         <h3>Nothing left behind</h3>
         <p>It does not run when you close it. Close the window and it is gone — nothing was
         installed.</p>
       </div>
+      <div class="card">
+        <div class="icon-tile"><svg class="icon-lg" aria-hidden="true"><use href="#i-arrow-right"/></svg></div>
+        <h3>Read the full story</h3>
+        <p><a class="inline-link" href="/how-it-works/">File access, multiple screens, what is
+        logged &rarr;</a></p>
+      </div>
     </div>
-    <p class="note"><a href="/how-it-works/">Read the full story of how a session works — file
-    access, multiple screens, what is logged &rarr;</a></p>
-  </section>
+  </div>
+</section>
 
-  <section>
-    <h2>If the download button does not work</h2>
-    <p>The same file is also here:
-    <a class="fallback-link" href="https://flashdesk.org/dl/FlashDesk.exe">flashdesk.org/dl/FlashDesk.exe</a> &mdash;
-    identical in every way. Browsers are more suspicious of it there, so the button above is the
-    easier route, but if that one fails for any reason this one will still work.</p>
-  </section>
-
-  <!-- ⚠ THE WORDING OF THIS WARNING IS FIXED. It is the reason this tool cannot easily be used
-       against the person reading it, and it is quoted verbatim in CLAUDE.md. Move it, restyle it,
-       but do not rewrite it. It sits here, immediately before "Who is behind this", because that
-       pairing is the one a wary person actually wants: what to be careful of, then who I am. -->
-  <!-- The one deliberate hairline on this page (see .section-break in site.css) — everywhere else
-       relies on whitespace alone. This is the single subject change on the page that earns it: the
-       preceding sections explain what to do; this one exists purely to protect the reader from the
-       scam this tool enables. -->
-  <section class="safety section-break">
-    <h2>Before you let anyone in</h2>
+<!-- ---- BEFORE YOU LET ANYONE IN — ⚠ WORDING FIXED, quoted verbatim in CLAUDE.md. Do not
+     rewrite it; only its container has ever changed, every round. -->
+<section class="band band-alt">
+  <div class="contained prose">
+    <span class="kicker">Before you let anyone in</span>
     <p class="scam">If someone phoned you out of the blue and told you to come here,
     <strong>hang up</strong>. Only download this if you contacted us yourself.</p>
-  </section>
-
-  <section class="who">
-    <h2>Who is behind this</h2>
-    <p>FlashDesk is made and run by Conor Honor, an independent computer specialist in Kyiv.</p>
-    <p>If you want to check who you are talking to, write to me at
-    <a href="mailto:support@flashdesk.org">support@flashdesk.org</a></p>
-  </section>
+    <p class="mt-4">FlashDesk is made and run by Conor Honor, an independent
+    computer specialist in Kyiv. Write to
+    <a class="inline-link" href="mailto:support@flashdesk.org">support@flashdesk.org</a> if you
+    want to check who you're talking to.</p>
+  </div>
+</section>

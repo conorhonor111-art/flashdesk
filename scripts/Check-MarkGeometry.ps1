@@ -107,13 +107,21 @@ if (Test-Path $indexHtml) {
         Test-StrokeMatches ([double]$m.Groups[2].Value) 'site\index.html favicon (data: URI)'
     } else { Bad "Could not find the favicon polyline in site\index.html." }
 
-    # Header <svg>, plain double-quoted markup. The favicon's polyline is single-quoted inside a
-    # URL-encoded data: URI (matched separately above), so this pattern only ever finds the header.
+    # ⚠ Plain double-quoted markup, ALL of them, not just the first. Until round 4 this page only
+    # ever carried ONE such mark (the header). The round-4 (2026-09-04) light redesign puts the mark
+    # in the page TWICE — once in the light header (ink-only, no tile) and once in the dark footer
+    # (its native tile+green colours) — see site-src\partials\header-v2.html / footer-v2.html. A
+    # version of this check that only looked at match [0] would silently stop verifying the
+    # footer's copy the moment it was added; checking every match is what keeps that from
+    # happening again the way it happened to this file's very first version.
     $headerMatches = [regex]::Matches($html, 'polyline points="([0-9., ]+)"[^>]*stroke-width="([0-9.]+)"')
     if ($headerMatches.Count -ge 1) {
-        Test-PointsMatch $headerMatches[0].Groups[1].Value 'site\index.html header <svg>'
-        Test-StrokeMatches ([double]$headerMatches[0].Groups[2].Value) 'site\index.html header <svg>'
-    } else { Bad "Could not find the header <svg> polyline in site\index.html." }
+        for ($mi = 0; $mi -lt $headerMatches.Count; $mi++) {
+            $label = if ($headerMatches.Count -eq 1) { 'site\index.html header <svg>' } else { "site\index.html mark copy #$($mi + 1) of $($headerMatches.Count)" }
+            Test-PointsMatch $headerMatches[$mi].Groups[1].Value $label
+            Test-StrokeMatches ([double]$headerMatches[$mi].Groups[2].Value) $label
+        }
+    } else { Bad "Could not find any plain <svg> polyline in site\index.html." }
 } else { Bad "Not found: $indexHtml" }
 
 # ---- site\holding.html ------------------------------------------------------------------------

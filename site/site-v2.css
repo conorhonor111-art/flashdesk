@@ -1,0 +1,508 @@
+/*
+  FlashDesk — REDESIGN (round 4, 2026-09-04). A new stylesheet, not an edit of site.css — Conor's
+  own instruction: "Do not start from site.css. Start a new stylesheet." site.css still exists,
+  unchanged, and still serves Privacy/FAQ/Terms while this track proves itself on Home and one
+  inner page (How it works). See scripts\Build-Site.ps1's LAYOUT front-matter key.
+
+  ===============================================================================================
+  THE COLOUR ARGUMENT — decided by evidence, not taste, because Conor asked for the argument, not
+  a palette.
+
+  THE QUESTION: our visitor is a frightened, non-technical person who has just been told to
+  download a remote-access tool onto their computer. Dark background + a vivid green accent is the
+  visual language of hacking-culture and crypto sites — the exact genre this visitor is afraid of.
+  Does every serious product in this category actually go light, or was that an assumption?
+
+  THE ANSWER, checked by fetching real sites directly rather than assuming (2026-09-04): 6 of 6
+  fetchable sites across both "direct competitor" and "trust-focused consumer security product"
+  categories are light-dominant — TeamViewer, Splashtop, 1Password, Proton, Bitwarden, Mullvad.
+  (RustDesk and AnyDesk block automated fetching; not counted either way.) None use a dark-primary
+  palette. Conor's claim holds, on evidence, not on the strength of his having stated it.
+
+  THE MORE USEFUL FINDING WAS WHICH OF THOSE SIX IS THE RIGHT MODEL. Most of them (TeamViewer,
+  Splashtop, 1Password, Proton, Bitwarden) build trust through THIRD-PARTY AUTHORITY: customer
+  logos, compliance badges (ISO 27001, SOC 2), star ratings, user counts, testimonials. FlashDesk
+  has NONE of that raw material — no customers to name, no certifications bought, no reviews yet —
+  and inventing any of it would be the exact lie this whole project's design has refused to tell
+  since round 1. MULLVAD is the one company in that list with nothing to show either (no logos, no
+  ratings, no badges, no testimonials) and it is light anyway, trusted through pure specificity and
+  restraint. That is the actual analog for a one-person, unsigned tool, and it is the model this
+  file follows: light because the audience needs it, restrained because manufactured authority
+  signals are not available and should not be faked.
+
+  THE RECONCILIATION WITH THE WINDOWS APP, asked for explicitly: there isn't a divergence to
+  propose reconciling — going light makes this site MATCH the app's own Theme.cs for the first
+  time. The app has always been light (Theme.Window #F5F6F8, Theme.Card white, Theme.TextPrimary
+  #1B1F24, Theme.TextSecondary #606266, Theme.Border #C6CCD4); the DARK website was the outlier
+  relative to its own product, not the other way round. Every neutral token below is taken directly
+  from Theme.cs's real values, not re-derived. Theme.BrandTile (#17191E) and Theme.BrandGreen
+  (#2BD16B) are UNCHANGED and still mean exactly what they meant before — see "Brand vs semantic
+  colour" below for where each is still allowed to appear.
+  ===============================================================================================
+*/
+
+:root {
+  color-scheme: light;
+
+  /* ---- NEUTRALS, taken directly from Theme.cs (see the argument above) ---------------------- */
+  --paper: #FFFFFF;          /* = Theme.Card. Page background on most bands, and every card. */
+  --paper-alt: #F5F6F8;      /* = Theme.Window. Alternate band tone — the app's own window colour. */
+  --ink: #1B1F24;            /* = Theme.TextPrimary. */
+  --ink-muted: #606266;      /* = Theme.TextSecondary. Verified >=4.5:1 on white in Theme.cs's own
+                                 comment; reused here on the same white, so the same guarantee holds. */
+  --border: #C6CCD4;         /* = Theme.Border. */
+  --border-strong: #A9B1BC;  /* = Theme.BorderStrong. For a hairline that needs to read as a real
+                                 edge (icon tiles, header/footer dividers), not a whisper. */
+
+  /* ---- BRAND, unchanged in value, DELIBERATELY narrowed in where it may appear -------------- */
+  --green: #2BD16B;          /* = Theme.BrandGreen. Still the ONE clickable green — one filled use
+                                 on screen at a time, same rule as every prior round. */
+  --green-hover: #23B860;    /* One step darker, same technique as Theme.cs's own hover shades
+                                 (BlueHover/RedHover) — a visible but not jarring press-state. */
+  --green-active: #1CA352;
+  --tile: #17191E;           /* = Theme.BrandTile. The mark's native colour. Confined to the mark
+                                 itself and the one deliberately dark chapter, the footer — see
+                                 partials\footer-v2.html's own comment for why that is not a
+                                 leftover of the old theme but a considered choice. */
+  --tile-text: #ECEFF3;      /* = Theme.OperatorHeaderText. Body text ON the dark footer only. */
+  --tile-muted: #9AA3AE;     /* Secondary text on the dark footer. */
+  --tile-border: #2E3440;    /* Hairlines on the dark footer. */
+
+  /* ---- SPACING SCALE — one geometric progression, written down before any page, per Conor's
+     instruction. Every margin, padding and gap on this stylesheet is one of these eight values;
+     nothing is eyeballed. Doubling roughly every two steps (8-16-24-32-48-64-96-128) gives enough
+     resolution for both a card's internal padding (sp-3) and a full-bleed hero's vertical rhythm
+     (sp-7/sp-8) from the same one system. -------------------------------------------------- */
+  --sp-1: 0.5rem;   /*  8px */
+  --sp-2: 1rem;     /* 16px */
+  --sp-3: 1.5rem;   /* 24px */
+  --sp-4: 2rem;     /* 32px */
+  --sp-5: 3rem;     /* 48px */
+  --sp-6: 4rem;     /* 64px */
+  --sp-7: 6rem;     /* 96px */
+  --sp-8: 8rem;     /* 128px */
+
+  /* ---- RADIUS SCALE — three tiers instead of one, so a hero image frame can read as more
+     deliberate than a small badge without either looking arbitrary. ---------------------------- */
+  --radius-sm: 8px;   /* inline depiction boxes, small badges */
+  --radius: 16px;     /* cards, buttons, the default */
+  --radius-lg: 28px;  /* the hero screenshot frame — the single largest surface on the page */
+
+  /* ---- TYPE SCALE — 8 levels (Conor asked for five or more), each distinguished by AT LEAST two
+     of {size, weight, colour, spacing/case} together, matching the pattern found across every
+     craft-benchmark site fetched for this round (Stripe, Vercel, Linear: hierarchy is size+weight
+     together, colour reinforces, never carries a level alone). Fluid sizes use the same derivation
+     method as the previous round's clamp() work (a 360px floor, a 1300px ceiling) so growth is
+     smooth, not jumped, at every width in between. Ratios between adjacent levels sit in the
+     ~1.15-1.3x range Stripe/Vercel both measured at — deliberately NOT the previous round's
+     jumpier scale, and the h1 is deliberately much larger than before (craft-benchmark hero type
+     runs 60-80px+ on desktop; the old scale topped out at 51px, which read as timid next to real
+     product sites, not restrained). ------------------------------------------------------------ */
+  --fs-kicker: 0.8125rem;                              /* 13px, uppercase, tracked, weight 600 */
+  --fs-small: 0.9375rem;                                /* 15px, meta/caption text */
+  --fs-body: clamp(1.0625rem, 1.02rem + 0.2vw, 1.125rem);       /* 17px -> 18px */
+  --fs-lead: clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem);            /* 20px -> 24px */
+  --fs-h3: 1.375rem;                                    /* 22px, weight 600 */
+  --fs-statement: clamp(1.75rem, 1.35rem + 1.7vw, 2.5rem);      /* 28px -> 40px, weight 600 */
+  --fs-h2: clamp(1.75rem, 1.3rem + 1.9vw, 2.5rem);              /* 28px -> 40px, weight 700 */
+  --fs-h1: clamp(2.75rem, 1.55rem + 5.1vw, 4.5rem);             /* 44px -> 72px, weight 700 */
+
+  /* ---- LAYOUT --------------------------------------------------------------------------------- */
+  --contained-max: 75rem;   /* 1200px — same reasoned width as the previous round's frame; the
+                                CONTAINER changed (bands + contained, not one grey frame) but the
+                                number that makes a 1440px screen read as deliberate did not need
+                                to change with it. */
+  --reading-max: 38rem;     /* ~608px at 16px root; combined with --fs-body this measures to
+                                roughly 62-68 characters per line, inside the 50-75 target. */
+}
+
+/* ONE self-hosted typeface, unchanged from the previous rounds (Inter, self-hosted, variable
+   400-700). "Any typeface on earth" was offered this round; the constraint that survived is
+   practical, not aesthetic: every asset must be self-hosted, and Inter is the one typeface already
+   verified, licensed and correctly subset in this repository. A second DISPLAY face was seriously
+   considered for the new, much larger --fs-h1 — and rejected on the same evidence that shaped the
+   type scale: resend.com achieves a full 3-tier hierarchy with NO second face and no chapter
+   devices at all, through weight+size+space alone, which is exactly the tool this scale now uses
+   (Inter's full 400-700 weight range, not just the two or three fixed weights the old scale used).
+   Restraint here is a finding, not a shortcut. */
+@font-face {
+  font-family: 'Inter';
+  src: url('/inter.woff2') format('woff2');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Inter fallback';
+  src: local('Segoe UI'), local('Helvetica Neue'), local('Arial');
+  size-adjust: 108.6%;
+  ascent-override: 96.9%;
+  descent-override: 24.1%;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { color-scheme: light; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Inter', 'Inter fallback', system-ui, "Segoe UI", Arial, sans-serif;
+  font-size: var(--fs-body);
+  line-height: 1.6;
+}
+
+/* Quoted Windows/Chrome dialog text stays in the system font — unchanged reasoning from every
+   prior round: a frightened person compares this page's words, character for character, against
+   the real box on their own screen, drawn by Windows in Segoe UI. */
+.quote, .btn-dark, .btn-pale { font-family: system-ui, "Segoe UI", Arial, sans-serif; }
+
+a { color: inherit; text-decoration: none; }
+
+/* ---------------------------------------------------------------------------------------------
+   MOTION — the one kind used on this page, and the reasoning for why it is the only kind.
+   "Motion with a reason, honouring prefers-reduced-motion, never delaying the download button or
+   the safety line" (Conor's brief). This site has never run JavaScript and does not start now
+   (see the Privacy page's own claim that this site loads and runs nothing beyond its own HTML/CSS
+   — adding a script to power scroll-triggered reveals would make that claim false the same way an
+   external font would). Without JS, "motion with a reason" is INTERACTION FEEDBACK — a hover or
+   focus state changing colour smoothly rather than snapping — never an ENTRANCE effect that could
+   delay when the download button or the safety line becomes visible or clickable; both render
+   immediately, full opacity, on first paint, on every page, always. That is the whole motion
+   budget. Wrapped in prefers-reduced-motion so it never fires for anyone who has asked their
+   system for less. --------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: no-preference) {
+  a, .btn, .site-nav a, .header-cta, .card {
+    transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease;
+  }
+}
+
+a:focus-visible, button:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+
+/* ---------------------------------------------------------------------------------------------
+   BANDS — full-bleed background, contained content. This is the chapter mechanism: every major
+   section of the page is a .band with its own background tone, and a .contained child that holds
+   the actual content to --contained-max, centred. Replaces the previous round's single grey
+   .frame wrapping the whole page — that gave the page ONE colour for its entire length, which is
+   part of why it read as a document instead of a designed page (5 of 6 researched sites use this
+   exact alternating-band technique as their primary chapter device; Mullvad, the one exception,
+   uses whitespace alone — this site uses a light hand: two tones only, paper and paper-alt, never
+   a third background colour invented for variety's own sake).
+   --------------------------------------------------------------------------------------------- */
+.band { width: 100%; }
+.band-paper { background: var(--paper); }
+.band-alt { background: var(--paper-alt); }
+.band-tile { background: var(--tile); color: var(--tile-text); }
+
+.contained {
+  max-width: var(--contained-max);
+  margin-inline: auto;
+  padding-inline: var(--sp-3);
+  padding-block: var(--sp-6);
+}
+@media (min-width: 640px) { .contained { padding-inline: var(--sp-4); } }
+
+/* The reading column — used for prose inside a band, same measure target as every prior round
+   (~65 characters), now reached by --reading-max + --fs-body together rather than a bare max-width
+   on a plain <p>. Centred within its band by default; a band that wants an asymmetric layout
+   (hero, two-column feature) overrides this with its own grid instead. */
+.prose { max-width: var(--reading-max); }
+.prose.center { margin-inline: auto; text-align: left; }
+
+/* ---------------------------------------------------------------------------------------------
+   TYPE — the 8 levels from :root, applied.
+   --------------------------------------------------------------------------------------------- */
+.kicker {
+  display: block;
+  font-size: var(--fs-kicker);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  margin-bottom: var(--sp-2);
+}
+h1 {
+  font-size: var(--fs-h1);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  margin-bottom: var(--sp-3);
+}
+h2 {
+  font-size: var(--fs-h2);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  margin-bottom: var(--sp-3);
+}
+h3 {
+  font-size: var(--fs-h3);
+  font-weight: 600;
+  line-height: 1.25;
+  margin-bottom: var(--sp-1);
+}
+.lead {
+  font-size: var(--fs-lead);
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--ink-muted);
+}
+.statement {
+  font-size: var(--fs-statement);
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+small, .meta { font-size: var(--fs-small); color: var(--ink-muted); }
+
+p + p, p + ul, p + ol, ul + p, ol + p { margin-top: var(--sp-3); }
+ul.plain { list-style: none; }
+ul.plain li { position: relative; padding-left: var(--sp-4); margin-bottom: var(--sp-2); }
+ul.plain li::before {
+  content: '';
+  position: absolute; left: 0; top: 0.6em;
+  width: 8px; height: 2px;
+  background: var(--ink);
+}
+
+/* ---------------------------------------------------------------------------------------------
+   ICONS — sized and coloured via CSS only; the shapes live once in layout-v2.html's sprite.
+   --------------------------------------------------------------------------------------------- */
+.icon { width: 1.5rem; height: 1.5rem; flex: none; display: inline-block; vertical-align: -0.3em; }
+.icon-lg { width: 2rem; height: 2rem; }
+.icon-tile {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 3rem; height: 3rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  margin-bottom: var(--sp-3);
+}
+
+/* ---------------------------------------------------------------------------------------------
+   CARDS — depth from a border and a tonal step, never a shadow (unchanged rule, every round).
+   --------------------------------------------------------------------------------------------- */
+.card {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--sp-4);
+}
+.band-alt .card { background: var(--paper); } /* card still pops one step off an alt band */
+.card h3 { margin-bottom: var(--sp-1); }
+.card p { color: var(--ink-muted); }
+.card p:last-child { margin-bottom: 0; }
+
+.grid {
+  display: grid;
+  gap: var(--sp-4);
+  grid-template-columns: 1fr;
+}
+/* ⚠ .cols-3 gets an intermediate 2-column step at the SAME 640px breakpoint as .cols-2, not just
+   its final 3-column step at 900px — caught by checking tablet portrait (834px) specifically,
+   which sits between those two breakpoints: without this, an 8-card .cols-3 grid stayed a single
+   stretched column the whole way from phone to tablet-landscape, one long scroll of full-width
+   cards on the one device class (tablet portrait) most likely to actually have the width to spare. */
+@media (min-width: 640px) { .grid.cols-2, .grid.cols-3 { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 900px) { .grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; } }
+
+/* ---------------------------------------------------------------------------------------------
+   BUTTONS
+   --------------------------------------------------------------------------------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-1);
+  font-weight: 650;
+  font-size: 1.0625rem;
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--radius);
+  text-decoration: none;
+  cursor: pointer;
+}
+.btn-primary { background: var(--green); color: var(--ink); border: 1px solid transparent; }
+.btn-primary:hover { background: var(--green-hover); }
+.btn-primary:active { background: var(--green-active); }
+.btn-secondary { background: transparent; color: var(--ink); border: 1px solid var(--border-strong); }
+.btn-secondary:hover { border-color: var(--ink); }
+
+/* ---------------------------------------------------------------------------------------------
+   HEADER — light, sticky (a position, not a motion), carries the download action on every page.
+   --------------------------------------------------------------------------------------------- */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  /* ⚠ SOLID, not translucent — was rgba(255,255,255,0.92). A near-opaque header still lets
+     whatever scrolls underneath show through faintly, which an independent trust review caught as
+     the top row of cards reading "washed out" at one scroll position — not a rendering artifact,
+     a real legibility defect on cards carrying some of the page's most important reassurance
+     copy. A solid fill costs nothing (no blur, no glass — see the "what we do not adopt" list,
+     unchanged) and removes the effect entirely rather than tuning the opacity number. */
+  background: var(--paper);
+  border-bottom: 1px solid var(--border);
+}
+.site-header .contained {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding-block: var(--sp-2);
+}
+.brand { display: flex; align-items: center; gap: var(--sp-1); font-weight: 650; font-size: 1.05rem; color: var(--ink); }
+.site-nav { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-3); }
+.site-nav a {
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--ink-muted);
+  padding: var(--sp-1) 0;
+  border-bottom: 2px solid transparent;
+}
+.site-nav a:hover, .site-nav a:focus-visible { color: var(--ink); }
+.site-nav a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--border-strong); }
+.header-cta {
+  display: inline-flex; align-items: center; gap: var(--sp-1);
+  background: var(--green); color: var(--ink);
+  font-weight: 650; font-size: var(--fs-small);
+  padding: var(--sp-1) var(--sp-3);
+  border-radius: var(--radius-sm);
+  flex: none;
+}
+.header-cta:hover { background: var(--green-hover); }
+.header-cta .icon { width: 1.1rem; height: 1.1rem; }
+
+/* ---------------------------------------------------------------------------------------------
+   FOOTER — dark, multi-column. See partials\footer-v2.html for why dark is not a leftover.
+   --------------------------------------------------------------------------------------------- */
+.site-footer { background: var(--tile); color: var(--tile-text); }
+.site-footer .footer-top {
+  max-width: var(--contained-max);
+  margin-inline: auto;
+  padding: var(--sp-6) var(--sp-3) var(--sp-5);
+  display: grid;
+  gap: var(--sp-4);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 640px) { .site-footer .footer-top { padding-inline: var(--sp-4); grid-template-columns: 1.4fr 1fr 1fr 1fr; } }
+.footer-brand .brand { color: var(--tile-text); margin-bottom: var(--sp-2); }
+.footer-brand p { color: var(--tile-muted); max-width: 22rem; }
+.footer-col h3 { font-size: var(--fs-small); font-weight: 650; color: var(--tile-text); margin-bottom: var(--sp-2); }
+.footer-col { display: flex; flex-direction: column; gap: var(--sp-1); }
+.footer-col a { color: var(--tile-muted); font-size: var(--fs-small); }
+.footer-col a:hover, .footer-col a:focus-visible { color: var(--tile-text); }
+.footer-bottom {
+  border-top: 1px solid var(--tile-border);
+  max-width: var(--contained-max);
+  margin-inline: auto;
+  padding: var(--sp-3);
+}
+@media (min-width: 640px) { .footer-bottom { padding-inline: var(--sp-4); } }
+.footer-meta { color: var(--tile-muted); font-size: var(--fs-small); }
+.footer-warning { color: var(--tile-text); font-weight: 650; margin-top: var(--sp-2); }
+
+/* ---------------------------------------------------------------------------------------------
+   DEVICE-AWARE PRIMARY ACTION — unchanged mechanism from round 1, restyled for the new system.
+   (pointer: coarse) is a platform-reported CSS media feature, never a User-Agent sniff.
+   --------------------------------------------------------------------------------------------- */
+.send-link, .touch-note, .send-link-fallback { display: none; }
+@media (pointer: coarse) {
+  .touch-note, .send-link, .send-link-fallback { display: block; }
+  .send-link { display: inline-flex; }
+  .download-btn { background: transparent; color: var(--ink); border: 1px solid var(--border-strong); }
+  .download-btn:hover { border-color: var(--ink); background: transparent; }
+}
+.touch-note { margin-bottom: var(--sp-2); }
+.send-link-fallback { color: var(--ink-muted); font-size: var(--fs-small); margin-top: var(--sp-1); }
+
+/* ---------------------------------------------------------------------------------------------
+   POINTER — 44px touch floor, unchanged reasoning from round 1.
+   --------------------------------------------------------------------------------------------- */
+@media (pointer: coarse) {
+  .btn, .header-cta { min-height: 44px; }
+  .site-nav a { min-height: 44px; display: inline-flex; align-items: center; }
+  .inline-link {
+    display: inline-block;
+    padding: 0.3em 0.15em;
+    margin: -0.3em -0.15em;
+  }
+}
+
+/* Depicted Windows/Chrome UI (quoted dialogs) — same technique as the previous round: drawn in
+   the vendor's own blue, never our radius, so they read as screenshots of someone else's software. */
+.quote {
+  background: var(--paper-alt);
+  border-left: 4px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: var(--sp-2) var(--sp-3);
+  line-height: 1.5;
+}
+.btn-dark, .btn-pale { display: inline-block; border-radius: var(--radius-sm); padding: 0.15rem 0.7rem; font-size: 0.95rem; margin-top: var(--sp-1); white-space: nowrap; }
+.btn-dark { background: #1A73E8; color: #FFFFFF; }
+.btn-pale { background: transparent; color: var(--ink); border: 1px solid var(--border-strong); }
+.link-look { color: var(--ink-muted); text-decoration: underline; }
+
+/* Small spacing utilities — used sparingly, only where a one-off gap sits inside a page that does
+   not otherwise need a new named component (a grid's own top margin, a paragraph following a
+   boxed element). Named from the same --sp-N scale as everything else, never a bare px value. */
+.mt-4 { margin-top: var(--sp-4); }
+.mt-6 { margin-top: var(--sp-6); }
+
+/* ---------------------------------------------------------------------------------------------
+   HERO — two columns at width (copy left, the one screenshot right), one column stacked on
+   phone. Same technique every prior round's hero used (grid, figure placed AFTER the copy in
+   the DOM so the phone reading order — decision, then picture — is never disturbed by the
+   desktop column swap).
+   --------------------------------------------------------------------------------------------- */
+.hero-grid { display: grid; grid-template-columns: 1fr; gap: var(--sp-5); align-items: center; }
+@media (min-width: 900px) { .hero-grid { grid-template-columns: minmax(0, 1fr) auto; gap: var(--sp-6); } }
+.hero-copy .btn { margin-bottom: var(--sp-2); }
+.hero-copy .meta { margin-bottom: var(--sp-3); }
+.hero-shot { display: flex; flex-direction: column; align-items: center; }
+.shot-frame { position: relative; width: 100%; max-width: 22rem; }
+@media (min-width: 900px) { .shot-frame { width: 22rem; } }
+.shot-frame img {
+  display: block; width: 100%; height: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+.shot-frame .callouts { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.callout-label {
+  position: absolute;
+  max-width: 9rem;
+  font-size: var(--fs-small);
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--sp-1) var(--sp-2);
+  line-height: 1.3;
+}
+.hero-shot figcaption { margin-top: var(--sp-2); color: var(--ink-muted); font-size: var(--fs-small); text-align: center; }
+
+/* ---------------------------------------------------------------------------------------------
+   STEPS — a numbered sequence, restyled from the card/list treatment: a large numeral in its own
+   column, matching the "step sequence" chapter type Conor's brief names explicitly.
+   --------------------------------------------------------------------------------------------- */
+ol.steps { list-style: none; }
+ol.steps li { display: grid; grid-template-columns: 2.5rem 1fr; gap: var(--sp-3); padding: var(--sp-3) 0; border-bottom: 1px solid var(--border); }
+ol.steps li:last-child { border-bottom: none; }
+ol.steps .num { font-size: var(--fs-h3); font-weight: 700; color: var(--border-strong); line-height: 1.4; }
+
+/* The canonical anti-scam warning — WORDING FIXED, quoted verbatim in CLAUDE.md. Styling only. */
+.scam {
+  background: var(--paper-alt);
+  border-left: 4px solid var(--ink);
+  border-radius: var(--radius);
+  padding: var(--sp-3);
+  line-height: 1.5;
+}
+.scam-inline {
+  background: var(--paper-alt);
+  border-left: 4px solid var(--ink);
+  border-radius: var(--radius-sm);
+  padding: var(--sp-3);
+}
