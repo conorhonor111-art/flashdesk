@@ -45,10 +45,16 @@ public static class Theme
     public static readonly Color Red = Color.FromArgb(0xC5, 0x22, 0x1F);   // disconnect / reject / revoke — ending only
 
     // Brand — lives ONLY in the mark (icon, and later lockup surfaces). Never a state signal.
-    // PALETTE LOCK with the download site (site/index.html): the site's background is BrandTile,
-    // its one clickable green is BrandGreen, its text is OperatorHeaderText. If any of these
-    // three values changes here, site/index.html must be updated in the same commit — the two
-    // must never drift (Conor, 2026-07-30). assets\make-icon.ps1 mirrors these values too.
+    // PALETTE LOCK with the download site — UPDATED 2026-09-09, the site's page background is no
+    // longer BrandTile. Round 4 (2026-09-04, site/site-v2.css) moved the site to a light palette
+    // matching Window/Card below, because the OLD dark site was the outlier relative to its own
+    // app, not the other way round (site-v2.css's own header comment has the full argument). What
+    // is still locked: BrandGreen remains the site's one clickable green, and BrandTile remains the
+    // mark's own tile colour, confined to the mark itself and the site's one deliberately dark
+    // chapter, the footer band (site-v2.css's --tile). Its footer text still matches
+    // OperatorHeaderText (site-v2.css's --tile-text). If any of these values changes here,
+    // site/site-v2.css must be updated in the same commit — the two must never drift (Conor,
+    // 2026-07-30). assets\make-icon.ps1 mirrors BrandGreen/BrandTile too.
     public static readonly Color BrandGreen = Color.FromArgb(0x2B, 0xD1, 0x6B);
     public static readonly Color BrandTile = Color.FromArgb(0x17, 0x19, 0x1E);
 

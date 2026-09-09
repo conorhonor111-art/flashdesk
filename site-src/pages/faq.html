@@ -1,81 +1,131 @@
 <!--PAGE
 SLUG: faq
+LAYOUT: v2
 TITLE: FlashDesk — frequently asked questions
 DESCRIPTION: Real questions people actually ask before letting someone use FlashDesk — is it safe, why Windows warns you, what to do if someone phones claiming to be us.
 CANONICAL: https://flashdesk.org/faq/
 -->
-  <h1>Frequently asked questions</h1>
-  <p class="lead">Not the questions a product page usually answers — the ones a person actually
-  has, sitting in front of the download.</p>
+<!-- ============================================================================================
+     ROUND 4 COMPLETION (2026-09-09). Ported onto the v2 components. TWO CONTENT FIXES made while
+     porting, not just restyling — both the exact same category of mistake the round-4 fact-check
+     already caught and fixed on home.html and how-it-works.html, just not yet caught HERE because
+     this page was outside that check's three-file scope:
+       1. The page statement said "Nobody can connect without you pressing Accept — not once, not
+          ever." Same false-as-worded claim as the original home.html pull-quote: HostServer.cs:64
+          sets a 90-second reconnect grace, and :319-332 skips the consent callback entirely for the
+          same caller reconnecting inside it. Replaced with home.html's own now-corrected wording,
+          reused verbatim rather than re-derived, so the same claim reads identically everywhere it
+          appears on the site.
+       2. "Can someone get in without me agreeing?" said "Every incoming connection shows a dialog"
+          — same issue, same fix: the first connection does; a same-caller reconnect within 90
+          seconds does not. "There is no remote way to answer that dialog for you" is untouched and
+          separately true (ConsentDialog.cs:44, InjectedInput.cs — FlashDesk's own remote-control
+          input is blocked from reaching the dialog).
+     Also fixed: the "why does Windows warn me" answer linked to the now-dead /#warnings anchor
+     (that content moved to its own page, /security-warning/, in the original round-4 commit) —
+     repointed to the real address.
 
-  <p class="statement">Nobody can connect without you pressing Accept — not once, not ever.</p>
+     ⚠ CARD GRID WIDTH — a same-day cohesion review caught this page's cards sitting in a narrow,
+     single-column `.contained.prose` (~38rem) while Home/How-it-works's card grids use the full
+     `.contained` (75rem) with `.grid.cols-3`, so FAQ read as "a list in a text column" next to
+     their "a card grid" on every other page — the one real visual seam left once the content
+     itself matched. Widened to the same `.contained` + `.grid.cols-3` pattern; no new CSS, same
+     component every other page already uses. Deliberately still WITHOUT icon-tiles, same reasoning
+     as privacy.html's own comment: these are Q&A pairs of uneven length, not the parallel-checklist
+     shape icon-tile was built for.
+     ============================================================================================ -->
 
-  <!-- .wide so this section's cards start at the same left edge as .statement above them (each
-       .card still caps at reading measure via `.wide > .card` in site.css — it is only the
-       SECTION that spans the frame, not the individual card text). Without this the section
-       defaulted to the centred/narrow treatment, and .statement (left-anchored, matching h1)
-       visibly did not line up with the card below it — caught by screenshot. -->
-  <section class="wide">
-    <div class="card faq-item">
-      <h3>Is this safe?</h3>
-      <p>The download itself is unsigned software from a small, one-person project, so Windows and
-      your browser both warn you about it — that part is normal and explained on the
-      <a href="/">home page</a>. Once it is running, the session itself has real limits built in:
-      nobody can connect without you pressing Accept, a coloured strip stays on your screen for as
-      long as anyone is connected and cannot be hidden by the other side, and you can end it with
-      one click at any moment. Read <a href="/how-it-works/">how a session actually works</a> for
-      the full list of what is and is not possible.</p>
-      <p>The one thing no software can protect you from is being talked into pressing Accept for
-      someone who should not have it. That is what the warning on the <a href="/">home page</a> and
-      the line at the bottom of every page are for.</p>
+<section class="band band-paper">
+  <div class="contained prose">
+    <h1>Frequently asked questions</h1>
+    <p class="lead">Not the questions a product page usually answers — the ones a person actually
+    has, sitting in front of the download.</p>
+  </div>
+</section>
+
+<section class="band band-alt">
+  <div class="contained">
+    <p class="statement">The first time anyone connects, a human has to press Accept. There is no
+    way around it, and no way to do it for them.</p>
+  </div>
+</section>
+
+<section class="band band-paper">
+  <div class="contained">
+    <div class="grid cols-3 mt-6">
+      <div class="card">
+        <h3>Is this safe?</h3>
+        <p>The download itself is unsigned software from a small, one-person project, so Windows
+        and your browser both warn you about it — that part is normal and explained on the
+        <a class="inline-link" href="/">home page</a>. Once it is running, the session itself has
+        real limits built in: nobody can connect without you pressing Accept the first time, a
+        coloured strip stays on your screen for as long as anyone is connected and cannot be hidden
+        by the other side, and you can end it with one click at any moment. Read
+        <a class="inline-link" href="/how-it-works/">how a session actually works</a> for the full
+        list of what is and is not possible.</p>
+        <p>The one thing no software can protect you from is being talked into pressing Accept for
+        someone who should not have it. That is what the warning on the
+        <a class="inline-link" href="/">home page</a> and the line at the bottom of every page are
+        for.</p>
+      </div>
+
+      <div class="card">
+        <h3>Why does Windows warn me when I open it?</h3>
+        <p>Windows Defender SmartScreen warns about software it has not seen many people run
+        before, and it has not been paid to attach a verified publisher name to the file (that
+        costs money every year and buys reputation over time, not on day one — it has not been
+        bought). New and unrecognised are not the same thing as dangerous, but Windows cannot tell
+        the difference from the file alone, so it warns about both. The exact screens you will see,
+        word for word, are on the
+        <a class="inline-link" href="/security-warning/">security warning page</a>.</p>
+      </div>
+
+      <div class="card">
+        <h3>Can they see my screen when nobody is connected?</h3>
+        <p>No. FlashDesk only captures and sends your screen while a session is live — after
+        someone has connected and you have pressed Accept. There is no background service and
+        nothing runs after you close the program.</p>
+      </div>
+
+      <div class="card">
+        <h3>Can someone get in without me agreeing?</h3>
+        <p>No. The first time someone connects, FlashDesk shows a dialog with the caller's number
+        and an Accept / Reject choice, and it defaults to Reject if left alone. If a connection
+        drops and the same caller reconnects within 90 seconds, that resumes without asking again
+        — a different caller is always asked. There is no remote way to answer that dialog for
+        you: FlashDesk's own remote-control input is blocked from reaching it while it is open.</p>
+      </div>
+
+      <div class="card">
+        <h3>How do I stop it?</h3>
+        <p>Click Disconnect on the strip that stays on your screen the whole time someone is
+        connected, or just close the FlashDesk window. Either one ends the session immediately.</p>
+      </div>
+
+      <div class="card">
+        <h3>Does it install anything?</h3>
+        <p>No. It is one file you double-click. Nothing is added to Windows, no admin password is
+        asked for to run it, and closing the window removes it from memory completely — the next
+        time you want to use it, you open the same file again.</p>
+      </div>
+
+      <div class="card">
+        <h3>Is it free?</h3>
+        <p>Yes.</p>
+      </div>
+
+      <div class="card">
+        <h3>What do I do if someone phones claiming to be from FlashDesk?</h3>
+        <p><strong>Hang up.</strong> FlashDesk does not make outbound calls to anyone, ever. There
+        is no support line that calls you, no "security team" that reaches out first. If a call
+        like that happens, it is not us — see the line at the bottom of every page on this site.</p>
+      </div>
     </div>
+  </div>
+</section>
 
-    <div class="card faq-item">
-      <h3>Why does Windows warn me when I open it?</h3>
-      <p>Windows Defender SmartScreen warns about software it has not seen many people run before,
-      and it has not been paid to attach a verified publisher name to the file (that costs money
-      every year and buys reputation over time, not on day one — it has not been bought). New and
-      unrecognised are not the same thing as dangerous, but Windows cannot tell the difference from
-      the file alone, so it warns about both. The exact screens you will see, word for word, are on
-      the <a href="/#warnings">home page</a>.</p>
-    </div>
-
-    <div class="card faq-item">
-      <h3>Can they see my screen when nobody is connected?</h3>
-      <p>No. FlashDesk only captures and sends your screen while a session is live — after someone
-      has connected and you have pressed Accept. There is no background service and nothing runs
-      after you close the program.</p>
-    </div>
-
-    <div class="card faq-item">
-      <h3>Can someone get in without me agreeing?</h3>
-      <p>No. Every incoming connection shows a dialog with the caller's number and an Accept /
-      Reject choice, and it defaults to Reject if left alone. There is no remote way to answer that
-      dialog for you.</p>
-    </div>
-
-    <div class="card faq-item">
-      <h3>How do I stop it?</h3>
-      <p>Click Disconnect on the strip that stays on your screen the whole time someone is
-      connected, or just close the FlashDesk window. Either one ends the session immediately.</p>
-    </div>
-
-    <div class="card faq-item">
-      <h3>Does it install anything?</h3>
-      <p>No. It is one file you double-click. Nothing is added to Windows, no admin password is
-      asked for to run it, and closing the window removes it from memory completely — the next time
-      you want to use it, you open the same file again.</p>
-    </div>
-
-    <div class="card faq-item">
-      <h3>Is it free?</h3>
-      <p>Yes.</p>
-    </div>
-
-    <div class="card faq-item">
-      <h3>What do I do if someone phones claiming to be from FlashDesk?</h3>
-      <p><strong>Hang up.</strong> FlashDesk does not make outbound calls to anyone, ever. There is
-      no support line that calls you, no "security team" that reaches out first. If a call like that
-      happens, it is not us — see the line at the bottom of every page on this site.</p>
-    </div>
-  </section>
+<section class="band band-alt">
+  <div class="contained prose">
+    <p><a class="inline-link" href="/">&larr; Back to the download page</a></p>
+  </div>
+</section>

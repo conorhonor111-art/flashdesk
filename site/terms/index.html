@@ -3,23 +3,26 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="dark">
+<meta name="color-scheme" content="light">
 <title>FlashDesk — terms</title>
 <!--
   GENERATED FILE — do not hand-edit. Source: site-src\pages\terms.html, assembled by
-  scripts\Build-Site.ps1 from site-src\layout.html + site-src\partials\. Edit the source files and
-  re-run the build script; a hand edit here will be silently overwritten by the next build.
+  scripts\Build-Site.ps1 from site-src\layout-v2.html + site-src\partials\*-v2.html.
 
-  PALETTE LOCK with src/RemoteDesktop.UI/Theme.cs (must never drift — see the comment there):
-    background = Theme.BrandTile  #17191E
-    the ONE clickable green = Theme.BrandGreen  #2BD16B
-    text = Theme.OperatorHeaderText  #ECEFF3
-  Rules from CLAUDE.md "The download site": phone-first, no JS, no tracking, nothing loaded from
-  another host.
+  ⚠ THIS IS THE ROUND-4 REDESIGN TRACK, NOT THE WHOLE SITE. Conor's own build order: design the
+  system, build Home completely in it, build ONE inner page to prove it scales, then WAIT — do not
+  roll out the rest until he has seen these two. Privacy, FAQ and Terms are UNTOUCHED and still
+  render from layout.html / site.css (see scripts\Build-Site.ps1's LAYOUT front-matter key — pages
+  without a LAYOUT key, or LAYOUT: v1, get the old track; LAYOUT: v2 gets this one). Two designs
+  coexist in this repository on purpose, for exactly as long as it takes to get a verdict.
+
+  WHY THE PALETTE CHANGED FROM DARK+GREEN TO LIGHT: see site-v2.css's own header comment for the
+  full argument (research-backed, not taste) — six real competitor/trust-product sites were fetched
+  and read directly, six of six are light-dominant, and dark+acid-green reads as the hacking/crypto
+  genre to exactly the frightened non-technical visitor this page exists for.
+
+  Nothing on this page loads from another host — same rule as the v1 track, unchanged.
 -->
-
-<!-- Link preview: these URLs get pasted into WhatsApp/Telegram to a nervous stranger. A preview
-     with no title or description reads as a scam link. No og:image — this site hosts none. -->
 <meta name="description" content="FlashDesk's terms in plain language: free, provided as is, no warranty, and not to be used to deceive or defraud anyone.">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="en_GB">
@@ -28,27 +31,117 @@
 <meta property="og:description" content="FlashDesk's terms in plain language: free, provided as is, no warranty, and not to be used to deceive or defraud anyone.">
 <meta name="twitter:card" content="summary">
 
-<!-- MARK GEOMETRY IS LOCKED to assets\make-icon.ps1 and to the header partial's <svg> — see
-     site-src\partials\header.html for the full note. scripts\Check-MarkGeometry.ps1 checks this
-     favicon and the header SVG in the generated site\index.html against the canonical points. -->
+<!-- MARK GEOMETRY IS LOCKED to assets\make-icon.ps1 — see site-src\partials\header-v2.html for the
+     full note. The mark's SHAPE is unchanged this round (Conor: "it took seven rounds and it is
+     earned"); only where and in what colour it appears changed. -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Crect%20x='1'%20y='1'%20width='14'%20height='14'%20rx='3.5'%20fill='%2317191E'/%3E%3Cpolyline%20points='4.631,2.512%209.387,11.495%2011.325,7.620'%20fill='none'%20stroke='%232BD16B'%20stroke-width='2.6'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="/site.css">
+<link rel="stylesheet" href="/site-v2.css">
 </head>
 <body>
-<div class="frame">
-<!-- ONE copy of the header, stamped onto every generated page by scripts\Build-Site.ps1. Editing
-     this file changes every page's header at once — that is the whole point of templating it.
+<!-- -----------------------------------------------------------------------------------------
+     THE ICON SET — one sprite, defined once, used everywhere via <svg class="icon"><use
+     href="#i-NAME"/></svg>. Built round 4 (2026-09-04) per Conor's instruction: "a coherent icon
+     set in the mark's own language — same stroke weight, same angles." Design rules, applied to
+     every icon below with no exception:
+       - 24x24 viewBox, stroke-width 2, stroke="currentColor" (tints via CSS `color`), fill: none
+       - stroke-linecap: butt, stroke-linejoin: miter — the mark uses flat caps and a sharp miter
+         join (that sharp corner is exactly what nearly clipped the mark itself once — see
+         make-icon.ps1's own history — so it is treated with the same care here)
+       - straight lines and rectangles ONLY. No circles, no curves anywhere in this set. The mark
+         itself is two straight segments and nothing else; every icon here is built from the same
+         restricted vocabulary so the family reads as one language, not eleven separate ideas that
+         happen to share a stroke width
+       - icon-screen's inner mark deliberately echoes the brand mark's own descending-then-rising
+         proportion (long stroke down, short stroke up) at a smaller scale — the one icon allowed
+         to directly quote the mark, because it depicts the one thing only the mark's own shape
+         means: a cursor moving on a screen that is not physically yours
+     ----------------------------------------------------------------------------------------- -->
+<svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+  <defs>
+    
+      <symbol id="i-screen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <rect x="2" y="3" width="20" height="14"/>
+        <line x1="8" y1="21" x2="16" y2="21"/>
+        <line x1="12" y1="17" x2="12" y2="21"/>
+        <polyline points="9,7 13,15 15.5,10.5"/>
+      </symbol>
+      <!-- ⚠ REDESIGNED — an independent review found this too similar to i-band (both were "a
+           rectangle with a line near the top"). Now a smaller, centred dialog with two actual
+           button RECTANGLES (not lines) at the bottom, reading unambiguously as "a decision with
+           two buttons" rather than "a window with a divider." -->
+      <symbol id="i-dialog" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <rect x="4" y="5" width="16" height="13"/>
+        <line x1="4" y1="9" x2="20" y2="9"/>
+        <rect x="7" y="12.5" width="4" height="3"/>
+        <rect x="13" y="12.5" width="4" height="3"/>
+      </symbol>
+      <symbol id="i-band" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <rect x="2" y="3" width="20" height="16"/>
+        <line x1="2" y1="7.5" x2="22" y2="7.5" stroke-width="3"/>
+      </symbol>
+      <symbol id="i-log" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <rect x="5" y="2" width="14" height="20"/>
+        <line x1="8" y1="7" x2="16" y2="7"/>
+        <line x1="8" y1="11" x2="16" y2="11"/>
+        <line x1="8" y1="15" x2="14" y2="15"/>
+      </symbol>
+      <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <polyline points="6,2 6,22 18,22 18,8 12,2 6,2"/>
+        <polyline points="12,2 12,8 18,8"/>
+      </symbol>
+      <!-- ⚠ REDESIGNED — an independent review found the original (three separate small blocks)
+           read ambiguously as a "more options" ellipsis or a loading indicator. Now ONE field
+           divided by two internal dividers — reads specifically as "one number, grouped in
+           three," matching the actual 9-digit-in-three-groups format, not a generic UI glyph. -->
+      <symbol id="i-address" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <rect x="2" y="8" width="20" height="8"/>
+        <line x1="9.33" y1="8" x2="9.33" y2="16"/>
+        <line x1="16.67" y1="8" x2="16.67" y2="16"/>
+      </symbol>
+      <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <polyline points="2,6 2,20 22,20 22,8 11,8 9,6 2,6"/>
+      </symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <rect x="7" y="7" width="14" height="14"/>
+        <polyline points="17,7 17,3 3,3 3,17 7,17"/>
+      </symbol>
+      <symbol id="i-arrival" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <rect x="3" y="9" width="12" height="12"/>
+        <polyline points="14,4 21,4 21,11"/>
+        <line x1="21" y1="4" x2="10" y2="15"/>
+      </symbol>
+      <symbol id="i-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <line x1="4" y1="4" x2="20" y2="20"/>
+        <line x1="20" y1="4" x2="4" y2="20"/>
+      </symbol>
+      <symbol id="i-monitors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <rect x="2" y="4" width="12" height="9"/>
+        <rect x="12" y="8" width="10" height="8"/>
+      </symbol>
+      <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <line x1="12" y1="3" x2="12" y2="15"/>
+        <polyline points="6,10 12,16 18,10"/>
+        <line x1="4" y1="21" x2="20" y2="21"/>
+      </symbol>
+      <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <line x1="4" y1="12" x2="20" y2="12"/>
+        <polyline points="14,6 20,12 14,18"/>
+      </symbol>
+  </defs>
+</svg>
 
-     MARK GEOMETRY IS LOCKED TO assets\make-icon.ps1 AND TO THE FAVICON IN site-src\layout.html.
-     All three draw the same polyline on the same 16-unit grid; scripts\Check-MarkGeometry.ps1
-     checks the generated site\index.html and site\holding.html against the canonical points in
-     make-icon.ps1 — if you change the points here, re-run Build-Site.ps1 and Check-MarkGeometry.ps1
-     in the same commit. -->
+<div class="page">
+<!-- v2 header — light, sticky (position, not motion), and per Conor's instruction "a header that
+     carries the download action": the download link is present in the header on every page, not
+     only in the hero. The mark here is the single-colour ink version (assets\FlashDesk-mark-mono.svg
+     — built last round specifically for light surfaces the dark tile was never meant for; this is
+     that asset's first real use). MARK GEOMETRY IS LOCKED to assets\make-icon.ps1 — if the points
+     change there, they must change here too, in the same commit; scripts\Check-MarkGeometry.ps1
+     checks this file. -->
 <header class="site-header">
   <a class="brand" href="/">
-    <svg viewBox="0 0 16 16" aria-hidden="true">
-      <rect x="1" y="1" width="14" height="14" rx="3.5" fill="#17191E"/>
-      <polyline points="4.631,2.512 9.387,11.495 11.325,7.620" fill="none" stroke="#2BD16B" stroke-width="2.6"/>
+    <svg viewBox="0 0 16 16" aria-hidden="true" width="28" height="28">
+      <polyline points="4.631,2.512 9.387,11.495 11.325,7.620" fill="none" stroke="#17191E" stroke-width="2.6"/>
     </svg>
     <span>FlashDesk</span>
   </a>
@@ -59,14 +152,29 @@
     <a href="/faq/" data-nav="faq">FAQ</a>
     <a href="/terms/" data-nav="terms" aria-current="page">Terms</a>
   </nav>
+  <a class="header-cta" href="https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe">
+    <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+    Download
+  </a>
 </header>
 
 <main>
-  <h1>Terms</h1>
-  <p class="lead">Short and plain on purpose. This is not a page written by a lawyer, and it does
-  not try to sound like one.</p>
+<!-- ============================================================================================
+     ROUND 4 COMPLETION (2026-09-09). Content is UNCHANGED — nothing here made a checkable claim
+     about the code that needed correcting; only the visual system is new, ported onto the same
+     v2 components as the other four pages.
+     ============================================================================================ -->
 
-  <section>
+<section class="band band-paper">
+  <div class="contained prose">
+    <h1>Terms</h1>
+    <p class="lead">Short and plain on purpose. This is not a page written by a lawyer, and it
+    does not try to sound like one.</p>
+  </div>
+</section>
+
+<section class="band band-alt">
+  <div class="contained prose">
     <h2>The plain version</h2>
     <ul class="plain">
       <li>FlashDesk is <strong>free</strong>.</li>
@@ -82,38 +190,75 @@
         their screen — using it to manufacture that trust dishonestly is not a permitted use, and
         the whole design of the consent dialog and the on-screen strip exists specifically to make
         that harder to get away with.</li>
-      <li>You are responsible for what you do with the access someone grants you, and for what you
-        allow onto your own computer when you grant it.</li>
+      <li>You are responsible for what you do with the access someone grants you, and for what
+        you allow onto your own computer when you grant it.</li>
     </ul>
-  </section>
+  </div>
+</section>
 
-  <section>
+<section class="band band-paper">
+  <div class="contained prose">
     <h2>Changes</h2>
-    <p>If these terms change, the change will be dated and posted here. There is no mailing list to
-    notify — check back if it matters to you.</p>
-  </section>
+    <p>If these terms change, the change will be dated and posted here. There is no mailing list
+    to notify — check back if it matters to you.</p>
+  </div>
+</section>
 
-  <section>
+<section class="band band-alt">
+  <div class="contained prose">
     <h2>Contact</h2>
-    <p>Questions about these terms: <a href="mailto:support@flashdesk.org">support@flashdesk.org</a></p>
-  </section>
+    <p>Questions about these terms:
+    <a class="inline-link" href="mailto:support@flashdesk.org">support@flashdesk.org</a></p>
+    <p class="mt-4"><a class="inline-link" href="/">&larr; Back to the download page</a></p>
+  </div>
+</section>
 
 </main>
-<!-- ONE copy of the footer, stamped onto every generated page by scripts\Build-Site.ps1. -->
+<!-- v2 footer — the one deliberately DARK moment on an otherwise light page. Not a leftover of the
+     old dark theme: the mark's native tile colour (#17191E) belongs here on purpose, bookending the
+     page the way it bookends the brand everywhere else (the app icon, the favicon) — the light
+     pages are where a visitor reads and decides; the dark footer is where the mark gets to be fully
+     itself, in its own colour, once the deciding is done. See site-v2.css's palette comment for the
+     full reasoning on why the REST of the page went light. -->
 <footer class="site-footer">
-  <nav class="site-nav" aria-label="Site">
-    <a href="/" data-nav="home">Home</a>
-    <a href="/how-it-works/" data-nav="how-it-works">How it works</a>
-    <a href="/privacy/" data-nav="privacy">Privacy</a>
-    <a href="/faq/" data-nav="faq">FAQ</a>
-    <a href="/terms/" data-nav="terms" aria-current="page">Terms</a>
-  </nav>
-  <p class="footer-meta">&copy; 2026 FlashDesk. All rights reserved.<br>
-  Made in Kyiv by Conor Honor &mdash; <a href="mailto:support@flashdesk.org">support@flashdesk.org</a></p>
-  <!-- This line matters more than the rest of the footer (Conor's own words, 2026-09-03) — see
-       .footer-warning in site.css for why it gets full-strength text and its own hairline rule,
-       the same treatment as .near-button and .scam elsewhere on the site. -->
-  <p class="footer-warning">FlashDesk will never telephone you. If someone calls claiming to be us, hang up.</p>
+  <div class="footer-top">
+    <div class="footer-brand">
+      <a class="brand" href="/">
+        <svg viewBox="0 0 16 16" aria-hidden="true" width="28" height="28">
+          <rect x="1" y="1" width="14" height="14" rx="3.5" fill="#17191E"/>
+          <polyline points="4.631,2.512 9.387,11.495 11.325,7.620" fill="none" stroke="#2BD16B" stroke-width="2.6"/>
+        </svg>
+        <span>FlashDesk</span>
+      </a>
+      <p>Remote support for your computer. One file, nothing installs.</p>
+    </div>
+
+    <nav class="footer-col" aria-label="Product">
+      <h3>Product</h3>
+      <a href="/" data-nav="home">Home</a>
+      <a href="/how-it-works/" data-nav="how-it-works">How it works</a>
+      <a href="https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe">Download</a>
+    </nav>
+
+    <nav class="footer-col" aria-label="Legal">
+      <h3>Legal</h3>
+      <a href="/privacy/" data-nav="privacy">Privacy</a>
+      <a href="/terms/" data-nav="terms" aria-current="page">Terms</a>
+    </nav>
+
+    <nav class="footer-col" aria-label="Help">
+      <h3>Help</h3>
+      <a href="/faq/" data-nav="faq">FAQ</a>
+      <a href="mailto:support@flashdesk.org">support@flashdesk.org</a>
+    </nav>
+  </div>
+
+  <div class="footer-bottom">
+    <p class="footer-meta">&copy; 2026 FlashDesk. All rights reserved. Made in Kyiv by Conor Honor.</p>
+    <!-- Wording unchanged from the last two rounds — this line matters more than the rest of the
+         footer (Conor's own words). -->
+    <p class="footer-warning">FlashDesk will never telephone you. If someone calls claiming to be us, hang up.</p>
+  </div>
 </footer>
 
 </div>

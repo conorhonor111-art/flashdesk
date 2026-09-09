@@ -1,28 +1,51 @@
 <!--PAGE
 SLUG: privacy
+LAYOUT: v2
 TITLE: FlashDesk — privacy
 DESCRIPTION: What FlashDesk stores, where it lives, and what is never recorded — checked against the actual code, not a template.
 CANONICAL: https://flashdesk.org/privacy/
 -->
-  <h1>Privacy</h1>
-  <p class="lead">This page describes what the code actually does, checked directly against the
-  source rather than written from a template. Conor Honor is not a lawyer, and this is not a legal
-  document — it is a plain description, kept honest by being checkable.</p>
+<!-- ============================================================================================
+     ROUND 4 COMPLETION (2026-09-09). Content is UNCHANGED from the previous round (every claim
+     already verified against src\ with file:line citations — see the 2026-09-04 hotfix comment
+     below, kept in place) — only the visual system is new, ported onto the same v2 components
+     Home/How-it-works already established (band/contained/prose, plain-heading .card grids, no
+     icon-tile here since these three cards are not the "parallel checklist" shape icon-tile was
+     built for). This page, along with FAQ and Terms, was the "half-old" half of the site the
+     trust/pride review flagged: three of the header's five nav links dropped a visitor from the
+     new light product into the untouched dark one. Bringing all three onto this track is the
+     whole point of this pass.
+     ============================================================================================ -->
 
-  <p class="statement">Your screen, your keystrokes and your files are never written to disk —
-  only sent, live, during a session you accepted.</p>
+<section class="band band-paper">
+  <div class="contained prose">
+    <h1>Privacy</h1>
+    <p class="lead">This page describes what the code actually does, checked directly against the
+    source rather than written from a template. Conor Honor is not a lawyer, and this is not a
+    legal document — it is a plain description, kept honest by being checkable.</p>
+  </div>
+</section>
 
-  <section class="wide">
-    <h2>What is kept, and where</h2>
-    <div class="feature-grid">
+<section class="band band-alt">
+  <div class="contained prose">
+    <p class="statement">Your screen, your keystrokes and your files are never written to disk —
+    only sent, live, during a session you accepted.</p>
+  </div>
+</section>
+
+<section class="band band-paper">
+  <div class="contained">
+    <span class="kicker">What is kept, and where</span>
+    <h2>What is kept, and where.</h2>
+    <div class="grid cols-3 mt-6">
       <div class="card">
+        <!-- ⚠ HOTFIX 2026-09-04, kept verbatim: an independent fact-check for the round-4 redesign
+             found "It never leaves your machine" false here too — the file panel's "copy their
+             session log" button (FilePanel.cs:56, DownloadSessionLogAsync at :423) lets a helper
+             with file-access consent copy it off, the same as any other file. The safety-accuracy
+             rule outranks "don't touch untouched pages" for a claim already committed to this file.
+             Re-verified again today (2026-09-09), same file:lines, still true. -->
         <h3>Session log</h3>
-        <!-- ⚠ HOTFIX 2026-09-04, minimal and surgical, OUTSIDE the round-4 v1/v2 rollout scope on
-             purpose: an independent fact-check for the round-4 redesign found "It never leaves
-             your machine" is false here too — the file panel's "copy their session log" button
-             (FilePanel.cs:412-457) lets a helper with file-access consent copy it off, the same as
-             any other file. The safety-accuracy rule outranks "don't touch untouched pages" for a
-             claim already committed to this file; nothing else on this page was touched. -->
         <p>A plain text file on <strong>your own computer</strong>, nowhere else. It records who
         connected, when, and what was decided — accepted, refused, or timed out. It stays there
         unless you separately let your helper copy files off your computer; FlashDesk has no server
@@ -41,13 +64,16 @@ CANONICAL: https://flashdesk.org/privacy/
         analytics from somewhere else, and this one deliberately does not.</p>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <section class="wide">
-    <h2>What is never recorded</h2>
-    <p>During a session, your screen is sent live to whoever you accepted — that is the product.
-    What the code does <strong>not</strong> do is keep a copy of any of it:</p>
-    <div class="feature-grid">
+<section class="band band-alt">
+  <div class="contained">
+    <span class="kicker">What is never recorded</span>
+    <h2>What is never recorded.</h2>
+    <p>During a session, your screen is sent live to whoever you accepted — that is
+    the product. What the code does <strong>not</strong> do is keep a copy of any of it:</p>
+    <div class="grid cols-3 mt-6">
       <div class="card">
         <h3>Screen contents</h3>
         <p>Nothing captured from your screen is written to disk. It exists only for as long as it
@@ -63,30 +89,39 @@ CANONICAL: https://flashdesk.org/privacy/
         contents are not.</p>
       </div>
     </div>
-    <p class="note">The program's own internal diagnostics — a capture-health log and a diagnostics
-    report, both for troubleshooting — record only technical numbers (timings, counts, which capture
-    method was used) and never anything you saw or typed.</p>
-  </section>
+    <p class="mt-4">The program's own internal diagnostics — a capture-health log and a diagnostics
+    report, both for troubleshooting — record only technical numbers (timings, counts, which
+    capture method was used) and never anything you saw or typed.</p>
+  </div>
+</section>
 
-  <section>
+<section class="band band-paper">
+  <div class="contained prose">
     <h2>Who this is shared with</h2>
     <p>The only computer outside your own that FlashDesk ever talks to is the relay that connects
     two sessions together — there is no other server, no analytics company, and no third party
     anywhere in the path. What that relay itself retains about a connection, beyond the moment of
     connecting two numbers, is not yet documented on this page — see the note below.</p>
-  </section>
+  </div>
+</section>
 
-  <section>
+<section class="band band-alt">
+  <div class="contained prose">
     <h2>Being honest about what is still open</h2>
-    <p>This page describes the client program with real confidence, checked against its source. The
-    relay side of the system — the small server that introduces two FlashDesk numbers to each other
-    — has not yet had the same documentation pass written for exactly what it logs and for how long.
-    Nothing found while checking suggests it does anything beyond what connecting two numbers
-    requires, but "nothing found yet" is not the same promise as a page that has been written and
-    checked line by line the way the rest of this one has. That will be corrected here once it has.</p>
-  </section>
+    <p>This page describes the client program with real confidence, checked against its source.
+    The relay side of the system — the small server that introduces two FlashDesk numbers to each
+    other — has not yet had the same documentation pass written for exactly what it logs and for
+    how long. Nothing found while checking suggests it does anything beyond what connecting two
+    numbers requires, but "nothing found yet" is not the same promise as a page that has been
+    written and checked line by line the way the rest of this one has. That will be corrected here
+    once it has.</p>
+  </div>
+</section>
 
-  <section>
+<section class="band band-paper">
+  <div class="contained prose">
     <h2>Questions</h2>
-    <p><a href="mailto:support@flashdesk.org">support@flashdesk.org</a></p>
-  </section>
+    <p><a class="inline-link" href="mailto:support@flashdesk.org">support@flashdesk.org</a></p>
+    <p class="mt-4"><a class="inline-link" href="/">&larr; Back to the download page</a></p>
+  </div>
+</section>

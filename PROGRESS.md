@@ -3081,3 +3081,267 @@ symmetry and mark geometry both re-confirmed unchanged.
    `site\faq\index.html` (all four changed this round; `site\terms\index.html` did NOT change and
    does not need re-uploading, though re-uploading it is harmless if it's simpler to do all five).
 3. `scripts\Check-LiveBuild.ps1` last, to verify.
+
+## Round 4: full redesign — light palette (2026-09-04, commit `bf9ae5f`)
+
+**This entry was written 2026-09-09, five days after the commit, reconstructed from the commit
+message, the code and a fresh review — not written live.** VS Code crashed at the end of the
+Round 4 session before this file was updated; the commit itself was intact and clean (nothing
+lost in git), but its own record here was the one real hole the crash left. Reconstructed by
+reading `git show bf9ae5f` in full, re-deriving the reasoning from the code comments it left
+behind (the reasoning was recoverable — nothing here is invented after the fact), and running
+two fresh review passes today rather than trusting the commit message's own claims uncritically.
+
+**"Stop polishing. Redesign it."** Every prior round fixed a named defect; this one throws the
+visual language away on Conor's own instruction. Ships in `site\site-v2.css` (new file, `site.css`
+untouched) plus a v1/v2 fork in `scripts\Build-Site.ps1` (a page's `LAYOUT` front-matter key picks
+its track), so the two designs coexist on purpose until Conor has seen both real pages.
+
+**THE COLOUR ARGUMENT — light, not dark, and why, written down so it cannot be undone by
+accident:** the visitor is a frightened, non-technical person who has just been told to download
+a remote-access tool onto their own computer. Dark background + vivid green accent is the visual
+language of hacking-culture and crypto sites — the exact genre this visitor is afraid of. Checked
+by evidence, not assumed: 6 real sites fetched directly across "direct competitor" and
+"trust-focused consumer security product" categories (TeamViewer, Splashtop, 1Password, Proton,
+Bitwarden, Mullvad — RustDesk/AnyDesk block automated fetching, not counted). **6 of 6 are
+light-dominant; none use a dark-primary palette.** Most build trust through third-party authority
+signals FlashDesk does not have (customer logos, compliance badges, ratings) and cannot fake
+without lying, which this project has refused to do since round 1. **Mullvad was the one useful
+outlier** — no logos, no badges, no testimonials, light anyway, trusted through specificity and
+restraint — the real analog for a one-person unsigned tool. Going light also makes the SITE match
+the WINDOWS APP's own `Theme.cs` for the first time (`Theme.Window` #F5F6F8, `Theme.Card` white,
+`Theme.TextPrimary` #1B1F24, `Theme.TextSecondary` #606266, `Theme.Border` #C6CCD4 — every neutral
+token in `site-v2.css` is taken directly from those real values): **the dark site was always the
+outlier relative to its own product, not the other way round.**
+
+**What does NOT change, and must not:** the brand mark's own shape and its native colours
+(`Theme.BrandGreen` #2BD16B on `Theme.BrandTile` #17191E) are untouched — the mark itself took
+seven rounds to earn and this round only narrowed *where* it may appear, never what it is. The
+Windows app itself was never "the dark one" to begin with — the client-facing host window has
+used the light neutrals above since the original design system (2026-07-29); what is and stays
+dark is (a) the mark's own tile, confined to the mark, and (b) the **operator (viewer) side's**
+deliberately different graphite header (`Theme.OperatorHeader` #242931), kept apart from the
+client side on purpose so the two can never be confused in a screenshot. Round 4 touched no C#
+project at all (confirmed: `git show --stat bf9ae5f` — 14 files changed, all under `site\`,
+`site-src\` and `scripts\`).
+
+**⚠ FOUND TODAY, NOT FIXED TODAY (Conor said "no design changes this round"): `Theme.cs`'s own
+"palette lock" comment is now stale.** It still reads "the site's background is BrandTile" (dark)
+— true of the *old* site, false of this one. This is exactly the drift the palette-lock comment
+was written to prevent, and it happened anyway because Round 4 only changed the site, not the C#
+comment describing the lock. Needs a one-line fix in `Theme.cs`; left for Conor to schedule since
+this session was reconstruct-and-review only.
+
+**WHAT SHIPPED, beyond the palette:** full-bleed alternating bands (paper / paper-alt / one
+deliberate dark band, the footer) replacing the old single grey frame; an 11-icon flat-line set in
+the mark's own visual language (24×24, stroke-width 2, flat caps, sharp miters, no circles); a
+sticky header carrying the download action on every page; the Home page's old three-documents-
+in-one structure (landing page + full SmartScreen/Chrome walkthrough + security guide) split, with
+the walkthrough moved word-for-word to a new page `/security-warning/` (not in nav, reached from
+Home's download line) so Home keeps only the decision itself. **How-it-works is the one inner page
+rebuilt this round** (the build order was: design system → Home → one inner page → wait); Privacy,
+FAQ and Terms stay on the untouched v1/dark track.
+
+**Two real bugs caught before shipping (per the commit message; both re-verified today against
+current code, not just re-read):** icon fill/stroke had been set on a wrapping `<g>` instead of
+each `<symbol>` directly, which rendered every icon as a solid black square — confirmed fixed:
+all 11 `<symbol>` elements in `site-src\layout-v2.html` now carry
+`fill="none" stroke="currentColor"` directly. The sticky header's background was translucent
+(0.92 alpha), letting scrolled content show through as a "washed out" look an independent review
+caught — confirmed fixed: `site-v2.css` now has it fully solid, with a comment recording why.
+
+**Two false claims in the page copy, caught and corrected before this shipped — independently
+re-verified today, file:line, not just re-read:**
+- "Nobody can connect without a human pressing Accept — not once, not ever" was FALSE:
+  `HostServer.cs:64` sets a 90-second reconnect grace, and `:319-332` really does skip the consent
+  callback for the same caller reconnecting inside that window. Rewritten to state the true rule
+  including the exception.
+- "A log stays on your computer... it never leaves it" was FALSE: `Files\FilePanel.cs:56`
+  (`"Copy their session log to my computer"` button) plus `DownloadSessionLogAsync` at `:423` let
+  an operator with file-access consent copy the log off the machine like any other file. Rewritten
+  to say it stays unless file access is separately granted — also back-ported to the still-v1
+  Privacy page, which made the same false claim.
+Also corrected this round, both re-verified today: the multi-monitor claim now says "planned but
+not built" (`DxgiScreenCapture.SwitchTo` is defined at `:53` but has zero call sites anywhere in
+`src\` — genuinely dead code); "orange" corrected to "amber" throughout (`Theme.cs:43`'s real name
+for that colour, reserved for "a session is LIVE").
+
+**TWO FRESH REVIEWS RUN TODAY (2026-09-09), since the crash took the ones the original session
+ran too — full text given to Conor in chat, summarized here:**
+
+*Fact-check (every claim in the three v2 page-source files against `src\`, file:line):* zero false
+or misleading claims found — 23 checkable claims, all confirmed true against current code (the
+9-digit-ID-not-a-password design, the consent-gate-with-90s-exception, the self-injected-input
+block on every consent dialog, the copy-only file panel with no delete/rename/move message type
+anywhere in the protocol, no background service, no autostart, no admin manifest, no installer).
+A handful of claims (OS dialog wording, the GitHub download URL, build size) are correctly flagged
+as outside what `src\` alone can verify. Three spot-checks re-run independently today (delete/
+rename/move message types, the admin-manifest absence, the self-injected-input-block mechanism)
+all confirmed the agent's findings rather than just trusting its report.
+
+*Trust/pride review (real Chrome screenshots at 390/1440/1890px, served over local HTTP so the
+CSS actually loads — see the screenshot note below):* verdict yes-to-both, with two real findings,
+one of them new (not caught in the original Round 4 session):
+1. **NEW FINDING — the download button silently leaves flashdesk.org for `github.com`, with zero
+   explanation on the page**, at the single highest-stakes click in the whole flow, right after the
+   page twice tells the visitor to be suspicious of anything unexpected. The GitHub-hosting
+   decision itself is sound and already justified elsewhere in this file (2026-08-05 — Chrome
+   blocked the identical file from flashdesk.org, GitHub did not) — what is missing is the same
+   one-line, before-it-happens treatment the page already gives the SmartScreen warning, applied to
+   this second surprise.
+2. **Confirmed independently — Privacy, FAQ and Terms still render in the old dark theme**, and the
+   new light header's nav links go straight to them. A visitor clicking Privacy or FAQ — plausibly
+   exactly who a cautious person is — lands on what reads as a different, older product.
+Also confirmed working well: the "ask them to read you their number too" step turning the consent
+dialog into an actual check; the How-it-works page's own visible self-corrections ("planned but
+not built yet"); the scam warning's placement; the restraint of the palette actually being followed
+through in the rendered pages, not just asserted in a comment.
+
+**Screenshot note, so a future session does not repeat the mistake:** the first screenshot attempt
+today, loading `site\index.html` directly via `file://`, rendered almost completely unstyled — the
+`<link>` to `site-v2.css` is root-relative (`/site-v2.css`), correct once deployed but resolving to
+nothing under `file://`. Fixed for today's screenshots by serving `site\` over a throwaway local
+HTTP server (`python -m http.server`) so root-relative paths resolved the way they will on the real
+domain; the real, correctly-styled renders were sent to Conor directly. Not a bug in the site —
+a bug in how it was first loaded for review.
+
+**Not touched today:** no design changes, per Conor's explicit instruction this round — reconstruct,
+show, review, document only. The `Theme.cs` stale-comment drift and the GitHub-link explanation are
+both left for Conor to decide whether and when to fix.
+
+**Upload status: still nothing uploaded.** Verified live today: `https://flashdesk.org/` returns
+200 but its HTML still has `color-scheme: dark` (the pre-Round-4 site); `/site-v2.css` and
+`/security-warning/` both 404 live. Round 4 exists only in this repository so far.
+
+## Round 4 completion: one product, not half-new half-old (2026-09-09, same day as the entry above)
+
+Conor's instruction after seeing the reconstruction and both reviews: finish Round 4 so it ships
+as one site, not two. Two authorised changes, plus two small fixes flagged earlier in the same
+session while already in the relevant files. No new design questions opened.
+
+**1. Privacy, FAQ and Terms are now on the v2 light track.** All three gained `LAYOUT: v2` and were
+rebuilt onto the exact components Home/How-it-works already established (`band`/`band-paper`/
+`band-alt`, `contained`/`prose`, `.statement`, `.card`, `.grid`, `ul.plain`) — no new CSS, no new
+component invented. Every fact already on these pages is unchanged in substance; only two
+exceptions, both content-accuracy fixes made because they are the exact category the whole
+redesign has been checking for, found while porting, not invented after the fact:
+- **FAQ's own page statement said "Nobody can connect without you pressing Accept — not once, not
+  ever."** Same false-as-worded claim the round-4 fact-check already caught and fixed on
+  `home.html`, just never checked on this page because it was outside that check's three-file
+  scope. Replaced with Home's own now-corrected wording, reused verbatim.
+- **FAQ's "Can someone get in without me agreeing?" answer said "Every incoming connection shows a
+  dialog."** Same issue: `HostServer.cs:64,319-332` skips it for a same-caller reconnect inside 90
+  seconds. Rewritten to state the true rule. "There is no remote way to answer that dialog for
+  you" is untouched and separately true (`ConsentDialog.cs:44`, self-injected input blocked).
+Also fixed while there: FAQ's "why does Windows warn me" answer linked to `/#warnings`, an anchor
+that stopped existing the moment the original Round 4 commit moved that content to its own page —
+repointed to `/security-warning/`. All three pages also gained a "← Back to the download page"
+link at the bottom, reusing How-it-works' own existing pattern, for consistency across all five
+inner pages.
+
+**2. The GitHub jump is now explained before it happens.** One new line under Home's primary
+download button: *"This link goes to GitHub, where I publish the file — that's expected."* Same
+`.meta` register as the existing SmartScreen line beside it, no new component. Addresses the
+trust/pride review's one real finding: the highest-stakes click on the page used to silently leave
+flashdesk.org with zero warning, right after the page twice tells the visitor to distrust
+surprises.
+
+**3. `Theme.cs`'s stale palette-lock comment is fixed** — comment only, zero behaviour change. It
+used to say the site's background is `BrandTile` (dark); now records that Round 4 moved the site's
+background to match `Window`/`Card`, and that `BrandGreen`/`BrandTile` stay locked only to the mark
+and the site's one dark chapter, the footer.
+
+**PROVEN, not asserted, today:**
+- **All five nav pages plus Security-warning now load `site-v2.css` and declare
+  `color-scheme: light`; grepped across every file in `site\`, zero remaining references to the
+  old `site.css` or `color-scheme: dark`.**
+- **Real Chrome screenshots at 390/1440/1890px for Privacy, FAQ and Terms** (served over a local
+  HTTP server, not `file://` — see the screenshot note in the entry above; the same root-relative-
+  path trap applies to every page, not just Home/How-it-works). Sent to Conor directly.
+- **Contrast, computed, not assumed:** every text/background pair actually used on the three
+  converted pages (`ink`/`ink-muted` on `paper`/`paper-alt`, footer `tile-text`/`tile-muted` on
+  `tile`) is >=5.6:1, comfortably inside AA — expected, since no new colour pairs were introduced,
+  only existing tokens already used on Home/How-it-works. **One real, PRE-EXISTING failure found
+  while computing this, on a component these three pages don't use: `ol.steps .num` (the "1 2 3 4"
+  step numerals on Home's "Four steps" section) is `--border-strong` (#A9B1BC) on white, 2.16:1 —
+  fails even the 3:1 large-text floor. This predates today, was not part of the original Round 4
+  WCAG claim (which only ever covered body-text pairs, correctly), and was NOT fixed — out of the
+  two authorised changes for this pass. Left for Conor to schedule.**
+- **`Check-MarkGeometry.ps1` run: MATCH, all copies pass.** Its own coverage is `site\index.html`
+  and `site\holding.html` only, by design — it does not scan the other five generated pages
+  individually. Verified by hand instead: grepped the mark's polyline points and stroke-width out
+  of all six generated pages (`index`, `how-it-works`, `privacy`, `faq`, `terms`,
+  `security-warning`) — identical in every one, both the header's ink copy and the footer's green
+  copy. This is expected, not luck: all six pages stamp the exact same unmodified
+  `header-v2.html`/`footer-v2.html` partials via `Build-Site.ps1`.
+- **`Check-LiveBuild.ps1` run.** Correctly reports the live server still serves the OLD build for
+  every page that changed (mismatches on `/`, `/how-it-works/`, `/privacy/`, `/faq/`, `/terms/`;
+  404 on `/security-warning/`) — expected, since nothing has been uploaded. **One real, unrelated
+  script gap found while running it: item 4 ("both download routes serve the same file") FAILED
+  with "Could not find the download button's address in site\index.html."** The script's regex
+  looks for `class="download"` — the v1 button's class name. The v2 button has always been
+  `class="btn btn-primary download-btn"`, since the very first Round 4 commit; this check has
+  silently been unable to run against the v2 home page since 2026-09-04, not something introduced
+  today. NOT fixed — a second thing found outside the two authorised changes. Left for Conor.
+
+**ONE FINAL COHESION REVIEW RUN, fresh context, asked one question: does the whole site now read
+as a single finished product?** Verdict: yes, with one real seam it found and one it flagged that
+turned out, on independent verification, to be a false alarm — both worth recording precisely so
+neither gets miscredited later.
+
+- **Real, and fixed:** FAQ's 8 Q&A cards sat in a narrow `.contained.prose` (~38rem) column in a
+  single stacked file, never going multi-column, while Home/How-it-works/Privacy all use the full
+  `.contained` (75rem) with `.grid.cols-3`. Next to those, FAQ read as "a text list" instead of "a
+  card grid" — the one place a visitor moving between pages would notice the seam. Widened FAQ to
+  the same `.contained` + `.grid.cols-3` pattern, still deliberately without icon-tiles (same
+  reasoning as `privacy.html`'s own comment: uneven-length Q&A pairs aren't the parallel-checklist
+  shape icon-tile was built for). Re-screenshotted at 1440px to confirm: FAQ's cards now fill three
+  columns exactly like every other page's grid.
+- **Flagged by the review, chased down, and RULED OUT as a real bug — recorded in detail because
+  the investigation itself is the useful part:** the review noticed text clipped at the right edge
+  in the 390px-wide screenshots on Privacy and FAQ (and, on closer inspection, Home too) and
+  correctly could not tell whether that was a real CSS bug or a capture artifact. Chased it down
+  with a purpose-built diagnostic page reporting `window.innerWidth` directly: **requesting a
+  390px-wide headless Chrome window on this machine actually produces a browser innerWidth of
+  500px, every time, regardless of headless engine (`--headless` and `--headless=new`), regardless
+  of an isolated `--user-data-dir` profile, regardless of `--force-device-scale-factor=1`.** A
+  1440px request measured 1424px (the missing 16px is an ordinary scrollbar gutter — expected, not
+  a bug). So every "390px" screenshot taken this session was genuinely laid out at 500px and then
+  cropped to a 390px-wide image, which is what produced the clipped-text appearance — a tooling
+  floor on this specific machine, not a defect in the site. **Honest gap, not resolved: the site's
+  actual behaviour below ~500px CSS width remains UNVERIFIED by any screenshot taken today or in
+  the prior entry above** — there is no known reason to expect a problem (no breakpoint exists
+  between 0 and 640px, and CSS text wraps continuously by width, not in tiers), but "no reason to
+  expect one" is not the same as "checked." Real phone or browser-devtools mobile-emulation testing
+  would settle it properly; not done here.
+- Two other things the review named and I did not act on, both judgement calls rather than
+  defects: Terms is the only page without a `.statement` pull-quote band after its hero — left
+  alone rather than manufacturing a claim just to pattern-match, since Terms has no single
+  strong verified fact worth spotlighting that way. The stale `layout-v2.html` header comment
+  ("Privacy, FAQ and Terms are UNTOUCHED... two designs coexist on purpose") is now false and is
+  copied verbatim into every generated page's `<head>` — the exact same category of fix as the
+  authorised `Theme.cs` comment fix, but Conor's instruction was specifically "the two things...
+  nothing else," so this is reported found-but-NOT-fixed rather than extended to on my own
+  judgement. **Third thing found outside the two authorised changes, on top of the border-strong
+  contrast failure and the Check-LiveBuild script gap above — left for Conor.**
+
+**Not touched:** no colour values changed, no new components invented. The one layout change made
+beyond the two originally authorised items — FAQ's grid width — was made because it directly
+answers Conor's own instruction for this pass ("They must all feel like one site"), reuses an
+existing component unchanged, and is called out here explicitly rather than folded in silently.
+`site.css` (v1) itself is left in the repository, unused now by any page — deleting it wasn't
+asked for.
+
+**Staged, nothing uploaded.** This entry and the file changes it describes, together with the
+Round 4 entry immediately above, are committed in the same commit as this session's work.
+
+**Upload list, in order (nothing uploaded yet):**
+1. `site\site-v2.css` — never uploaded; every v2 page's `<link>` depends on it. (`inter.woff2` and
+   `flashdesk-window.png` are already live from an earlier round and do not need re-uploading.)
+2. `site\index.html`, `site\how-it-works\index.html`, `site\privacy\index.html`,
+   `site\faq\index.html`, `site\terms\index.html`, `site\security-warning\index.html` — all six,
+   since none of them exist on the server in their current form yet.
+3. `scripts\Check-LiveBuild.ps1` last — not an upload, the verification step: run it after the six
+   pages are live to confirm every one matches this repository and every asset it asks for exists.
+   Expect item 4 to still fail on the download-button-address check (the pre-existing script gap
+   above) even once everything else passes — that failure is the script, not the upload.
