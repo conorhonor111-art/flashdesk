@@ -3345,3 +3345,72 @@ Round 4 entry immediately above, are committed in the same commit as this sessio
    pages are live to confirm every one matches this repository and every asset it asks for exists.
    Expect item 4 to still fail on the download-button-address check (the pre-existing script gap
    above) even once everything else passes — that failure is the script, not the upload.
+
+## Round 4 completion, part 2: closing the three found-not-fixed items (2026-09-15)
+
+Conor uploaded all six pages the same day (verified: `Check-LiveBuild.ps1` section 5 showed every
+page matching the repository exactly, before this round's edits). He then read `Check-LiveBuild`'s
+NOT READY output and made the call on each of its three remaining items himself, rather than have
+them sit as an open list again.
+
+**Section 3 was a FALSE ALARM, and Conor's diagnosis was right: it needed the check fixed, not the
+exe republished.** Commit `6f33070` touched `src\RemoteDesktop.UI\Theme.cs`, but only a comment —
+the section 3 logic at the time treated ANY commit touching `src\` as a stale build, with no way to
+tell a comment from real code. **Proven wrong before it was trusted, the same way every regression
+test on this project is: ran the OLD script against the real repo state first** — it failed exactly
+as predicted, reporting `6f33070` as a missing code change. Fixed with `Test-CommentOnlyDiff`, a
+line-based heuristic added to `Check-LiveBuild.ps1`: a changed line only counts as "safe" if, once
+trimmed, it is blank or entirely a `//`/`/* */`-style comment; a single non-comment line anywhere
+in a changed `.cs` file, or any changed file under `src\` that isn't `.cs` at all, makes the whole
+commit unsafe. **Explicitly not a real C# parser** — recorded in the script's own comment so a
+later session does not oversell it: it cannot see a real change sharing a line with a comment, or
+inside a multi-line string that happens to contain a comment-like sequence. Because of that limit,
+the changed `.cs` files are now ALWAYS printed either way, safe or not, so a human can check the
+heuristic's homework in one glance rather than trust it blindly — Conor's own fallback instruction,
+built in rather than only used when the heuristic is unsure.
+
+**Section 4 was the regex bug already named in the previous entry, now actually fixed.** It looked
+for `class="download"`, the v1 button's exact markup; the v2 button has been
+`class="btn btn-primary download-btn"` since the original round-4 commit (2026-09-04) — eleven days
+during which this check matched nothing and the byte-for-byte route-parity check silently never
+ran at all. New pattern uses a lookahead for a `download-btn` class token anywhere in the `<a ...>`
+tag, independent of attribute order. **Also hardened per Conor's rule-12 instruction**
+("a check that silently stops checking is worse than no check"): the failure message now says
+explicitly that the parity check DID NOT RUN, not merely that the routes might differ, and points
+at the exact line to fix if the button's markup ever changes shape again.
+
+**Proof, run for real, not asserted:** the OLD script was run first and both failures reproduced
+exactly as expected — section 3 flagged `6f33070` as an old build, section 4 could not find the
+button at all. The FIXED script was then run against the same live server: section 3 now reports
+`[ OK ] code-current`, naming `Theme.cs` and stating plainly that its only changed lines are
+comment/blank; section 4 now finds the button, downloads both routes (GitHub and the
+`flashdesk.org/dl` fallback), and confirms **byte-identical, 71,848,459 bytes, matching SHA-256**.
+
+**The two small things also closed, same day, same files already open:**
+- **Home's step numerals failed contrast, 2.16:1 against a 3:1 floor** (`ol.steps .num`, `--border-
+  strong` on white). Changed to `--ink-muted` (6.11:1) — an existing palette token already used for
+  exactly this "secondary but legible" role elsewhere (kicker, `.meta`, `.lead`), not a new colour.
+- **`layout-v2.html`'s own header comment still said "Privacy, FAQ and Terms are UNTOUCHED... two
+  designs coexist"** — false since `6f33070`, and baked into every generated page's `<head>`. Same
+  category of fix as the `Theme.cs` comment fixed in the previous entry; rewritten to state that
+  all six pages now render from this file and the v1 track is orphaned, not withheld on purpose.
+  Site rebuilt so the correction reaches all six generated pages, not just the source template.
+
+**Not touched:** no .cs behaviour changed (only a CSS colour value and PowerShell script logic);
+no C# build/test run this round since nothing under `src\` changed beyond the untouched-by-today
+comment already committed last time.
+
+**Staged, committed, nothing uploaded yet.** Both content fixes (the contrast fix and the
+`layout-v2.html` comment, which reaches every page through the rebuild) are new since Conor's
+upload earlier today, which is exactly why `Check-LiveBuild` section 5 now correctly reports all
+six pages as not matching the server — that is the check doing its job, not a regression.
+
+**Upload list, in order:**
+1. `site\site-v2.css` — the contrast fix.
+2. All six pages again: `site\index.html`, `how-it-works\index.html`, `privacy\index.html`,
+   `faq\index.html`, `terms\index.html`, `security-warning\index.html` — every one carries the
+   corrected `layout-v2.html` header comment now.
+3. `scripts\Check-LiveBuild.ps1` last, to verify — this file is not uploaded (it runs locally
+   against the live site), but re-run it after the two items above are live. Section 4 should now
+   read `[ OK ]`, not just avoid a false FAIL — the fix is expected to actually pass, not merely
+   stop crying wolf.

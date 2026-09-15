@@ -9,12 +9,16 @@
   GENERATED FILE — do not hand-edit. Source: site-src\pages\faq.html, assembled by
   scripts\Build-Site.ps1 from site-src\layout-v2.html + site-src\partials\*-v2.html.
 
-  ⚠ THIS IS THE ROUND-4 REDESIGN TRACK, NOT THE WHOLE SITE. Conor's own build order: design the
-  system, build Home completely in it, build ONE inner page to prove it scales, then WAIT — do not
-  roll out the rest until he has seen these two. Privacy, FAQ and Terms are UNTOUCHED and still
-  render from layout.html / site.css (see scripts\Build-Site.ps1's LAYOUT front-matter key — pages
-  without a LAYOUT key, or LAYOUT: v1, get the old track; LAYOUT: v2 gets this one). Two designs
-  coexist in this repository on purpose, for exactly as long as it takes to get a verdict.
+  ⚠ THIS IS THE ROUND-4 REDESIGN TRACK. UPDATED 2026-09-15 — it is now the WHOLE SITE, not one
+  track of two. Conor's own build order for the rollout: design the system, build Home completely
+  in it, build ONE inner page to prove it scales, then WAIT for a verdict before the rest — that
+  wait ended 2026-09-09 (commit 6f33070), when Privacy, FAQ and Terms were ported onto this same
+  track. All six pages (Home, How-it-works, Privacy, FAQ, Terms, Security-warning) render from
+  this file now (see scripts\Build-Site.ps1's LAYOUT front-matter key — every page source under
+  site-src\pages\ currently sets LAYOUT: v2). The v1 files (layout.html, site.css,
+  partials\header.html/footer.html) still exist in this repository but are orphaned — no page
+  references them — kept only because deleting them was never asked for, not because two designs
+  are still meant to coexist.
 
   WHY THE PALETTE CHANGED FROM DARK+GREEN TO LIGHT: see site-v2.css's own header comment for the
   full argument (research-backed, not taste) — six real competitor/trust-product sites were fetched

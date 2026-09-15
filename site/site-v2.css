@@ -490,7 +490,12 @@ ul.plain li::before {
 ol.steps { list-style: none; }
 ol.steps li { display: grid; grid-template-columns: 2.5rem 1fr; gap: var(--sp-3); padding: var(--sp-3) 0; border-bottom: 1px solid var(--border); }
 ol.steps li:last-child { border-bottom: none; }
-ol.steps .num { font-size: var(--fs-h3); font-weight: 700; color: var(--border-strong); line-height: 1.4; }
+/* ⚠ was var(--border-strong) (#A9B1BC on white = 2.16:1) — computed, not assumed, during the
+   round-4-completion pass and found to fail even the 3:1 large-text floor (this numeral is 22px
+   bold, which does count as "large text" under WCAG, so 3:1 is the real bar, not 4.5:1). Reused
+   --ink-muted (6.11:1 on white) rather than inventing a new colour — it is the palette's existing
+   token for exactly this "secondary, still legible" role (kicker, .meta, .lead already use it). */
+ol.steps .num { font-size: var(--fs-h3); font-weight: 700; color: var(--ink-muted); line-height: 1.4; }
 
 /* The canonical anti-scam warning — WORDING FIXED, quoted verbatim in CLAUDE.md. Styling only. */
 .scam {

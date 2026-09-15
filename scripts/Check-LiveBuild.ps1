@@ -11,9 +11,12 @@
     LIVE download and compares it with this repository.
 
     ONE DELIBERATE SUBTLETY, and it is what makes this worth trusting: a difference from HEAD is
-    only reported as a PROBLEM when the missing commits actually touch code that goes into the exe
-    (anything under src\). Documentation-only commits are reported as fine. A check that cries wolf
-    every time a comment changes is a check people learn to ignore, and that is worse than none.
+    only reported as a PROBLEM when the missing commits actually touch code that goes into the exe.
+    Documentation-only commits are reported as fine — and, UPDATED 2026-09-15, so is a commit that
+    only edits a comment or a blank line inside a .cs file under src\ (checked line by line, not
+    assumed — see Test-CommentOnlyDiff below); the exe's behaviour did not change, so republishing
+    it would prove nothing. A check that cries wolf every time a comment changes is a check people
+    learn to ignore, and that is worse than none.
 
     Run it by double-clicking Check-LiveBuild.cmd, or:  powershell -File scripts\Check-LiveBuild.ps1
 #>
@@ -44,6 +47,29 @@ function Say  ($t) { Write-Host $t }
 function Good ($t) { Write-Host "  [ OK ]  $t" -ForegroundColor Green }
 function Bad  ($t) { Write-Host "  [FAIL]  $t" -ForegroundColor Red; $problems.Add($t) }
 function Note ($t) { Write-Host "          $t" -ForegroundColor DarkGray }
+
+# Added 2026-09-15, for section 3. A LINE-BASED HEURISTIC, not a real C# parser: a changed line
+# counts as "safe" only if, once trimmed, it is blank or is entirely a // or /* */ style comment.
+# It will not catch a real code change sharing a line with a comment (`DoThing(); // note`), and it
+# cannot see inside a multi-line string that happens to contain something that looks like a
+# comment marker. When unsure, it must call a line unsafe — never the reverse. Section 3 also
+# always PRINTS every changed .cs file regardless of what this returns, so a human is never asked
+# to trust the heuristic blindly (Conor, 2026-09-15: "if you cannot tell those apart reliably, say
+# so and instead state which .cs files changed").
+function Test-CommentOnlyDiff($path, $fromRef, $toRef) {
+    $diffLines = @(git diff $fromRef $toRef -- $path)
+    foreach ($line in $diffLines) {
+        if ($line.Length -eq 0) { continue }
+        if ($line.StartsWith('+++') -or $line.StartsWith('---')) { continue }   # file header, not content
+        $marker = $line.Substring(0, 1)
+        if ($marker -ne '+' -and $marker -ne '-') { continue }                  # diff metadata / context line
+        $body = $line.Substring(1).Trim()
+        if ($body -eq '') { continue }                                          # blank-line change
+        if ($body -match '^(//|/\*|\*/|\*(?!/))') { continue }                  # a comment line, start to end
+        return $false                                                           # anything else: real code
+    }
+    return $true
+}
 
 Say ''
 Say '================================================================'
@@ -127,16 +153,33 @@ if (-not $liveCommit) {
             Good "The server is serving exactly this repository's current build ($($liveCommit.Substring(0,7)))."
         }
         else {
-            # THE SUBTLETY: only code changes matter. Docs-only commits are not a problem.
-            $codeMissing = @(git log --oneline "$liveCommit..HEAD" -- 'src/')
-            $allMissing  = @(git log --oneline "$liveCommit..HEAD")
+            # THE SUBTLETY: only REAL code changes matter. Docs-only commits are not a problem — and
+            # as of 2026-09-15, neither is a commit that only edits a comment or blank line INSIDE a
+            # .cs file (a real false positive this script produced on commit 6f33070: a one-line
+            # comment fix in Theme.cs, zero behaviour change, still reported as a stale build). A
+            # non-.cs file under src\ (a .csproj, a .resx, anything not source text) gets no benefit
+            # of the doubt — see Test-CommentOnlyDiff above for exactly what "safe" means here.
+            $allMissing   = @(git log --oneline "$liveCommit..HEAD")
+            $changedFiles = @(git diff --name-only $liveCommit HEAD -- 'src/')
+            $csFiles      = @($changedFiles | Where-Object { $_ -like '*.cs' })
+            $otherFiles   = @($changedFiles | Where-Object { $_ -notlike '*.cs' })
+            $unsafeCs     = @($csFiles | Where-Object { -not (Test-CommentOnlyDiff $_ $liveCommit 'HEAD') })
 
-            if ($codeMissing.Count -eq 0) {
+            if ($changedFiles.Count -eq 0) {
                 Good ("The server's build is code-current ({0})." -f $liveCommit.Substring(0,7))
                 Note ("It is behind by {0} commit(s), but none of them touch src\ - documentation only." -f $allMissing.Count)
+            } elseif ($otherFiles.Count -eq 0 -and $unsafeCs.Count -eq 0) {
+                Good ("The server's build is code-current ({0})." -f $liveCommit.Substring(0,7))
+                Note ("It is behind by {0} commit(s). {1} .cs file(s) changed in that range, but every" -f $allMissing.Count, $csFiles.Count)
+                Note 'changed line in each is a comment or blank line, checked line-by-line - not assumed:'
+                foreach ($f in $csFiles) { Note "  comment/blank only: $f" }
             } else {
-                Bad ("The server is serving an OLD build - {0} code change(s) are missing from it:" -f $codeMissing.Count)
-                foreach ($c in $codeMissing) { Note "  missing: $c" }
+                Bad ("The server is serving an OLD build - {0} commit(s) touch real .cs code, missing from it:" -f $allMissing.Count)
+                foreach ($c in $allMissing) { Note "  missing: $c" }
+                Note ''
+                Note 'Changed files under src\ in the missing range, so you can judge in one glance:'
+                foreach ($f in $csFiles)    { Note ("  {0}  {1}" -f $f, $(if ($unsafeCs -contains $f) { '(real code changed)' } else { '(comment/blank only)' })) }
+                foreach ($f in $otherFiles) { Note ("  {0}  (not a .cs file - no comment-only exemption possible)" -f $f) }
                 Note ''
                 Note 'Republish and re-upload before testing, or the test will measure the wrong program:'
                 Note '  dotnet publish src\RemoteDesktop.Host -c Release -r win-x64 --self-contained true \'
@@ -160,11 +203,20 @@ $localPageForLink = Join-Path $RepoRoot 'site\index.html'
 $buttonUrl = $null
 if (Test-Path $localPageForLink) {
     $html = Get-Content -Raw -Encoding UTF8 -Path $localPageForLink
-    if ($html -match 'class="download"\s+href="([^"]+)"') { $buttonUrl = $Matches[1] }
+    # ⚠ UPDATED 2026-09-15 — was 'class="download"\s+href="([^"]+)"', the v1 button's exact markup.
+    # The v2 button (live since round 4, 2026-09-04) is <a class="btn btn-primary download-btn"
+    # href="...">, so the old pattern has matched NOTHING for eleven days and this whole check has
+    # been silently skipped that whole time — exactly the "check that cannot fail proves nothing"
+    # trap (CLAUDE.md rule 12). A lookahead finds "download-btn" as one class token anywhere inside
+    # the <a ...> tag, independent of attribute order, then captures href from the same tag.
+    if ($html -match '(?is)<a\b(?=[^>]*\bclass\s*=\s*"[^"]*\bdownload-btn\b)[^>]*\bhref\s*=\s*"([^"]+)"') { $buttonUrl = $Matches[1] }
 }
 
 if (-not $buttonUrl) {
-    Bad 'Could not find the download button''s address in site\index.html, so the main route was not checked.'
+    Bad 'NO download button address could be found in site\index.html at all -- the byte-for-byte route-parity check below DID NOT RUN.'
+    Note 'This is not "the routes differ" - it means NOTHING about the button route was checked this'
+    Note 'time. The button markup in site-src\pages\home.html has changed shape again; update the'
+    Note 'regex a few lines above this message in scripts\Check-LiveBuild.ps1 to match it.'
 } elseif ($buttonUrl -eq $Url) {
     Good 'The page''s button points at the same address this check already downloaded.'
 } else {
