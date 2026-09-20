@@ -3569,3 +3569,12 @@ live exe one doc-only commit behind HEAD again. Rebuilt and released from `19543
 Uploaded to GitHub (`v0.4.0-7`) and to `public_html/dl/FlashDesk.exe` on cPanel (DELE +
 fresh upload — same pattern as previous releases to avoid the server's 451-on-overwrite
 error). 162 MB, upload completed at 100%.
+
+---
+
+### v0.4.0-8 — 2026-09-20 — documentation rebuild, exe brought to HEAD
+
+No source changes. Same cycle as v0.4.0-7: releasing v0.4.0-7 advanced PROGRESS.md to
+commit `2d28e95`, leaving the live exe one doc-only commit behind HEAD. Rebuilt and
+released from `2d28e95`. Uploaded to GitHub (`v0.4.0-8`) and to
+`public_html/dl/FlashDesk.exe` on cPanel (DELE + fresh upload). 162 MB, 100%.
