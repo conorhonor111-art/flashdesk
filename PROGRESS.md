@@ -3449,3 +3449,35 @@ calls; the token is stored in the Windows credential store via `gh auth login` f
 
 **Nothing in `src\` changed this session.** The only new artefacts are the uploaded site files,
 the `v0.4.0-2` GitHub release, and this PROGRESS entry.
+
+---
+
+## 2026-09-20 — Fix misleading checkpoint wording, v0.4.0-3 released
+
+**One-line change in `src\RemoteDesktop.Host\Diagnostics\SessionRecorder.cs` (`RecoveryLine`).**
+
+The old message for a transfer that hadn't recovered to full speed yet:
+```
+NOT back to full speed within 0s and counting — stuck at level 2/9
+```
+Two problems:
+1. **"within 0s"** — nonsensical when a small file transfers faster than the one-second bucket.
+   The checkpoint fires in the same second the transfer ends, so 0 s of recovery time has elapsed.
+2. **"stuck at"** — implies a permanent failure. The ladder is almost always still settling at the
+   moment the checkpoint runs; calling it stuck misreads a snapshot as a verdict.
+
+New messages:
+```
+near-instant:  not yet back to full speed — still at level 2/9
+longer wait:   not back to full speed after 15s — still at level 4/9
+```
+
+Also updated the XML doc comment on `RecoveryLine` which still said "where it got stuck".
+
+**No behaviour change** — purely the string returned by `RecoveryLine`. 304 tests pass;
+the 2 pre-existing failures (`HostFileServiceTests`, `FileTransferEndToEndTests`) are
+unrelated to this file and were already failing before this change.
+
+**Released as `v0.4.0-3`** — built from `ca8e36a`, uploaded to GitHub and to
+`public_html/dl/FlashDesk.exe` on cPanel. Check-LiveBuild all green: build confirmed
+as `ca8e36a`, both download routes byte-identical.
