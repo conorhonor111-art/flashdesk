@@ -3481,3 +3481,37 @@ unrelated to this file and were already failing before this change.
 **Released as `v0.4.0-3`** — built from `ca8e36a`, uploaded to GitHub and to
 `public_html/dl/FlashDesk.exe` on cPanel. Check-LiveBuild all green: build confirmed
 as `ca8e36a`, both download routes byte-identical.
+
+## 2026-09-20 — Fix two race conditions in HostFileService, v0.4.0-4 released
+
+Two pre-existing test failures, confirmed unrelated to the Round 5 changes, investigated
+and fixed. Both were races in `HostFileService` — commit `eaa5e5f`.
+
+**Fix 1 — `_transferBusy` cleared too late (`A_PROGRAM_is_asked_about_by_name_every_single_time`)**
+
+`AnswerSendAsync` cleared `_transferBusy` in its `finally` block, which runs AFTER
+`WriteChunksAsync` has already sent `FileSendResult` to the wire. The test's `UploadAsync`
+receives the result and immediately fires the next request — that next `FileSendRequest`
+could arrive at the server before the `finally` had a chance to run, see the flag still
+set, and get back `FileStatus.Busy`. The upload short-circuits there and never reaches
+`AllowedToWriteAsync`, so the program-name consent question is never asked.
+
+Fix: added `_transferBusyClearedEarly` field. `WriteChunksAsync` sets it and calls
+`Interlocked.Exchange(ref _transferBusy, 0)` immediately before every `SendResultAsync`
+exit (NameTaken, Ok, failed:). `AnswerSendAsync`'s `finally` now skips the clear when
+the flag is set, so it cannot accidentally zero out a new transfer's busy flag that
+started the instant the old result landed on the wire.
+
+**Fix 2 — `_listingBusy` blocked concurrent directory listings (`A_reply_for_a_request_the_operator_has_moved_on_from_is_dropped`)**
+
+Two `DirListRequest` messages sent concurrently — one per folder — both should be
+served. The second hit the `_listingBusy` guard, got an empty `FileStatus.Busy` reply,
+and `secondReply.Entries` came back empty.
+
+Fix: removed `_listingBusy` entirely from `AnswerListAsync`. `ReadPage` is `private
+static`, reads only from the filesystem, and has no shared mutable state — concurrent
+listings are completely safe.
+
+`dotnet test`: **306/306** (up from 304 — both previously failing tests now pass, zero
+regressions). **Released as `v0.4.0-4`** — built from `eaa5e5f`, uploaded to GitHub and
+to `public_html/dl/FlashDesk.exe` on cPanel.
