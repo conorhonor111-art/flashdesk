@@ -3582,3 +3582,10 @@ released from `2d28e95`. Uploaded to GitHub (`v0.4.0-8`) and to
 **Check-LiveBuild result:** READY — server serving `2d28e95`, 1 commit behind HEAD but
 doc-only (`3021ff2`, this PROGRESS.md entry), both routes byte-identical
 (`1C3F12B784695464...`). Script gives green light on doc-only gaps.
+
+---
+
+### v0.4.0-9 — 2026-09-20 — documentation rebuild, exe brought to HEAD
+
+No source changes. Rebuilt from `ec4bcc2` (Check-LiveBuild result appended to v0.4.0-8
+entry). Released to GitHub (`v0.4.0-9`) and cPanel. 162 MB, 100%.
