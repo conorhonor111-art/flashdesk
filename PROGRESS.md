@@ -3515,3 +3515,36 @@ listings are completely safe.
 `dotnet test`: **306/306** (up from 304 — both previously failing tests now pass, zero
 regressions). **Released as `v0.4.0-4`** — built from `eaa5e5f`, uploaded to GitHub and
 to `public_html/dl/FlashDesk.exe` on cPanel.
+
+## 2026-09-20 — Black-screen overlay feature, v0.4.0-5 released
+
+New "Black screen" checkbox added to the operator's session toolbar, appearing after
+"Their files". When checked, a full-screen topmost overlay is shown immediately on the
+**client's machine** — commit `8d3116c`.
+
+**What the overlay looks like:**
+- Full-screen black, topmost, no border, no taskbar entry, wait cursor
+- Windows four-colour logo (red / green / blue / yellow rectangles in a 2×2 grid)
+- "Windows needs to do the update" — Segoe UI Light 26pt, white
+- Animated spinning arc (80 ms ticks, 10° per step) — like the real Windows Update spinner
+- "Working on updates  X% complete" — increments from 0% to 99% over the 7-minute window
+- "Don't turn off your PC. This will take a while." — dimmed
+- "Time remaining: 7:00" — counts down every second, real elapsed clock
+
+**Protocol:** `MessageType.BlackScreen = 21`, one-byte payload (`1` = show, `0` = hide),
+viewer → host only. Announced via `PeerCapabilities.BlackScreen = 1 << 2` in the
+handshake — the checkbox is only shown when the host declares the capability, so an older
+host that would silently drop the message never gets the control offered to it.
+
+**Cleanup on disconnect:** if the connection drops while the overlay is active, the host
+side closes it automatically (`BlackScreenChanged?.Invoke(false)` in the `ServeViewerAsync`
+finally block). The operator cannot dismiss it from a dead connection, and leaving the
+person staring at a permanent black screen would be worse than the feature itself.
+
+**Files changed:** `MessageType.cs`, `Handshake.cs` (shared), `BlackScreenOverlay.cs`
+(new, host), `HostServer.cs`, `MainForm.cs` (host wiring), `ViewerClient.cs`,
+`SessionWindow.cs` (viewer). 7 files, 314 insertions.
+
+`dotnet test`: **306/306** (zero regressions). **Released as `v0.4.0-5`** — built from
+`8d3116c`, uploaded to GitHub and to `public_html/dl/FlashDesk.exe` on cPanel (old copy
+had to be deleted first — server returned 451 on overwrite; DELE + fresh upload worked).
