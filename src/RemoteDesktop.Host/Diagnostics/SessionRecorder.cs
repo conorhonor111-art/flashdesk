@@ -405,7 +405,7 @@ public sealed class SessionRecorder
 
     /// <summary>
     /// How many seconds after a transfer ended it took the LADDER to reach level 0 — full speed —
-    /// or, if it never did within what was recorded, where it got stuck. Answers Conor's "confirm it
+    /// or, if it never did within what was recorded, the last level seen. Answers Conor's "confirm it
     /// recovers, and how long that takes" (2026-08-27) from recorded history instead of a stopwatch
     /// on the technical view.
     ///
@@ -425,8 +425,11 @@ public sealed class SessionRecorder
         }
         var lastSeen = _seconds.Where(b => b.Second >= endSecond && b.Frames > 0)
             .OrderByDescending(b => b.Second).FirstOrDefault();
-        string stuckAt = lastSeen.Frames > 0 ? $"level {lastSeen.Level}/{ladderTop}" : "no frames recorded since";
-        return $"NOT back to full speed within {_currentSecond - endSecond}s and counting — stuck at {stuckAt}";
+        string lastAt = lastSeen.Frames > 0 ? $"level {lastSeen.Level}/{ladderTop}" : "no frames recorded since";
+        long elapsed = _currentSecond - endSecond;
+        // "within 0s" is meaningless for a near-instant transfer — say "not yet" instead.
+        string elapsedStr = elapsed == 0 ? "not yet back to full speed" : $"not back to full speed after {elapsed}s";
+        return $"{elapsedStr} — still at {lastAt}";
     }
 
     private static string Duration(TimeSpan span) =>
