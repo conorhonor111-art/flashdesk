@@ -3578,3 +3578,7 @@ No source changes. Same cycle as v0.4.0-7: releasing v0.4.0-7 advanced PROGRESS.
 commit `2d28e95`, leaving the live exe one doc-only commit behind HEAD. Rebuilt and
 released from `2d28e95`. Uploaded to GitHub (`v0.4.0-8`) and to
 `public_html/dl/FlashDesk.exe` on cPanel (DELE + fresh upload). 162 MB, 100%.
+
+**Check-LiveBuild result:** READY — server serving `2d28e95`, 1 commit behind HEAD but
+doc-only (`3021ff2`, this PROGRESS.md entry), both routes byte-identical
+(`1C3F12B784695464...`). Script gives green light on doc-only gaps.
