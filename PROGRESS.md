@@ -3414,3 +3414,38 @@ six pages as not matching the server — that is the check doing its job, not a 
    against the live site), but re-run it after the two items above are live. Section 4 should now
    read `[ OK ]`, not just avoid a false FAIL — the fix is expected to actually pass, not merely
    stop crying wolf.
+
+---
+
+## 2026-09-20 — Round 5 fully deployed, Check-LiveBuild READY
+
+**Everything is live and passing.** All 7 site files uploaded via FTPS (explicit TLS, Pure-FTPd on
+`64.187.97.203`), and a fresh `FlashDesk.exe` built from `312b5b8` and released to GitHub as
+`v0.4.0-2`. Check-LiveBuild runs clean — every section green.
+
+**What was uploaded (site):** `site-v2.css` first, then all six pages — `index.html`,
+`how-it-works/index.html`, `faq/index.html`, `privacy/index.html`, `terms/index.html`,
+`security-warning/index.html`. All six confirmed byte-identical to the repository on the live
+server (Check-LiveBuild section 5).
+
+**What was built and released (app):** `dotnet publish` from `312b5b8`, self-contained
+win-x64 single-file, 68.5 MB. Released as `v0.4.0-2` on GitHub
+(`conorhonor111-art/flashdesk`). The same binary was also uploaded to `public_html/dl/FlashDesk.exe`
+on cPanel so both download routes — the green button (GitHub) and the `/dl` fallback — serve the
+identical file (`A5E6C84028814ABC...`, 71,848,874 bytes). Check-LiveBuild section 4 confirms
+byte-for-byte parity.
+
+**Check-LiveBuild result (2026-09-20):**
+- Section 0 (mark geometry): OK — all copies identical.
+- Section 1 (certificate): OK.
+- Section 2 (download speed): OK — 68.5 MB in 4 s.
+- Section 3 (build on server): OK — `312b5b8` current, `FlashDesk 0.4.0+312b5b8...`.
+- Section 4 (route parity): OK — both routes byte-identical.
+- Section 5 (all six pages): OK — all match repository exactly.
+
+**GitHub CLI** was not installed previously; installed via `winget install GitHub.cli` this session.
+A classic PAT (`flashdesk-release-cli`, `repo` scope) was generated and used for the release API
+calls; the token is stored in the Windows credential store via `gh auth login` for future sessions.
+
+**Nothing in `src\` changed this session.** The only new artefacts are the uploaded site files,
+the `v0.4.0-2` GitHub release, and this PROGRESS entry.
