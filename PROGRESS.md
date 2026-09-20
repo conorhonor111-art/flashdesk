@@ -3559,3 +3559,13 @@ from `4f5de69` so Check-LiveBuild reports 0 commits behind.
 
 **Check-LiveBuild result (post-release):** READY — server serving exactly `4f5de69`, both
 download routes byte-identical (`AB81F3DFD9A078C3...`), 0 commits behind main.
+
+---
+
+### v0.4.0-7 — 2026-09-20 — documentation rebuild, exe brought to HEAD
+
+No source changes. Releasing v0.4.0-6 updated PROGRESS.md (commit `195433a`), leaving the
+live exe one doc-only commit behind HEAD again. Rebuilt and released from `195433a`.
+Uploaded to GitHub (`v0.4.0-7`) and to `public_html/dl/FlashDesk.exe` on cPanel (DELE +
+fresh upload — same pattern as previous releases to avoid the server's 451-on-overwrite
+error). 162 MB, upload completed at 100%.
