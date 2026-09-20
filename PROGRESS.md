@@ -3591,3 +3591,47 @@ No source changes. Built from this commit to permanently close the update→rebu
 loop: from here on, PROGRESS.md is updated and committed first, then the exe is built from
 that commit and released — no follow-up entry is written for the rebuild itself.
 Released to GitHub (`v0.4.0-10`) and cPanel. 162 MB, 100%.
+
+---
+
+### v0.4.0-11 — 2026-09-20 — BlackScreen feature audit: 9 defects fixed
+
+42-agent ultracode workflow audited all 7 BlackScreen files (19 raw findings, 16 adversarially
+verified, 9 distinct fixes after deduplication). Commit `2615a45`.
+
+**`BlackScreenOverlay.cs`**
+- **Multi-monitor gap (major):** `FormWindowState.Maximized` only covers the primary
+  monitor. Replaced with a `CreateForAllScreens()` static factory that constructs one
+  `BlackScreenOverlay(Screen screen)` per `Screen.AllScreens` entry, each with
+  `StartPosition.Manual`, `Bounds = screen.Bounds`, `WindowState.Normal`. Every display
+  is now blacked out.
+- **Spinner frozen (major):** `SpinnerPanel` uses `ControlStyles.UserPaint` — WinForms
+  never repaints it automatically. The `_spinTimer` tick was updating `Angle` but never
+  calling `Invalidate()`, so the arc was drawn once at 0° and never moved. Fixed by adding
+  `_spinner.Invalidate()` to the tick lambda and backing `Angle` with a field whose setter
+  calls `Invalidate()`.
+- **Alt+F4 escape:** Added `ProcessCmdKey` override (swallows Alt+F4) and `OnFormClosing`
+  override (cancels `UserClosing`) so the person at the client machine cannot dismiss the
+  overlay without the operator's knowledge.
+
+**`MainForm.cs`**
+- Switched `_blackScreenOverlay` (single) to `_blackScreenOverlays[]`; show/close iterates
+  all entries from `CreateForAllScreens()`.
+- Added inner `try/catch` inside the `BeginInvoke` lambda so overlay construction failures
+  are caught on the UI thread rather than becoming unhandled exceptions.
+
+**`ViewerClient.cs`**
+- `IsConnected` backed by `volatile` field — prevents stale cross-thread read bypassing
+  the dead-channel guard (pattern already used for `_latencyMeasured`).
+- `SendBlackScreen` fire-and-forget now passes `_cts?.Token` so it is cancellable on
+  disconnect; `.ContinueWith(...OnlyOnFaulted)` observes the faulted task instead of
+  silently swallowing it.
+
+**`SessionWindow.cs`**
+- `_suppressBlackScreenSend` guard added: `OnDisconnected` sets `Checked = false` without
+  firing `CheckedChanged → SendBlackScreen(false)` on the already-dead connection.
+- `ReconnectAsync` now refreshes `_blackScreen.Visible` and `_showFiles.Visible` from
+  `fresh.HostCapabilities` after every successful reconnect.
+
+`dotnet test`: **306/306** (zero regressions). **Released as `v0.4.0-11`** — built from
+`2615a45`, 162.5 MB, GitHub and cPanel (DELE + fresh upload, 100%).
