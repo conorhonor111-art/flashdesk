@@ -3548,3 +3548,14 @@ person staring at a permanent black screen would be worse than the feature itsel
 `dotnet test`: **306/306** (zero regressions). **Released as `v0.4.0-5`** — built from
 `8d3116c`, uploaded to GitHub and to `public_html/dl/FlashDesk.exe` on cPanel (old copy
 had to be deleted first — server returned 451 on overwrite; DELE + fresh upload worked).
+
+---
+
+### v0.4.0-6 — 2026-09-20 — documentation rebuild, exe brought to HEAD
+
+No source changes. After releasing v0.4.0-5 the PROGRESS.md itself was updated (commit
+`4f5de69`), which left the live exe one doc-only commit behind HEAD. Rebuilt and released
+from `4f5de69` so Check-LiveBuild reports 0 commits behind.
+
+**Check-LiveBuild result (post-release):** READY — server serving exactly `4f5de69`, both
+download routes byte-identical (`AB81F3DFD9A078C3...`), 0 commits behind main.
