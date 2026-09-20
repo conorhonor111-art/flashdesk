@@ -25,10 +25,12 @@ internal sealed class BlackScreenOverlay : Form
     private readonly System.Windows.Forms.Timer _secTimer  = new() { Interval = 1000 };
     private readonly System.Windows.Forms.Timer _spinTimer = new() { Interval = 80   };
 
-    internal BlackScreenOverlay()
+    internal BlackScreenOverlay(Screen screen)
     {
         FormBorderStyle = FormBorderStyle.None;
-        WindowState     = FormWindowState.Maximized;
+        StartPosition   = FormStartPosition.Manual;
+        Bounds          = screen.Bounds;
+        WindowState     = FormWindowState.Normal;   // Maximized ignores explicit Bounds — use Normal
         TopMost         = true;
         BackColor       = Color.Black;
         ShowInTaskbar   = false;
@@ -83,9 +85,16 @@ internal sealed class BlackScreenOverlay : Form
         _secTimer.Tick += OnSecondTick;
         _secTimer.Start();
 
-        _spinTimer.Tick += (_, _) => { _spinner.Angle = (_spinner.Angle + 10) % 360; };
+        _spinTimer.Tick += (_, _) => { _spinner.Angle = (_spinner.Angle + 10) % 360; _spinner.Invalidate(); };
         _spinTimer.Start();
     }
+
+    /// <summary>
+    /// Creates one full-screen overlay per attached display and returns all of them.
+    /// The caller must Show() each one and Dispose() all of them when the feature is toggled off.
+    /// </summary>
+    internal static BlackScreenOverlay[] CreateForAllScreens()
+        => Screen.AllScreens.Select(s => new BlackScreenOverlay(s)).ToArray();
 
     // ─── helpers ─────────────────────────────────────────────────────────
 
@@ -143,12 +152,32 @@ internal sealed class BlackScreenOverlay : Form
         base.Dispose(disposing);
     }
 
+    protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+    {
+        // Swallow Alt+F4 so the person at the host machine cannot dismiss
+        // the overlay with the keyboard. The operator controls lifetime.
+        if ((keyData & (Keys.Alt | Keys.F4)) == (Keys.Alt | Keys.F4))
+            return true;
+        return base.ProcessCmdKey(ref msg, keyData);
+    }
+
+    protected override void OnFormClosing(FormClosingEventArgs e)
+    {
+        if (e.CloseReason == CloseReason.UserClosing)
+        {
+            e.Cancel = true;
+            return;
+        }
+        base.OnFormClosing(e);
+    }
+
     // ── SpinnerPanel ──────────────────────────────────────────────────────
     // Draws a thin rotating arc on a black circle — like the Windows Update spinner.
 
     private sealed class SpinnerPanel : Panel
     {
-        public int Angle { get; set; }
+        private int _angle;
+        public int Angle { get => _angle; set { _angle = value; Invalidate(); } }
 
         public SpinnerPanel()
         {

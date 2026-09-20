@@ -98,6 +98,7 @@ public sealed class SessionWindow : Form
 
     private bool _closingForGood;   // the person pressed Disconnect: do not try to come back
     private bool _reconnecting;
+    private bool _suppressBlackScreenSend;
 
     // One repaint outstanding at a time; frames arriving meanwhile merge into it. See OnFrame.
     private const int MaxPendingTiles = 2048;
@@ -174,7 +175,11 @@ public sealed class SessionWindow : Form
         // Black-screen overlay — gated on the same capability pattern. Checking it locks the
         // client's screen with the Windows Update overlay; unchecking (or disconnecting) removes it.
         _blackScreen.Visible = _client.HostCapabilities.HasFlag(PeerCapabilities.BlackScreen);
-        _blackScreen.CheckedChanged += (_, _) => _client.SendBlackScreen(_blackScreen.Checked);
+        _blackScreen.CheckedChanged += (_, _) =>
+        {
+            if (_suppressBlackScreenSend) return;
+            _client.SendBlackScreen(_blackScreen.Checked);
+        };
         controlsBar.Controls.Add(_blackScreen);
 
         _status.BackColor = Theme.Window;
@@ -320,7 +325,9 @@ public sealed class SessionWindow : Form
             if (_closingForGood || _reconnecting) return;
             _control.Checked = false;
             // The host already closes the overlay on disconnect; uncheck the button so it matches.
+            _suppressBlackScreenSend = true;
             _blackScreen.Checked = false;
+            _suppressBlackScreenSend = false;
             _reconnecting = true;
             _ = ReconnectAsync();
         });
@@ -355,6 +362,8 @@ public sealed class SessionWindow : Form
             // Back in. Swap in the new connection under the same window and picture.
             var old = _client;
             _client = fresh;
+            _blackScreen.Visible = fresh.HostCapabilities.HasFlag(PeerCapabilities.BlackScreen);
+            _showFiles.Visible   = fresh.HostCapabilities.HasFlag(PeerCapabilities.FileBrowsing);
             fresh.ScreenInfoReceived += OnScreenInfo;
             fresh.ScreenStateChanged += OnScreenState;
             fresh.FrameReceived += OnFrame;

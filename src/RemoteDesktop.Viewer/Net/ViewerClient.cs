@@ -39,7 +39,12 @@ public sealed class ViewerClient : IDisposable
     public RateMeter IncomingMeter { get; } = new();
     public double LastLatencyMs { get; private set; }
     private volatile bool _latencyMeasured; // until the first Pong, there is no number to report
-    public bool IsConnected { get; private set; }
+    private volatile bool _isConnected;
+    public bool IsConnected
+    {
+        get => _isConnected;
+        private set => _isConnected = value;
+    }
 
     public event Action<ScreenInfo>? ScreenInfoReceived;
     public event Action<FramePacket>? FrameReceived;
@@ -153,7 +158,11 @@ public sealed class ViewerClient : IDisposable
         if (ch is null || !IsConnected) return;
         // Fire and forget — not awaited. If the link drops, the overlay is closed automatically
         // when the host side detects the disconnection.
-        _ = ch.SendAsync(MessageType.BlackScreen, new byte[] { on ? (byte)1 : (byte)0 }, default);
+        _ = ch.SendAsync(MessageType.BlackScreen, new byte[] { on ? (byte)1 : (byte)0 }, _cts?.Token ?? default)
+             .ContinueWith(
+                 t => { /* ObjectDisposedException: channel was disposed between the null-check and
+                           the send — the connection is already gone, safe to ignore */ },
+                 TaskContinuationOptions.OnlyOnFaulted);
     }
 
     private async Task ReceiveLoopAsync(CancellationToken ct)

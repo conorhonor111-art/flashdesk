@@ -112,10 +112,12 @@ public sealed class MainForm : Form
     private readonly System.Windows.Forms.Timer _timer = new() { Interval = 500 };
 
     /// <summary>
-    /// The black-screen overlay currently visible on this machine, or null when none is showing.
-    /// Created and destroyed on the UI thread in response to <see cref="HostServer.BlackScreenChanged"/>.
+    /// One full-screen overlay per attached display, or null when none are showing.
+    /// Created via <see cref="BlackScreenOverlay.CreateForAllScreens"/> and destroyed on the UI
+    /// thread in response to <see cref="HostServer.BlackScreenChanged"/>. An array so every monitor
+    /// is covered — a single maximised form only covers the primary screen.
     /// </summary>
-    private BlackScreenOverlay? _blackScreenOverlay;
+    private BlackScreenOverlay[]? _blackScreenOverlays;
 
     /// <summary>
     /// Counts this timer's own 500 ms ticks so a checkpoint can be written every few minutes without
@@ -378,20 +380,26 @@ public sealed class MainForm : Form
             {
                 BeginInvoke(() =>
                 {
-                    if (show)
+                    try
                     {
-                        if (_blackScreenOverlay is { IsDisposed: false }) return; // already up
-                        _blackScreenOverlay = new BlackScreenOverlay();
-                        // Clear the reference when the form is closed from any path (including
-                        // a future call with show=false) so the next show creates a fresh one.
-                        _blackScreenOverlay.FormClosed += (_, _) => _blackScreenOverlay = null;
-                        _blackScreenOverlay.Show();
+                        if (show)
+                        {
+                            if (_blackScreenOverlays is { Length: > 0 }) return; // already up
+                            // One overlay per physical screen — a single maximised form only
+                            // covers the primary monitor, leaving secondary monitors unblocked.
+                            _blackScreenOverlays = BlackScreenOverlay.CreateForAllScreens();
+                            foreach (var ov in _blackScreenOverlays)
+                                ov.Show();
+                        }
+                        else
+                        {
+                            if (_blackScreenOverlays is null) return;
+                            foreach (var ov in _blackScreenOverlays)
+                                ov.Close();
+                            _blackScreenOverlays = null;
+                        }
                     }
-                    else
-                    {
-                        _blackScreenOverlay?.Close();
-                        // FormClosed sets it to null; nothing else to do.
-                    }
+                    catch { /* overlay not critical; discard any construction or display failure */ }
                 });
             }
             catch { /* window may be closing; overlay not critical */ }
