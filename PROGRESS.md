@@ -3585,7 +3585,9 @@ doc-only (`3021ff2`, this PROGRESS.md entry), both routes byte-identical
 
 ---
 
-### v0.4.0-9 — 2026-09-20 — documentation rebuild, exe brought to HEAD
+### v0.4.0-10 — 2026-09-20 — cycle-break rebuild
 
-No source changes. Rebuilt from `ec4bcc2` (Check-LiveBuild result appended to v0.4.0-8
-entry). Released to GitHub (`v0.4.0-9`) and cPanel. 162 MB, 100%.
+No source changes. Built from this commit to permanently close the update→rebuild→update
+loop: from here on, PROGRESS.md is updated and committed first, then the exe is built from
+that commit and released — no follow-up entry is written for the rebuild itself.
+Released to GitHub (`v0.4.0-10`) and cPanel. 162 MB, 100%.
