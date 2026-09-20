@@ -84,4 +84,15 @@ public enum MessageType : byte
 
     /// <summary>host -> viewer: what actually happened on the disk. Always sent.</summary>
     FileSendResult = 20,
+
+    // --- Black-screen overlay, added 2026-09-20. ------------------------------------------------
+    // One message, one byte payload: 1 = show, 0 = hide. Viewer -> host only; no reply.
+    // An older host silently ignores it — same silent-drop guarantee as the file messages above.
+
+    /// <summary>
+    /// viewer -> host: show (payload[0] == 1) or hide (payload[0] == 0) the full-screen black
+    /// overlay on the host machine. Used while the operator does sensitive work they do not want
+    /// the person at that screen to watch.
+    /// </summary>
+    BlackScreen = 21,
 }

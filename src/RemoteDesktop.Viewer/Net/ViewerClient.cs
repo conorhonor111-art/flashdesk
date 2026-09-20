@@ -142,6 +142,20 @@ public sealed class ViewerClient : IDisposable
         if (IsConnected) _inputQueue.Writer.TryWrite(e);
     }
 
+    /// <summary>
+    /// Tells the host to show (<paramref name="on"/> = true) or hide (<paramref name="on"/> = false)
+    /// the black-screen overlay on the client's machine. Fire-and-forget: no reply is expected.
+    /// No-op if not connected.
+    /// </summary>
+    public void SendBlackScreen(bool on)
+    {
+        var ch = _channel;
+        if (ch is null || !IsConnected) return;
+        // Fire and forget — not awaited. If the link drops, the overlay is closed automatically
+        // when the host side detects the disconnection.
+        _ = ch.SendAsync(MessageType.BlackScreen, new byte[] { on ? (byte)1 : (byte)0 }, default);
+    }
+
     private async Task ReceiveLoopAsync(CancellationToken ct)
     {
         string reason = "Connection closed by the host.";

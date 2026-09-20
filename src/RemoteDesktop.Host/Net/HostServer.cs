@@ -119,6 +119,15 @@ public sealed class HostServer : IDisposable
     public Action<string>? SessionCheckpointLine;
 
     /// <summary>
+    /// Raised when the viewer requests the black-screen overlay to be shown (true) or hidden
+    /// (false). Also raised with false whenever a viewer disconnects, so the overlay is always
+    /// closed when nobody is connected — a disconnected operator cannot dismiss it, and leaving
+    /// the client staring at a black screen forever would be worse than the thing the overlay
+    /// was protecting.
+    /// </summary>
+    public Action<bool>? BlackScreenChanged;
+
+    /// <summary>
     /// Raised the instant a file transfer ends, with just that transfer's own before/during/after/
     /// recovery lines. See <see cref="EmitTransferCheckpoint"/>. Both of these exist so a session that
     /// never gets a clean close (a crash, Task Manager, a plain kill) still leaves what was known up
@@ -380,6 +389,10 @@ public sealed class HostServer : IDisposable
                 {
                     ViewerConnected = false;
                     _injector?.ReleaseAll(); // never leave a key or button stuck down
+                    // The operator is gone so they can no longer dismiss the overlay themselves.
+                    // Close it now — the person at the client machine must not be left staring at
+                    // a permanent black screen because a link dropped mid-session.
+                    BlackScreenChanged?.Invoke(false);
                     // Start the grace window from the END of the session: that is the moment a
                     // dropped link would need to be resumed from.
                     _lastAcceptedId = paired.PeerId;
@@ -484,7 +497,9 @@ public sealed class HostServer : IDisposable
         // an older host talking to a newer viewer offers nothing rather than failing at the moment
         // the operator clicks — which is why the capability field exists at all.
         await channel.SendAsync(MessageType.Handshake,
-            Handshake.Create(PeerRole.Host, PeerCapabilities.FileBrowsing | PeerCapabilities.FileUpload).ToBytes(),
+            Handshake.Create(PeerRole.Host,
+                PeerCapabilities.FileBrowsing | PeerCapabilities.FileUpload | PeerCapabilities.BlackScreen
+            ).ToBytes(),
             ct).ConfigureAwait(false);
 
         // Send the screen size and force a full first frame for this viewer.
@@ -566,6 +581,11 @@ public sealed class HostServer : IDisposable
                     // but the message is still refused here rather than trusted to that alone.
                     if (!FlashDeskTestMode.ControlDisabled)
                         _injector?.Apply(InputEvent.FromBytes(msg.Value.Payload));
+                    break;
+
+                case MessageType.BlackScreen:
+                    // payload[0] == 1 → show, 0 → hide. An empty payload is treated as hide.
+                    BlackScreenChanged?.Invoke(msg.Value.Payload.Length > 0 && msg.Value.Payload[0] != 0);
                     break;
             }
         }

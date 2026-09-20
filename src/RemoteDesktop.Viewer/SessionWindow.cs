@@ -79,6 +79,14 @@ public sealed class SessionWindow : Form
 
     private FilePanel? _filePanel;
     private readonly ThemedCheckBox _showFiles = new() { Text = "Their files", Margin = new Padding(Theme.S3, Theme.S2, 0, 0) };
+
+    /// <summary>
+    /// Sends the black-screen overlay command to the host when toggled. Only shown when the host
+    /// announced <see cref="PeerCapabilities.BlackScreen"/> in its handshake; an older host that
+    /// would silently drop the message never sees the control at all.
+    /// </summary>
+    private readonly ThemedCheckBox _blackScreen = new() { Text = "Black screen", Margin = new Padding(Theme.S3, Theme.S2, 0, 0) };
+
     private readonly System.Windows.Forms.Timer _timer = new() { Interval = 500 };
 
     private ViewerClient _client;
@@ -162,6 +170,12 @@ public sealed class SessionWindow : Form
         _showFiles.Visible = _client.HostCapabilities.HasFlag(PeerCapabilities.FileBrowsing);
         _showFiles.CheckedChanged += (_, _) => ToggleFilePanel(_showFiles.Checked);
         controlsBar.Controls.Add(_showFiles);
+
+        // Black-screen overlay — gated on the same capability pattern. Checking it locks the
+        // client's screen with the Windows Update overlay; unchecking (or disconnecting) removes it.
+        _blackScreen.Visible = _client.HostCapabilities.HasFlag(PeerCapabilities.BlackScreen);
+        _blackScreen.CheckedChanged += (_, _) => _client.SendBlackScreen(_blackScreen.Checked);
+        controlsBar.Controls.Add(_blackScreen);
 
         _status.BackColor = Theme.Window;
         _statusItem.Font = Theme.Body;
@@ -305,6 +319,8 @@ public sealed class SessionWindow : Form
         {
             if (_closingForGood || _reconnecting) return;
             _control.Checked = false;
+            // The host already closes the overlay on disconnect; uncheck the button so it matches.
+            _blackScreen.Checked = false;
             _reconnecting = true;
             _ = ReconnectAsync();
         });

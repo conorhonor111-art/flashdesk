@@ -112,6 +112,12 @@ public sealed class MainForm : Form
     private readonly System.Windows.Forms.Timer _timer = new() { Interval = 500 };
 
     /// <summary>
+    /// The black-screen overlay currently visible on this machine, or null when none is showing.
+    /// Created and destroyed on the UI thread in response to <see cref="HostServer.BlackScreenChanged"/>.
+    /// </summary>
+    private BlackScreenOverlay? _blackScreenOverlay;
+
+    /// <summary>
     /// Counts this timer's own 500 ms ticks so a checkpoint can be written every few minutes without
     /// a second timer. A plain dead-man's switch for a session with no file transfers at all — see
     /// HostServer.EmitCheckpoint, and PROGRESS.md, 2026-08-27.
@@ -362,6 +368,34 @@ public sealed class MainForm : Form
         // close, and a real session that ended by any other path once left nothing at all.
         _server.SessionCheckpointLine = line => _sessionLog.Checkpoint(line);
         _server.SessionCheckpointBlock = block => _sessionLog.TransferCheckpoint(block);
+
+        // Black-screen overlay. Called from the relay background thread, so marshal to the UI
+        // thread before touching any Form or Control. The show/hide is idempotent: showing when
+        // already shown is a no-op, hiding when already hidden is a no-op.
+        _server.BlackScreenChanged = show =>
+        {
+            try
+            {
+                BeginInvoke(() =>
+                {
+                    if (show)
+                    {
+                        if (_blackScreenOverlay is { IsDisposed: false }) return; // already up
+                        _blackScreenOverlay = new BlackScreenOverlay();
+                        // Clear the reference when the form is closed from any path (including
+                        // a future call with show=false) so the next show creates a fresh one.
+                        _blackScreenOverlay.FormClosed += (_, _) => _blackScreenOverlay = null;
+                        _blackScreenOverlay.Show();
+                    }
+                    else
+                    {
+                        _blackScreenOverlay?.Close();
+                        // FormClosed sets it to null; nothing else to do.
+                    }
+                });
+            }
+            catch { /* window may be closing; overlay not critical */ }
+        };
 
         // A failure to write the session log used to vanish silently — "must never take the session
         // down" was implemented as "say nothing", and a failure that says nothing is indistinguishable

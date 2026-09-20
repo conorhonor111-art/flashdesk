@@ -29,6 +29,13 @@ public enum PeerCapabilities : uint
     /// without the other.
     /// </summary>
     FileUpload = 1 << 1,
+
+    /// <summary>
+    /// This host can display the full-screen black-screen overlay on command. The viewer only
+    /// shows the "Black screen" toggle when this bit is set, so an older host that would silently
+    /// drop the message is never offered the control in the first place.
+    /// </summary>
+    BlackScreen = 1 << 2,
 }
 
 public readonly record struct Handshake(uint Magic, byte Version, PeerRole Role, PeerCapabilities Capabilities)
