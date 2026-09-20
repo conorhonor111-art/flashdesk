@@ -57,7 +57,10 @@ public sealed class FilePanel : UserControl
     private readonly Button _send = Theme.MakeButton("Send a file…", ButtonKind.Neutral);
     private readonly Button _more = Theme.MakeButton("Show more", ButtonKind.Neutral);
     private readonly Button _stop = Theme.MakeButton("Stop", ButtonKind.Destructive);
-    private readonly ProgressBar _progress = new() { Style = ProgressBarStyle.Continuous, Height = 6, Maximum = 1000 };
+    // Hidden until a transfer actually starts — a permanent grey trough at 0 is noise and
+    // suggests something is stalled. Shown on the first real progress callback; hidden again
+    // in EndTransferTracking once the transfer ends (finished, cancelled, or failed).
+    private readonly ProgressBar _progress = new() { Style = ProgressBarStyle.Continuous, Height = 6, Maximum = 1000, Visible = false };
 
     // Feeds SessionWindow's status line — see "Screen is slowed while the file transfers" there.
     // The operator was never told WHY the picture goes soft during a transfer; now measured
@@ -81,6 +84,12 @@ public sealed class FilePanel : UserControl
         AutoSize = false,
         Height = 40,
         Dock = DockStyle.Top,
+        // Without TextAlign the text pins to the top-left corner of the 40 px band and
+        // single-line messages float oddly at the very top edge. MiddleLeft centres them
+        // on the band's vertical axis, matching every other status label in the product.
+        TextAlign = ContentAlignment.MiddleLeft,
+        // Without Padding the text starts at pixel 0 — flush against the panel edge.
+        Padding = new Padding(Theme.S2, 0, Theme.S2, 0),
     };
 
     /// <summary>Where the listing currently is. Empty means the root: the machine's own drives.</summary>
@@ -401,7 +410,6 @@ public sealed class FilePanel : UserControl
         catch (Exception ex) { _status.Text = ex.Message; }
         finally
         {
-            _progress.Value = 0;
             EndTransferTracking();
             _transfer?.Dispose();
             _transfer = null;
@@ -463,7 +471,6 @@ public sealed class FilePanel : UserControl
         catch (Exception ex) { _status.Text = ex.Message; }
         finally
         {
-            _progress.Value = 0;
             EndTransferTracking();
             _transfer?.Dispose();
             _transfer = null;
@@ -526,7 +533,6 @@ public sealed class FilePanel : UserControl
         catch (Exception ex) { _status.Text = ex.Message; }
         finally
         {
-            _progress.Value = 0;
             EndTransferTracking();
             _transfer?.Dispose();
             _transfer = null;
@@ -618,7 +624,6 @@ public sealed class FilePanel : UserControl
         catch (Exception ex) { _status.Text = ex.Message; }
         finally
         {
-            _progress.Value = 0;
             EndTransferTracking();
             _transfer?.Dispose();
             _transfer = null;
@@ -645,6 +650,8 @@ public sealed class FilePanel : UserControl
             IsTransferActive = true;
             _transferStartedAtMs = Environment.TickCount64;
             _status.Text = activeStatusText;
+            // Bytes are now moving — make the bar visible for the first time this transfer.
+            _progress.Visible = true;
         }
 
         if (total <= 0) return;
@@ -667,6 +674,9 @@ public sealed class FilePanel : UserControl
     {
         IsTransferActive = false;
         TransferTimeRemaining = null;
+        // Hide the bar so the idle panel has no trough — it reappears on the next transfer.
+        _progress.Value = 0;
+        _progress.Visible = false;
     }
 
     // ---------------------------------------------------------------- plumbing

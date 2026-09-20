@@ -1,131 +1,243 @@
 <!--PAGE
 SLUG: faq
 LAYOUT: v2
-TITLE: FlashDesk — frequently asked questions
-DESCRIPTION: Real questions people actually ask before letting someone use FlashDesk — is it safe, why Windows warns you, what to do if someone phones claiming to be us.
+TITLE: FAQ — FlashDesk remote support questions answered
+DESCRIPTION: Answers to the questions you actually have before letting someone help you with FlashDesk — is it free, does anything install, why Windows warns you, what your helper can and cannot do, and how to disconnect.
 CANONICAL: https://flashdesk.org/faq/
 -->
-<!-- ============================================================================================
-     ROUND 4 COMPLETION (2026-09-09). Ported onto the v2 components. TWO CONTENT FIXES made while
-     porting, not just restyling — both the exact same category of mistake the round-4 fact-check
-     already caught and fixed on home.html and how-it-works.html, just not yet caught HERE because
-     this page was outside that check's three-file scope:
-       1. The page statement said "Nobody can connect without you pressing Accept — not once, not
-          ever." Same false-as-worded claim as the original home.html pull-quote: HostServer.cs:64
-          sets a 90-second reconnect grace, and :319-332 skips the consent callback entirely for the
-          same caller reconnecting inside it. Replaced with home.html's own now-corrected wording,
-          reused verbatim rather than re-derived, so the same claim reads identically everywhere it
-          appears on the site.
-       2. "Can someone get in without me agreeing?" said "Every incoming connection shows a dialog"
-          — same issue, same fix: the first connection does; a same-caller reconnect within 90
-          seconds does not. "There is no remote way to answer that dialog for you" is untouched and
-          separately true (ConsentDialog.cs:44, InjectedInput.cs — FlashDesk's own remote-control
-          input is blocked from reaching the dialog).
-     Also fixed: the "why does Windows warn me" answer linked to the now-dead /#warnings anchor
-     (that content moved to its own page, /security-warning/, in the original round-4 commit) —
-     repointed to the real address.
 
-     ⚠ CARD GRID WIDTH — a same-day cohesion review caught this page's cards sitting in a narrow,
-     single-column `.contained.prose` (~38rem) while Home/How-it-works's card grids use the full
-     `.contained` (75rem) with `.grid.cols-3`, so FAQ read as "a list in a text column" next to
-     their "a card grid" on every other page — the one real visual seam left once the content
-     itself matched. Widened to the same `.contained` + `.grid.cols-3` pattern; no new CSS, same
-     component every other page already uses. Deliberately still WITHOUT icon-tiles, same reasoning
-     as privacy.html's own comment: these are Q&A pairs of uneven length, not the parallel-checklist
-     shape icon-tile was built for.
-     ============================================================================================ -->
-
+<!-- ────────────────────────────────────────────────────────────────────────────
+     HERO — page title and lead
+     ──────────────────────────────────────────────────────────────────────────── -->
 <section class="band band-paper">
   <div class="contained prose">
     <h1>Frequently asked questions</h1>
-    <p class="lead">Not the questions a product page usually answers — the ones a person actually
-    has, sitting in front of the download.</p>
+    <p class="lead">Straightforward answers to the questions people actually ask before
+    letting someone use FlashDesk on their computer.</p>
   </div>
 </section>
 
-<section class="band band-alt">
+<!-- ────────────────────────────────────────────────────────────────────────────
+     CONSENT STATEMENT — the one thing that matters most, stated plainly
+     ──────────────────────────────────────────────────────────────────────────── -->
+<section class="band band-alt" aria-label="Key fact">
   <div class="contained">
-    <p class="statement">The first time anyone connects, a human has to press Accept. There is no
-    way around it, and no way to do it for them.</p>
+    <p class="statement">The first time anyone connects, a human has to press Accept.
+    There is no way around it, and no way to do it for them.</p>
   </div>
 </section>
 
-<section class="band band-paper">
+<!-- ────────────────────────────────────────────────────────────────────────────
+     FAQ ACCORDIONS — three groups: Safety, Privacy, Technical
+     Each <details> is keyboard- and screen-reader-accessible:
+       - <summary> is focusable and activatable with Space or Enter
+       - aria-expanded is managed natively by the <details> element
+       - No JavaScript required
+     ──────────────────────────────────────────────────────────────────────────── -->
+<section class="band band-paper" aria-labelledby="faq-heading">
   <div class="contained">
-    <div class="grid cols-3 mt-6">
-      <div class="card">
-        <h3>Is this safe?</h3>
-        <p>The download itself is unsigned software from a small, one-person project, so Windows
-        and your browser both warn you about it — that part is normal and explained on the
-        <a class="inline-link" href="/">home page</a>. Once it is running, the session itself has
-        real limits built in: nobody can connect without you pressing Accept the first time, a
-        coloured strip stays on your screen for as long as anyone is connected and cannot be hidden
-        by the other side, and you can end it with one click at any moment. Read
-        <a class="inline-link" href="/how-it-works/">how a session actually works</a> for the full
-        list of what is and is not possible.</p>
-        <p>The one thing no software can protect you from is being talked into pressing Accept for
-        someone who should not have it. That is what the warning on the
-        <a class="inline-link" href="/">home page</a> and the line at the bottom of every page are
-        for.</p>
-      </div>
+    <h2 id="faq-heading" class="sr-only">All questions</h2>
 
-      <div class="card">
-        <h3>Why does Windows warn me when I open it?</h3>
-        <p>Windows Defender SmartScreen warns about software it has not seen many people run
-        before, and it has not been paid to attach a verified publisher name to the file (that
-        costs money every year and buys reputation over time, not on day one — it has not been
-        bought). New and unrecognised are not the same thing as dangerous, but Windows cannot tell
-        the difference from the file alone, so it warns about both. The exact screens you will see,
-        word for word, are on the
-        <a class="inline-link" href="/security-warning/">security warning page</a>.</p>
-      </div>
+    <!-- ── GROUP 1: Safety ─────────────────────────────────────────────── -->
+    <div class="faq-section" aria-labelledby="faq-safety-label">
+      <span class="faq-section-label" id="faq-safety-label">Safety</span>
+      <div class="faq-list" role="list">
 
-      <div class="card">
-        <h3>Can they see my screen when nobody is connected?</h3>
-        <p>No. FlashDesk only captures and sends your screen while a session is live — after
-        someone has connected and you have pressed Accept. There is no background service and
-        nothing runs after you close the program.</p>
-      </div>
+        <details class="faq-item" role="listitem">
+          <summary>Is FlashDesk free?</summary>
+          <div class="faq-answer">
+            <p>Yes, completely free. There is no subscription, no payment at any point, and no
+            feature locked behind a trial. The download, the relay connection, and every session
+            are all free.</p>
+          </div>
+        </details>
 
-      <div class="card">
-        <h3>Can someone get in without me agreeing?</h3>
-        <p>No. The first time someone connects, FlashDesk shows a dialog with the caller's number
-        and an Accept / Reject choice, and it defaults to Reject if left alone. If a connection
-        drops and the same caller reconnects within 90 seconds, that resumes without asking again
-        — a different caller is always asked. There is no remote way to answer that dialog for
-        you: FlashDesk's own remote-control input is blocked from reaching it while it is open.</p>
-      </div>
+        <details class="faq-item" role="listitem">
+          <summary>Do I need to install anything?</summary>
+          <div class="faq-answer">
+            <p>No. FlashDesk is a single .exe file — double-click it and it runs immediately.
+            Nothing is added to Windows, no admin password is asked, and nothing stays behind after
+            you close it. The next time you need it, open the same file again.</p>
+          </div>
+        </details>
 
-      <div class="card">
-        <h3>How do I stop it?</h3>
-        <p>Click Disconnect on the strip that stays on your screen the whole time someone is
-        connected, or just close the FlashDesk window. Either one ends the session immediately.</p>
-      </div>
+        <details class="faq-item" role="listitem">
+          <summary>Do I need to create an account?</summary>
+          <div class="faq-answer">
+            <p>No account, no sign-in, no email address, no registration of any kind. You open
+            the file and it gives you a 9-digit number. That number is what your helper connects
+            to. When you close FlashDesk, the number is gone.</p>
+          </div>
+        </details>
 
-      <div class="card">
-        <h3>Does it install anything?</h3>
-        <p>No. It is one file you double-click. Nothing is added to Windows, no admin password is
-        asked for to run it, and closing the window removes it from memory completely — the next
-        time you want to use it, you open the same file again.</p>
-      </div>
+        <details class="faq-item" role="listitem">
+          <summary>Why does Windows say it might be unsafe?</summary>
+          <div class="faq-answer">
+            <p>Windows Defender SmartScreen warns about software it has not seen many people run
+            before. It also warns about software from publishers who have not paid for an annual
+            verified-publisher certificate. FlashDesk is a small, one-person project that has not
+            bought one. New and unrecognised are not the same as dangerous, but Windows cannot tell
+            the difference from the file alone, so it warns about both.</p>
+            <p>The exact screens you will see — word for word, with instructions for getting past
+            them safely — are on the
+            <a class="inline-link" href="/security-warning/">security warning page</a>.</p>
+          </div>
+        </details>
 
-      <div class="card">
-        <h3>Is it free?</h3>
-        <p>Yes.</p>
-      </div>
+        <details class="faq-item" role="listitem">
+          <summary>Is this safe?</summary>
+          <div class="faq-answer">
+            <p>The session itself has real, built-in limits: nobody can connect without you pressing
+            Accept the first time, a coloured strip stays on your screen for as long as anyone is
+            connected and cannot be hidden by the other side, and you can end the session with one
+            click at any moment.</p>
+            <p>The one thing no software can protect you from is being talked into pressing Accept
+            for someone who should not have it. Read
+            <a class="inline-link" href="/how-it-works/">how a session actually works</a> for the
+            full list of what is and is not possible.</p>
+          </div>
+        </details>
 
-      <div class="card">
-        <h3>What do I do if someone phones claiming to be from FlashDesk?</h3>
-        <p><strong>Hang up.</strong> FlashDesk does not make outbound calls to anyone, ever. There
-        is no support line that calls you, no "security team" that reaches out first. If a call
-        like that happens, it is not us — see the line at the bottom of every page on this site.</p>
+        <details class="faq-item" role="listitem">
+          <summary>Can someone get in without me agreeing?</summary>
+          <div class="faq-answer">
+            <p>No. The first time someone connects, FlashDesk shows a dialog with the caller's
+            9-digit number and an Accept / Reject choice. It defaults to Reject if you leave it
+            alone.</p>
+            <p>If a connection drops and the same caller reconnects within 90 seconds — for example
+            because the network hiccupped — that resumes without asking again. A different caller
+            is always asked. There is no remote way to answer that dialog for you: FlashDesk's own
+            remote-control input is blocked from reaching it while it is open.</p>
+          </div>
+        </details>
+
+        <details class="faq-item" role="listitem">
+          <summary>What can my helper do on my computer?</summary>
+          <div class="faq-answer">
+            <p>They can see your screen, move the mouse, type, and open programs — the same things
+            you can do yourself. They cannot do anything you could not undo: they cannot delete
+            files permanently without your password, cannot install software silently, and cannot
+            stay connected after you close FlashDesk.</p>
+            <p>You can see everything they do in real time, and you can take back control at any
+            moment by clicking your mouse or typing. You are never locked out of your own computer
+            while a session is live.</p>
+          </div>
+        </details>
+
+        <details class="faq-item" role="listitem">
+          <summary>How do I disconnect?</summary>
+          <div class="faq-answer">
+            <p>Click Disconnect on the amber strip that stays on your screen the whole time someone
+            is connected. Or simply close the FlashDesk window. Either one ends the session
+            immediately — there is no confirmation step, and nothing continues running afterwards.</p>
+          </div>
+        </details>
+
+        <details class="faq-item" role="listitem">
+          <summary>What do I do if someone phones claiming to be from FlashDesk?</summary>
+          <div class="faq-answer">
+            <p><strong>Hang up.</strong> FlashDesk does not make outbound calls to anyone, ever.
+            There is no support line that calls you first, no "security team" that reaches out, no
+            "account alert" that requires a callback. If a call like that happens, it is not
+            us — it is a scam. You can see the warning at the bottom of every page on this site.</p>
+          </div>
+        </details>
+
       </div>
+    </div>
+
+    <!-- ── GROUP 2: Privacy ────────────────────────────────────────────── -->
+    <div class="faq-section" aria-labelledby="faq-privacy-label">
+      <span class="faq-section-label" id="faq-privacy-label">Privacy</span>
+      <div class="faq-list" role="list">
+
+        <details class="faq-item" role="listitem">
+          <summary>Can my helper see my screen after the call?</summary>
+          <div class="faq-answer">
+            <p>No. FlashDesk only captures and sends your screen while a session is live — after
+            someone has connected and you have pressed Accept. There is no background service, and
+            nothing runs after you close the program. Once you close FlashDesk, your screen is
+            yours alone.</p>
+          </div>
+        </details>
+
+        <details class="faq-item" role="listitem">
+          <summary>Is my screen being recorded?</summary>
+          <div class="faq-answer">
+            <p>No. FlashDesk does not record sessions. It streams your screen to your helper in
+            real time, but it does not save that stream anywhere — not on your computer, not on the
+            relay server, and not on any FlashDesk system. When the session ends, nothing of it
+            remains.</p>
+          </div>
+        </details>
+
+        <details class="faq-item" role="listitem">
+          <summary>What data does FlashDesk collect?</summary>
+          <div class="faq-answer">
+            <p>Only what is strictly necessary to route the connection between your computer and
+            your helper's. That means the two 9-digit IDs involved in a session and basic
+            connection metadata (timing, bandwidth). No account is created, no name is stored, no
+            browsing or screen content is retained after the session ends.</p>
+            <p>For the full detail, see the
+            <a class="inline-link" href="/privacy/">privacy page</a>.</p>
+          </div>
+        </details>
+
+      </div>
+    </div>
+
+    <!-- ── GROUP 3: Technical ──────────────────────────────────────────── -->
+    <div class="faq-section" aria-labelledby="faq-technical-label">
+      <span class="faq-section-label" id="faq-technical-label">Technical</span>
+      <div class="faq-list" role="list">
+
+        <details class="faq-item" role="listitem">
+          <summary>What Windows versions does this support?</summary>
+          <div class="faq-answer">
+            <p>Windows 10 and Windows 11. Both 32-bit and 64-bit editions are supported. No
+            additional software, runtime, or framework needs to be installed first.</p>
+          </div>
+        </details>
+
+        <details class="faq-item" role="listitem">
+          <summary>Does FlashDesk work over the internet?</summary>
+          <div class="faq-answer">
+            <p>Yes. FlashDesk routes connections through a relay server, so your helper does not
+            need to know your IP address, and you do not need to open any ports or change your
+            router settings. If you can browse the web, FlashDesk can connect.</p>
+          </div>
+        </details>
+
+      </div>
+    </div>
+
+    <!-- ── SCAM WARNING CALLOUT ────────────────────────────────────────── -->
+    <!-- Anti-scam wording — kept consistent with footer wording per site policy -->
+    <aside class="scam" role="note" aria-label="Scam warning" style="margin-top: var(--sp-7);">
+      <p><strong>FlashDesk will never telephone you.</strong> If someone calls claiming to be us,
+      hang up. Legitimate remote-support sessions only ever start with you downloading FlashDesk
+      yourself — not because someone told you to in an unsolicited call.</p>
+    </aside>
+
+  </div>
+</section>
+
+<!-- ────────────────────────────────────────────────────────────────────────────
+     CTA BAND — download prompt and support contact
+     ──────────────────────────────────────────────────────────────────────────── -->
+<section class="band band-alt" aria-label="Download FlashDesk">
+  <div class="contained">
+    <div class="cta-band-inner">
+      <p class="lead">Ready to get help?</p>
+      <a class="btn btn-primary" href="https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe">
+        <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+        Download FlashDesk — free, 70 MB
+      </a>
+      <p class="meta">
+        Still have questions?
+        <a class="inline-link" href="mailto:support@flashdesk.org">support@flashdesk.org</a>
+      </p>
     </div>
   </div>
 </section>
 
-<section class="band band-alt">
-  <div class="contained prose">
-    <p><a class="inline-link" href="/">&larr; Back to the download page</a></p>
-  </div>
-</section>

@@ -34,6 +34,11 @@ public sealed class ConsentDialog : Form
     // which turned a deliberate pause into an apparently broken button — and a person who jabs at a
     // dead button clicks the instant it lights, producing a MORE reflexive Accept than no delay at
     // all. That is the opposite of what the delay is for.
+    //
+    // Font is now promoted to Theme.Heading (semibold 12pt) while Accept is locked — the line
+    // "Read this first. Accept unlocks in N seconds." must visually dominate the dialog so that the
+    // reason for the wait is unmistakable rather than a footnote. Once Accept unlocks, it drops back
+    // to Theme.Body: the remaining countdown is important but not as urgent as the locked warning.
     /// <summary>
     /// Alive for exactly as long as this window is. While it exists, FlashDesk's own injected mouse
     /// and keyboard events cannot reach any window on this thread — so the remote operator cannot
@@ -101,12 +106,22 @@ public sealed class ConsentDialog : Form
         // person is matching it against a number their helper gave them before the call. Display
         // size, not Hero — the size gap between this and their own number is the only cue that
         // says which is which.
+        //
+        // Centre-aligned (2026-09-20): AutoSize = true with no TextAlign and no Left+Right anchor
+        // produced a shrink-wrapped left-flushed label — the number read as incidental debris rather
+        // than the main thing to inspect. AutoSize = false + Anchor L+R fills the column width;
+        // TextAlign = MiddleCenter makes the digit string sit in the middle of that space.
+        // Height is fixed at 56px: ~2× the em-height of DisplayStrong at 100% DPI, leaving the
+        // number visual breathing room without requiring auto-layout negotiation.
         var who = new Label
         {
             Text = FlashDeskId.Format(callerId),
             Font = Theme.DisplayStrong,
             ForeColor = Theme.TextPrimary,
-            AutoSize = true,
+            AutoSize = false,
+            Anchor = AnchorStyles.Left | AnchorStyles.Right,
+            TextAlign = ContentAlignment.MiddleCenter,
+            Height = 56,
             Margin = new Padding(0, 0, 0, Theme.S1),
         };
         root.Controls.Add(who);
@@ -215,11 +230,28 @@ public sealed class ConsentDialog : Form
 
     private void UpdateCountdown()
     {
+        // While Accept is locked the countdown carries the whole explanation for why the button
+        // is unavailable, so it must compete with nothing in the window. Theme.Heading (semibold
+        // 12pt) gives it visual dominance; once the lock lifts the message demotes itself back to
+        // Theme.Body — it is still important (a person should know a timeout is pending) but it no
+        // longer needs to shout.
+        //
+        // Font swap is safe: WinForms does not dispose externally-assigned Font instances when a
+        // new value is set — only fonts the control itself created internally are freed that way.
+        // Theme.Heading and Theme.Body are shared statics and outlive every dialog instance.
+        //
         // "…" after a bare number read as a glitch rather than as a countdown, and "refused" alone
         // sounded like a failure the person had caused rather than the safe outcome it is.
-        _countdown.Text = _acceptUnlocksIn > 0
-            ? $"Read this first. Accept unlocks in {_acceptUnlocksIn} seconds."
-            : $"If you do nothing, this is refused in {_secondsLeft} seconds — nobody gets in.";
+        if (_acceptUnlocksIn > 0)
+        {
+            _countdown.Font = Theme.Heading;  // semibold — demands to be read while Accept is locked
+            _countdown.Text = $"Read this first. Accept unlocks in {_acceptUnlocksIn} seconds.";
+        }
+        else
+        {
+            _countdown.Font = Theme.Body;     // back to body once the decision is available
+            _countdown.Text = $"If you do nothing, this is refused in {_secondsLeft} seconds — nobody gets in.";
+        }
     }
 
     private void Finish(bool accepted, ConsentAnswerMethod how)

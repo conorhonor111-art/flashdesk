@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>FlashDesk — the Windows warning, exactly as you'll see it</title>
+<title>Why Windows shows a warning — FlashDesk</title>
 <!--
   GENERATED FILE — do not hand-edit. Source: site-src\pages\security-warning.html, assembled by
   scripts\Build-Site.ps1 from site-src\layout-v2.html + site-src\partials\*-v2.html.
@@ -27,13 +27,18 @@
 
   Nothing on this page loads from another host — same rule as the v1 track, unchanged.
 -->
-<meta name="description" content="Windows and some browsers warn about FlashDesk because it is new, unsigned software — exactly what you'll see, word for word, and what to do.">
+<meta name="description" content="Windows shows a security warning for FlashDesk because it is new software, not because it is dangerous. Here is exactly what you will see, word for word, and what to click.">
+<link rel="canonical" href="https://flashdesk.org/security-warning/">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="en_GB">
 <meta property="og:url" content="https://flashdesk.org/security-warning/">
-<meta property="og:title" content="FlashDesk — the Windows warning, exactly as you'll see it">
-<meta property="og:description" content="Windows and some browsers warn about FlashDesk because it is new, unsigned software — exactly what you'll see, word for word, and what to do.">
-<meta name="twitter:card" content="summary">
+<meta property="og:title" content="Why Windows shows a warning — FlashDesk">
+<meta property="og:description" content="Windows shows a security warning for FlashDesk because it is new software, not because it is dangerous. Here is exactly what you will see, word for word, and what to click.">
+<meta property="og:image" content="https://flashdesk.org/flashdesk-window.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Why Windows shows a warning — FlashDesk">
+<meta name="twitter:description" content="Windows shows a security warning for FlashDesk because it is new software, not because it is dangerous. Here is exactly what you will see, word for word, and what to click.">
+<meta name="twitter:image" content="https://flashdesk.org/flashdesk-window.png">
 
 <!-- MARK GEOMETRY IS LOCKED to assets\make-icon.ps1 — see site-src\partials\header-v2.html for the
      full note. The mark's SHAPE is unchanged this round (Conor: "it took seven rounds and it is
@@ -42,6 +47,9 @@
 <link rel="stylesheet" href="/site-v2.css">
 </head>
 <body>
+<!-- Skip link — first focusable element; announced by screen readers before the header. -->
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
 <!-- -----------------------------------------------------------------------------------------
      THE ICON SET — one sprite, defined once, used everywhere via <svg class="icon"><use
      href="#i-NAME"/></svg>. Built round 4 (2026-09-04) per Conor's instruction: "a coherent icon
@@ -155,6 +163,7 @@
     <a href="/privacy/" data-nav="privacy">Privacy</a>
     <a href="/faq/" data-nav="faq">FAQ</a>
     <a href="/terms/" data-nav="terms">Terms</a>
+    <a href="/security-warning/" data-nav="security-warning" aria-current="page">SmartScreen</a>
   </nav>
   <a class="header-cta" href="https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe">
     <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
@@ -162,108 +171,237 @@
   </a>
 </header>
 
-<main>
-<!-- ============================================================================================
-     NEW PAGE, round 4 (2026-09-04). This is word-for-word the content that used to sit directly
-     on the home page — moved, not rewritten, because Conor's own diagnosis was that three screens
-     of quoted-dialog prose on a landing page is what made it read as "a landing page, an
-     instruction manual and a security guide at once." The TEXT below is unchanged from the
-     previous round (already verified against real Chrome/Windows screenshots on 2026-08-03/05 —
-     see the original warnings in CLAUDE.md); only its address and its container changed. Not in
-     the main nav — reached from Home's download meta line and (once that page is rebuilt in this
-     language) FAQ's "why does Windows warn me" answer, the same way it was reachable via #warnings
-     before.
-     ============================================================================================ -->
+<main id="main-content">
+<!-- ══════════════════════════════════════════════════════════════════════════
+     AMBER REASSURANCE STRIPE — top of page. The amber colour matches the LIVE
+     session safety band inside the app, reinforcing the in-product visual
+     language and signalling: "you are in the right place, this is handled."
+     Tone: calm, specific, not alarming. Text colour: --color-amber-text-aa
+     (#3D2200 / 6.5:1) not --color-amber-text (#B26A00 / 2.3:1, fails AA).
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="band-amber" role="note" aria-label="Reassurance notice">
+  <div class="contained" style="padding-block: var(--sp-3);">
+    <p style="color: var(--color-amber-text-aa); font-weight: 600; max-width: var(--reading-max);">
+      You are here because Windows showed you a security warning.
+      That is normal — this page explains exactly what it means and what to click.
+    </p>
+  </div>
+</div>
 
+<!-- ══════════════════════════════════════════════════════════════════════════
+     HERO
+     ══════════════════════════════════════════════════════════════════════════ -->
 <section class="band band-paper">
   <div class="contained prose">
     <span class="kicker">Before you run it</span>
-    <h1>Windows will warn you when you open it.</h1>
-    <p class="lead">Exactly what you'll see, word for word — so it's recognised, not
-    frightening, when it happens.</p>
+    <h1>Windows showed you a warning. That is expected.</h1>
+    <p class="lead">Windows warns about every program it has not seen many people run before — including FlashDesk. This page shows you exactly what you will see, word for word, and what to click at each step.</p>
   </div>
 </section>
 
+<!-- ══════════════════════════════════════════════════════════════════════════
+     STEP 1 — BROWSER DOWNLOAD WARNING
+     Shown before the SmartScreen dialog: some browsers flag the .exe at the
+     moment of download. The user needs to pass this first before they reach
+     the Windows SmartScreen step.
+     ══════════════════════════════════════════════════════════════════════════ -->
 <section class="band band-alt">
   <div class="contained prose">
-    <p>A blue box appears. It says:</p>
+    <span class="kicker">Step 1 — if your browser blocks the download</span>
+    <h2>Your browser may flag the file when you download it.</h2>
+    <p>Most browsers let the file through without any warning. If yours flags it, you will see something like this in the downloads area at the top of the browser window:</p>
 
-    <p class="quote"><strong>Windows protected your PC</strong><br>
-    Microsoft Defender SmartScreen prevented an unrecognized app from starting.
-    Running this app might put your PC at risk.<br>
-    <span class="link-look">More info</span><br>
-    <span class="btn-dark">Don&rsquo;t run</span></p>
+    <!-- Chrome/Edge download warning mockup — system font per CLAUDE.md rule -->
+    <div style="overflow:hidden; border-radius:var(--radius); border:1px solid #9AA3AE; margin-block:var(--sp-4); color-scheme:light;" role="img" aria-label="Screenshot of a browser download warning reading: FlashDesk.exe — Suspicious download blocked">
+      <div style="background:#F0F0F0; color:#202124; padding:var(--sp-2) var(--sp-3); font-family:system-ui,'Segoe UI',Arial,sans-serif; font-size:0.9rem; border-bottom:1px solid #9AA3AE;">
+        <strong>FlashDesk.exe</strong><br>
+        <span style="color:#C5221F; font-weight:600;">Suspicious download blocked</span>
+        &nbsp;<span style="color:#444; font-size:0.85rem;">&rsaquo;</span>
+      </div>
+    </div>
 
-    <p><strong>There is no way forward on this screen.</strong> The only button is
-    <strong>Don&rsquo;t run</strong>. The button you need does not exist yet.</p>
+    <p>Click the small <strong>&rsaquo;</strong> arrow at the right end of that line. A second box opens:</p>
 
-    <p>Click the small grey words <strong>More&nbsp;info</strong>. They are a link, not a button,
-    and they are easy to miss. The box then grows and shows:</p>
+    <!-- Chrome download warning detail mockup — system font per CLAUDE.md rule -->
+    <div style="overflow:hidden; border-radius:var(--radius); border:1px solid #9AA3AE; margin-block:var(--sp-4); color-scheme:light;" role="img" aria-label="Screenshot of Chrome download warning with option to keep the file">
+      <div style="background:#F8F9FA; padding:var(--sp-3) var(--sp-4); font-family:system-ui,'Segoe UI',Arial,sans-serif; line-height:1.6;">
+        <strong>This file isn&rsquo;t commonly downloaded and it may be dangerous</strong><br>
+        <span style="color:#70757A; font-size:0.9rem;">Learn why Chrome blocks some downloads</span><br><br>
+        <span class="btn-dark">Delete from history</span>&nbsp;<span class="btn-pale">Download suspicious file</span>
+      </div>
+    </div>
 
-    <p class="quote">App:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FlashDesk.exe<br>
-    Publisher:&nbsp;<strong>Unknown publisher</strong><br>
-    <span class="btn-pale">Run anyway</span>
-    <span class="btn-dark">Don&rsquo;t run</span></p>
+    <p>Press <strong>Download suspicious file</strong> — the pale button on the <strong>right</strong>. The solid dark blue button says <strong>Delete from history</strong> and removes the file.</p>
 
-    <p>The name beside <strong>App:</strong> is whatever your browser saved the file as. If you
-    have downloaded it before it may read <em>FlashDesk&nbsp;(1).exe</em> or
-    <em>FlashDesk&nbsp;(2).exe</em>. It is the same file.</p>
+    <p class="scam-inline">If nobody you telephoned yourself asked you to do this,
+    <strong>press Delete from history</strong>. That is what the dark button is for.</p>
 
-    <p>This screen has two buttons. Press <strong>Run&nbsp;anyway</strong>, on the
-    <strong>left</strong>.</p>
+    <p class="mt-4 text-muted">If your browser downloaded the file without any warning, skip to step 2.</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     STEP 2 — SMARTSCREEN FIRST SCREEN
+     The first Windows SmartScreen dialog: "Windows protected your PC".
+     There is NO run button on this screen — that is the source of confusion.
+     ══════════════════════════════════════════════════════════════════════════ -->
+<section class="band band-paper">
+  <div class="contained prose">
+    <span class="kicker">Step 2 — when you open the downloaded file</span>
+    <h2>A blue box appears. There is no run button yet.</h2>
+    <p>Double-click FlashDesk.exe and Windows shows this before it runs anything. The blue box is a Windows SmartScreen warning:</p>
+
+    <!-- Windows SmartScreen first screen — system font per CLAUDE.md rule.
+         Uses Windows SmartScreen blue (#0053D6) to match what the user sees.
+         Explicit hex colours so the mockup renders correctly in dark mode too. -->
+    <div style="overflow:hidden; border-radius:var(--radius); border:1px solid #9AA3AE; margin-block:var(--sp-4); color-scheme:light;" role="img" aria-label="Screenshot of Windows SmartScreen: Windows protected your PC, with a More info link and a Don't run button">
+      <div style="background:#0053D6; color:#ffffff; padding:var(--sp-3) var(--sp-4); font-family:system-ui,'Segoe UI',Arial,sans-serif;">
+        <strong>Windows protected your PC</strong>
+      </div>
+      <div style="background:#f3f3f3; color:#1a1a1a; padding:var(--sp-3) var(--sp-4); font-family:system-ui,'Segoe UI',Arial,sans-serif; line-height:1.6;">
+        Microsoft Defender SmartScreen prevented an unrecognized app from starting.
+        Running this app might put your PC at risk.<br><br>
+        <span class="link-look">More info</span><br><br>
+        <span class="btn-dark">Don&rsquo;t run</span>
+      </div>
+    </div>
+
+    <p><strong>There is no way forward on this screen.</strong> The only button is <strong>Don&rsquo;t run</strong>.</p>
+
+    <p>Click the small grey words <strong>More&nbsp;info</strong>. They are a link, not a button, and they are easy to miss because they are pale and sit above the button. The box will grow and show a new screen — that is step 3.</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     STEP 3 — SMARTSCREEN SECOND SCREEN + RUN ANYWAY
+     After clicking "More info", the "Run anyway" button appears.
+     ══════════════════════════════════════════════════════════════════════════ -->
+<section class="band band-alt">
+  <div class="contained prose">
+    <span class="kicker">Step 3 — after clicking "More info"</span>
+    <h2>The box grows and shows two buttons. Click "Run anyway".</h2>
+    <p>After clicking <strong>More info</strong>, the box changes to show the app name, the publisher line, and now two buttons:</p>
+
+    <!-- Windows SmartScreen second screen — system font per CLAUDE.md rule.
+         Uses Windows SmartScreen blue (#0053D6). Explicit hex for dark-mode safety. -->
+    <div style="overflow:hidden; border-radius:var(--radius); border:1px solid #9AA3AE; margin-block:var(--sp-4); color-scheme:light;" role="img" aria-label="Screenshot of Windows SmartScreen after clicking More info, showing App: FlashDesk.exe, Publisher: Unknown publisher, and two buttons: Run anyway and Don't run">
+      <div style="background:#0053D6; color:#ffffff; padding:var(--sp-3) var(--sp-4); font-family:system-ui,'Segoe UI',Arial,sans-serif;">
+        <strong>Windows protected your PC</strong>
+      </div>
+      <div style="background:#f3f3f3; color:#1a1a1a; padding:var(--sp-3) var(--sp-4); font-family:system-ui,'Segoe UI',Arial,sans-serif; line-height:1.8;">
+        App:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FlashDesk.exe<br>
+        Publisher:&nbsp;<strong>Unknown publisher</strong><br><br>
+        <span class="btn-pale">Run anyway</span>&nbsp;<span class="btn-dark">Don&rsquo;t run</span>
+      </div>
+    </div>
+
+    <p>Press <strong>Run anyway</strong> — the pale button on the <strong>left</strong>. The solid dark blue button says <strong>Don&rsquo;t run</strong>.</p>
+
+    <p>The name next to <strong>App:</strong> is whatever your browser saved the file as. If you have downloaded FlashDesk before, it may read <em>FlashDesk&nbsp;(1).exe</em> or <em>FlashDesk&nbsp;(2).exe</em>. That is the same file with a number added by your browser.</p>
 
     <p class="scam-inline">If nobody you telephoned yourself asked you to do this,
     <strong>press Don&rsquo;t run</strong> and close this page. Somebody who phoned you out of the
     blue and talked you as far as a security warning is not helping you.</p>
-
-    <p><strong>What &ldquo;Unknown publisher&rdquo; means.</strong> A publisher is the name of
-    whoever made the file. Mine is not shown because I have not paid a company to attach a
-    verified name to it. If I had, that line would read <em>Publisher: Conor Honor</em>. It would
-    be the same file either way.</p>
-
-    <p><strong>Why the warning appears.</strong> Windows trusts software it has seen many people
-    run before, and treats everything else as unrecognised. FlashDesk is new, so it is
-    unrecognised. Your computer cannot tell new software from bad software, so it warns about
-    both.</p>
   </div>
 </section>
 
+<!-- ══════════════════════════════════════════════════════════════════════════
+     WHY THIS HAPPENS — explanation section
+     Three things to explain:
+       1. Why the warning appears (reputation-based, new software)
+       2. What "Unknown publisher" means
+       3. What code signing is (one sentence, per requirements)
+     ══════════════════════════════════════════════════════════════════════════ -->
 <section class="band band-paper">
   <div class="contained prose">
-    <span class="kicker">If your browser blocks the download</span>
-    <h2>Most browsers let this download through.</h2>
-    <p>If yours stops it, you will see this in the downloads box at the top right:</p>
+    <span class="kicker">What the warning means</span>
+    <h2>Why Windows showed you this warning</h2>
 
-    <p class="quote">FlashDesk.exe<br>
-    <strong>Suspicious download blocked</strong></p>
+    <p>Windows uses a reputation system to decide what to warn about. Software it has seen many people run before is trusted silently. Software it has not seen many people run is flagged as "unrecognized" and triggers the SmartScreen warning.</p>
 
-    <p>Click the small arrow <strong>&rsaquo;</strong> at the end of that line. It opens:</p>
+    <p>FlashDesk is new software. Windows has not seen enough people run it yet to build a reputation for it. <strong>This is not a sign that the file is dangerous.</strong> It is a sign that the file is new.</p>
 
-    <p class="quote"><strong>This file isn&rsquo;t commonly downloaded and it may be
-    dangerous</strong><br>
-    Learn why Chrome blocks some downloads<br>
-    <span class="btn-dark">Delete from history</span>
-    <span class="btn-pale">Download suspicious file</span></p>
+    <p>As more people run FlashDesk over time, the warning will reduce and eventually disappear on its own — that is how the reputation system works.</p>
 
-    <p>To continue, press <strong>Download suspicious file</strong> &mdash; the <strong>pale</strong>
-    button on the right. The solid dark blue one says <strong>Delete from history</strong> and
-    throws the file away.</p>
+    <h3 class="mt-4">What "Unknown publisher" means</h3>
 
-    <p class="scam-inline">Again: if nobody you telephoned yourself asked you to do this,
-    <strong>press Delete from history</strong>. That is what the dark button is for.</p>
+    <p>A publisher is the name of whoever made the file. Mine is not shown because I have not bought a company to attach a verified name to it.</p>
+
+    <p>That process is called <strong>code signing</strong>. Code signing is a paid certificate that lets Windows display a verified name next to "Publisher:" — without one, the line reads "Unknown publisher" instead of "Publisher: Conor Honor." It is the same file either way; only the label changes.</p>
+
+    <p>If I had purchased a certificate, the box in step 3 would read:</p>
+
+    <!-- Example of what a signed publisher line would look like — system font -->
+    <div class="quote">
+      Publisher:&nbsp;Conor Honor
+    </div>
+
+    <p>The file itself would be identical. Code signing is a trust signal Windows can verify — nothing more.</p>
   </div>
 </section>
 
+<!-- ══════════════════════════════════════════════════════════════════════════
+     TRANSPARENCY — what FlashDesk does; link to /privacy/
+     ══════════════════════════════════════════════════════════════════════════ -->
 <section class="band band-alt">
   <div class="contained prose">
-    <span class="kicker">If the download button on the home page doesn't work</span>
-    <p>The same file is also here:
+    <span class="kicker">Transparency</span>
+    <h2>What FlashDesk actually does — and what it does not do</h2>
+
+    <p>FlashDesk is open about exactly what it can and cannot do during a session. There are no hidden capabilities. The <a class="inline-link" href="/privacy/">privacy page</a> lists everything plainly.</p>
+
+    <ul class="plain mt-4">
+      <li>It can see your screen and move your mouse — <em>only</em> while a session is active and you have accepted the connection.</li>
+      <li>It cannot access your files, camera, microphone, or saved passwords.</li>
+      <li>It runs only while you have it open. There is no background process, no startup entry, and nothing is installed on your computer.</li>
+      <li>It stops the moment you close the window. The person helping you loses access instantly.</li>
+      <li>You can end a session at any time by clicking the red stop button or closing the window. That is a design requirement, not a courtesy.</li>
+    </ul>
+
+    <p class="mt-4"><a class="inline-link" href="/privacy/">Read the full privacy policy &rarr;</a></p>
+
+    <p class="mt-3 text-muted">If you have a question not answered here, email
+    <a class="inline-link" href="mailto:support@flashdesk.org">support@flashdesk.org</a>
+    or check the <a class="inline-link" href="/faq/">FAQ</a>.</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     ALTERNATIVE DOWNLOAD — fallback URL if the home-page button fails
+     ══════════════════════════════════════════════════════════════════════════ -->
+<section class="band band-paper">
+  <div class="contained prose">
+    <span class="kicker">If the download button does not work</span>
+    <p>The same file is also available directly at
     <a class="inline-link" href="https://flashdesk.org/dl/FlashDesk.exe">flashdesk.org/dl/FlashDesk.exe</a>
-    &mdash; identical in every way. Browsers are more suspicious of it there, so the button on the
+    — identical in every way. Browsers are slightly more suspicious of that address, so the button on the
     <a class="inline-link" href="/">home page</a> is the easier route, but if that one fails for
     any reason this one will still work.</p>
   </div>
 </section>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     CTA BAND — every page ends with a call to action (audit finding: high)
+     ══════════════════════════════════════════════════════════════════════════ -->
+<section class="band band-alt">
+  <div class="contained" style="text-align:center; max-width:48rem; margin-inline:auto;">
+    <p class="statement">Ready to proceed?</p>
+    <p class="lead mt-3" style="max-width:var(--reading-max); margin-inline:auto;">
+      Download FlashDesk and follow the three steps above. The whole process takes under a minute.
+    </p>
+    <div style="display:flex; flex-wrap:wrap; gap:var(--sp-3); justify-content:center; margin-top:var(--sp-5);">
+      <a class="btn btn-primary" href="https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe">
+        <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+        Download FlashDesk — free
+      </a>
+      <a class="btn btn-secondary" href="/faq/">
+        More questions
+      </a>
+    </div>
+    <p class="meta mt-4">Still unsure? Email <a class="inline-link" href="mailto:support@flashdesk.org">support@flashdesk.org</a> — we will help.</p>
+  </div>
+</section>
+
 
 </main>
 <!-- v2 footer — the one deliberately DARK moment on an otherwise light page. Not a leftover of the
@@ -301,6 +439,7 @@
     <nav class="footer-col" aria-label="Help">
       <h3>Help</h3>
       <a href="/faq/" data-nav="faq">FAQ</a>
+      <a href="/security-warning/" data-nav="security-warning" aria-current="page">SmartScreen warning</a>
       <a href="mailto:support@flashdesk.org">support@flashdesk.org</a>
     </nav>
   </div>

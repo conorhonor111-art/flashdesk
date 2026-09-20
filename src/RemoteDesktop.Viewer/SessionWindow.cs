@@ -202,7 +202,14 @@ public sealed class SessionWindow : Form
         _timer.Start();
 
         // Only now, with the handlers attached and the window built, let frames start arriving.
-        Shown += (_, _) => _client.Start();
+        Shown += (_, _) =>
+        {
+            _client.Start();
+            // Do not leave focus on the Disconnect button: a red button with a focus ring on
+            // open reads as "you are already ending the session". Null gives focus to the form
+            // itself — no child highlights — so the first click goes exactly where it lands.
+            ActiveControl = null;
+        };
     }
 
     private void OnScreenInfo(ScreenInfo info)
@@ -312,7 +319,7 @@ public sealed class SessionWindow : Form
         {
             attempt++;
             int seconds = (int)(giveUpAt - DateTimeOffset.UtcNow).TotalSeconds;
-            _statusItem.Text = $"Connection lost — reconnecting… (trying for another {seconds}s)";
+            _statusItem.Text = $"{_peerLabel}  |  Connection lost — reconnecting… (trying for another {seconds}s)";
 
             try { await Task.Delay(TimeSpan.FromSeconds(attempt == 1 ? 2 : 4)).ConfigureAwait(true); }
             catch { break; }
@@ -356,7 +363,7 @@ public sealed class SessionWindow : Form
             old.Dispose();
 
             _reconnecting = false;
-            _statusItem.Text = "Reconnected";
+            _statusItem.Text = $"{_peerLabel}  |  Reconnected";
             fresh.Start();
             return;
         }
@@ -475,10 +482,15 @@ public sealed class SessionWindow : Form
 
     private string StatusText()
     {
-        if (!_client.IsConnected) return "Connection lost";
+        // The peer label prefixes every status line so the operator can always see WHICH machine
+        // the strip is describing — this matters during reconnect ("Connection lost" with no peer
+        // name is harder to diagnose than "Connection lost — 123 456 789").
+        string peer = _peerLabel;
+
+        if (!_client.IsConnected) return $"{peer}  |  Connection lost";
         // The connection being fine is not the same as the picture being live, and saying "Connected"
         // over a frozen image is what made people think it had crashed.
-        if (_screenNoticeWords.Length > 0) return "Connected  |  their screen is not available right now";
+        if (_screenNoticeWords.Length > 0) return $"{peer}  |  Connected  |  their screen is not available right now";
 
         // The picture genuinely goes soft while a file moves — measured, not starved, but a few
         // fps at several hundred ms latency reads as broken if nobody says why. "Paused" would be
@@ -489,11 +501,11 @@ public sealed class SessionWindow : Form
             string left = _filePanel.TransferTimeRemaining is { } remaining
                 ? FormatMinutesLeft(remaining)
                 : "estimating time left…";
-            return $"Screen is slowed while the file transfers — {left}";
+            return $"{peer}  |  Screen is slowed while the file transfers — {left}";
         }
 
         var (fps, bytesPerSecond) = _client.IncomingMeter.Read();
-        return $"Connected    |    {fps:0} fps    |    latency {_client.LastLatencyMs:0} ms    |    {(bytesPerSecond / 1024.0):0.0} KB/s";
+        return $"{peer}  |  Connected  |  {fps:0} fps  |  latency {_client.LastLatencyMs:0} ms  |  {(bytesPerSecond / 1024.0):0.0} KB/s";
     }
 
     private static string FormatMinutesLeft(TimeSpan remaining)

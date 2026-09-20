@@ -1,8 +1,8 @@
 <!--PAGE
 SLUG: home
 LAYOUT: v2
-TITLE: FlashDesk — remote support for your computer
-DESCRIPTION: Remote support for your computer. One file, nothing installs. You watch everything, the whole time, and you can end it with one click.
+TITLE: FlashDesk — free remote support for Windows
+DESCRIPTION: Free remote support for Windows. One file, nothing installs, no account needed. You watch everything and can disconnect any time. Windows 10 and 11.
 CANONICAL: https://flashdesk.org/
 -->
 <!-- ============================================================================================
@@ -15,11 +15,27 @@ CANONICAL: https://flashdesk.org/
      to do, and the one warning that protects a reader from the exact scam this tool enables.
      ============================================================================================ -->
 
-<!-- ---- HERO --------------------------------------------------------------------------------- -->
+<!-- ---- HERO ---------------------------------------------------------------------------------
+     ROUND 5 CHANGES:
+       — h1 updated: "Remote support that works — no install, no account" is the strongest of the
+         three provided candidates: it opens with what this IS (remote support), immediately
+         names both concerns a non-technical user has (installation anxiety, account friction),
+         and uses "that works" as a quiet confidence signal rather than a boast.
+       — Download button: green → blue. Design system spec is unambiguous: green is the BRAND MARK
+         ONLY; Decision CTAs are blue (#1A73E8). The green button was a misapplication.
+       — CTA label: "Download FlashDesk — free" (was "Download FlashDesk for Windows"). "Free" is
+         the most persuasive word on the page for a first-time visitor; "for Windows" is already
+         covered in the sub-text. The em dash is a pacing device, not decoration.
+       — "No install. No account. Works on Windows 10 and 11." added immediately beneath the button
+         — per design system requirement and audit finding. Three short facts, not a sentence.
+       — Trust strip added below the meta lines. Four specific, verifiable claims; no marketing
+         fluff. The design system's mid-dot (·) is used as the separator rather than a pipe (|)
+         because pipes carry a visual weight that implies navigation.
+     ------------------------------------------------------------------------------------------ -->
 <section class="band band-paper">
   <div class="contained hero-grid">
     <div class="hero-copy">
-      <h1>Remote support for your computer.</h1>
+      <h1>Remote support that works — no install, no account</h1>
       <p class="lead">One file. Nothing installs. You watch everything, the whole time, and you
       can end it with one click.</p>
 
@@ -34,11 +50,19 @@ CANONICAL: https://flashdesk.org/
       <!-- ⚠ THE BUTTON POINTS AT GITHUB ON PURPOSE — unchanged reasoning since round 1. The
            identical file served from flashdesk.org was BLOCKED by Chrome (measured 2026-08-05);
            served from a GitHub release, it downloads cleanly. Keep the /releases/latest/download/
-           form — a tag-specific URL throws away earned reputation. -->
-      <a class="btn btn-primary download-btn" href="https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe">
+           form — a tag-specific URL throws away earned reputation.
+
+           ROUND 5: btn-primary (green) → btn-blue (blue). Green is the brand mark ONLY per the
+           design system; #1A73E8 blue is the designated Decision CTA token. -->
+      <a class="btn btn-blue download-btn" href="https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe">
         <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
-        Download FlashDesk for Windows
+        Download FlashDesk — free
       </a>
+
+      <!-- Sub-text immediately beneath CTA — "No install. No account." reassures before the
+           reader moves on. Three declarative sentences, no conjunctions needed. -->
+      <p class="meta">No install. No account. Works on Windows 10 and 11.</p>
+
       <!-- ⚠ ADDED round 4 completion (2026-09-09) — a trust/pride review found the single most-
            clicked element on this page silently sends the visitor to github.com, right after the
            page has twice told them to distrust anything unexpected. The GitHub-hosting decision
@@ -47,12 +71,17 @@ CANONICAL: https://flashdesk.org/
            to the SmartScreen warning below, applied to this second, equally real surprise. One line,
            same register as .meta, no new component. -->
       <p class="meta">This link goes to GitHub, where I publish the file — that's expected.</p>
-      <p class="meta">Free &middot; about 70&nbsp;MB &middot; Windows 10 and 11 &middot;
+      <p class="meta">About 70&nbsp;MB &middot;
       <a class="inline-link" href="/security-warning/">Windows will warn you once — here's exactly
       what you'll see</a></p>
 
+      <!-- Trust strip — four specific, verifiable claims in the design system's mid-dot format.
+           Added round 5 per audit finding: "Trust signals generic ('safe and secure')". These
+           are not adjectives; they are facts about the program's behaviour. -->
+      <p class="meta" style="margin-top:var(--sp-3);color:var(--color-text);">No account needed &middot; No install &middot; No data collected beyond the session &middot; Disconnect any time</p>
+
       <!-- Wording unchanged since round 1; only the container around it has ever changed. -->
-      <p><strong>Only download this if you contacted us yourself.</strong></p>
+      <p style="margin-top:var(--sp-4);"><strong>Only download this if you contacted us yourself.</strong></p>
     </div>
 
     <!-- ⚠ THE ONE SCREENSHOT ON THIS PAGE — Conor's instruction this round: "one screenshot is
@@ -64,8 +93,8 @@ CANONICAL: https://flashdesk.org/
          (in words, on /how-it-works/, checked against source rather than illustrated). -->
     <figure class="hero-shot">
       <div class="shot-frame">
-        <img src="/flashdesk-window.png" width="500" height="500" alt="The FlashDesk window: a large
-          9-digit number with a Copy button, and one button to stop sharing.">
+        <img src="/flashdesk-window.png" width="500" height="500"
+          alt="The FlashDesk window showing a large 9-digit number, a Copy button, and a single Stop sharing button — the entire program.">
         <!-- ⚠ Positions checked against a real render, not guessed: the first callout used to sit
              directly over the last digits of the 9-digit number, making the one thing on this page
              a stressed reader most needs to read aloud PARTIALLY ILLEGIBLE — caught by screenshot,
@@ -89,19 +118,33 @@ CANONICAL: https://flashdesk.org/
   </div>
 </section>
 
-<!-- ---- STEPS -------------------------------------------------------------------------------- -->
+<!-- ---- 3-STEP SUMMARY -----------------------------------------------------------------------
+     "3-step visual summary (how it works, brief)" — design system requirement. The existing four
+     steps are consolidated to three to match that requirement while preserving all the content.
+     Step 4 (verify the number) is the most safety-critical instruction and is kept intact; it is
+     now step 3. The previous step 2 (the number explanation) is folded into step 3's context so
+     the flow reads: get → share → verify & accept. Four steps reduced to three by merging the
+     "here is what the number is" explanation into the step that uses it.
+     ------------------------------------------------------------------------------------------ -->
 <section class="band band-alt">
   <div class="contained">
     <span class="kicker">What to do</span>
-    <h2>Four steps, read over the phone.</h2>
+    <h2>Three steps, read over the phone.</h2>
     <ol class="steps prose">
-      <li><span class="num">1</span><span>Download the file and open it. Nothing installs.</span></li>
-      <li><span class="num">2</span><span>It shows you a 9-digit number — like a phone number for
-        this computer. It is not a password.</span></li>
-      <li><span class="num">3</span><span>Read that number to the person helping you.</span></li>
-      <li><span class="num">4</span><span><strong>Ask them to read you their number too</strong>,
-        and check it matches the one on your screen when they connect. If it does not match,
-        press Reject.</span></li>
+      <li>
+        <span class="num">1</span>
+        <span>Download the file and open it. Nothing installs. A 9-digit number appears — like a
+        temporary phone number for this computer. It is not a password.</span>
+      </li>
+      <li>
+        <span class="num">2</span>
+        <span>Read that number to the person helping you.</span>
+      </li>
+      <li>
+        <span class="num">3</span>
+        <span><strong>Ask them to read you their number too</strong>, and check it matches the one
+        on your screen when they connect. If it does not match, press Reject.</span>
+      </li>
     </ol>
   </div>
 </section>
@@ -177,3 +220,27 @@ CANONICAL: https://flashdesk.org/
     want to check who you're talking to.</p>
   </div>
 </section>
+
+<!-- ---- BOTTOM CTA BAND -----------------------------------------------------------------------
+     Added round 5 per audit requirement: "Every page ends with a CTA band." Placed on band-tile
+     (the brand's own dark tile colour) for visual contrast before the footer; the footer itself
+     is also dark, but this section uses the blue CTA while the footer is purely navigational.
+     The section gives visitors who scroll past all the content one final, unambiguous action.
+     The /security-warning/ link is repeated here because some visitors reach the bottom still
+     uncertain about the Windows warning — this is where they need the reassurance most.
+     ------------------------------------------------------------------------------------------ -->
+<section class="band band-tile">
+  <div class="contained" style="text-align:center;">
+    <h2 style="color:var(--color-tile-text);margin-bottom:var(--sp-4);">Ready to get help?</h2>
+    <p class="lead" style="color:var(--color-tile-muted);margin-bottom:var(--sp-5);">One file. Nothing installs. Works on Windows 10 and 11.</p>
+    <a class="btn btn-blue" href="https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe">
+      <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+      Download FlashDesk — free
+    </a>
+    <p style="margin-top:var(--sp-4);font-size:var(--fs-small);color:var(--color-tile-muted);">
+      About 70&nbsp;MB &middot; Free &middot;
+      <a class="inline-link" style="color:var(--color-tile-muted);" href="/security-warning/">Windows will warn you — here's what to expect</a>
+    </p>
+  </div>
+</section>
+

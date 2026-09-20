@@ -1,127 +1,328 @@
 <!--PAGE
 SLUG: privacy
 LAYOUT: v2
-TITLE: FlashDesk — privacy
-DESCRIPTION: What FlashDesk stores, where it lives, and what is never recorded — checked against the actual code, not a template.
+TITLE: Privacy Policy — FlashDesk
+DESCRIPTION: FlashDesk collects almost nothing — no account, no analytics, no screen recording. Here is exactly what the code does, verified against the source.
 CANONICAL: https://flashdesk.org/privacy/
 -->
+
 <!-- ============================================================================================
-     ROUND 4 COMPLETION (2026-09-09). Content is UNCHANGED from the previous round (every claim
-     already verified against src\ with file:line citations — see the 2026-09-04 hotfix comment
-     below, kept in place) — only the visual system is new, ported onto the same v2 components
-     Home/How-it-works already established (band/contained/prose, plain-heading .card grids, no
-     icon-tile here since these three cards are not the "parallel checklist" shape icon-tile was
-     built for). This page, along with FAQ and Terms, was the "half-old" half of the site the
-     trust/pride review flagged: three of the header's five nav links dropped a visitor from the
-     new light product into the untouched dark one. Bringing all three onto this track is the
-     whole point of this pass.
+     HERO — h1, lead, and the single most important statement on the page.
+     Kept deliberately short: the visitor arrived because they want to know if this product
+     is safe. Give them the answer before the scroll.
      ============================================================================================ -->
 
 <section class="band band-paper">
   <div class="contained prose">
-    <h1>Privacy</h1>
-    <p class="lead">This page describes what the code actually does, checked directly against the
-    source rather than written from a template. Conor Honor is not a lawyer, and this is not a
-    legal document — it is a plain description, kept honest by being checkable.</p>
+    <span class="kicker">Privacy policy</span>
+    <h1>Your privacy in plain English</h1>
+    <p class="lead">FlashDesk is built on a simple idea: the person asking for help should always
+    be in control. That principle shows up in every part of the product — including what it
+    records, stores, and sends. This page describes exactly what the code does, checked directly
+    against the source rather than written from a template.</p>
+    <p class="mt-3 text-muted" style="font-size:var(--fs-small)">Conor Honor is not a lawyer.
+    This is a plain description of how the software behaves, kept honest by being checkable.
+    Last reviewed: September 2026.</p>
   </div>
 </section>
 
+<!-- ============================================================================================
+     AT A GLANCE — four key facts as icon tiles. Fast answer for the visitor who wants one
+     sentence before committing to the full page.
+     ============================================================================================ -->
+
 <section class="band band-alt">
-  <div class="contained prose">
-    <p class="statement">Your screen, your keystrokes and your files are never written to disk —
-    only sent, live, during a session you accepted.</p>
+  <div class="contained">
+    <p class="statement" style="max-width:var(--reading-max);margin-bottom:var(--sp-7)">Your
+    screen, your keystrokes and your files are never written to disk — only sent, live, during
+    a session you accepted.</p>
+    <div class="grid cols-2" style="max-width:52rem">
+      <div class="card" style="display:flex;gap:var(--sp-4);align-items:flex-start">
+        <span class="icon-tile" aria-hidden="true">
+          <svg class="icon" aria-hidden="true"><use href="#i-screen"/></svg>
+        </span>
+        <div>
+          <h3>No screen recording</h3>
+          <p>Nothing from your screen is ever saved to disk or sent to FlashDesk. Screen pixels
+          exist only long enough to be sent live during an active session.</p>
+        </div>
+      </div>
+      <div class="card" style="display:flex;gap:var(--sp-4);align-items:flex-start">
+        <span class="icon-tile" aria-hidden="true">
+          <svg class="icon" aria-hidden="true"><use href="#i-address"/></svg>
+        </span>
+        <div>
+          <h3>No account, no identity</h3>
+          <p>There is no sign-up. Your FlashDesk number is generated locally and carries no name,
+          email address, or personal information.</p>
+        </div>
+      </div>
+      <div class="card" style="display:flex;gap:var(--sp-4);align-items:flex-start">
+        <span class="icon-tile" aria-hidden="true">
+          <svg class="icon" aria-hidden="true"><use href="#i-band"/></svg>
+        </span>
+        <div>
+          <h3>No tracking, no cookies</h3>
+          <p>This website loads nothing from other servers, sets no cookies, and runs no analytics
+          of any kind. There is no script on this site at all.</p>
+        </div>
+      </div>
+      <div class="card" style="display:flex;gap:var(--sp-4);align-items:flex-start">
+        <span class="icon-tile" aria-hidden="true">
+          <svg class="icon" aria-hidden="true"><use href="#i-dialog"/></svg>
+        </span>
+        <div>
+          <h3>You control every session</h3>
+          <p>You see a confirmation dialog before any session begins. One click ends it
+          immediately, at any time, with no delay and no reconnect unless you allow it.</p>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
+
+<!-- ============================================================================================
+     SECTION 1 — WHAT WE COLLECT
+     Honest about the small amount that is genuinely kept.
+     ============================================================================================ -->
 
 <section class="band band-paper">
   <div class="contained">
-    <span class="kicker">What is kept, and where</span>
-    <h2>What is kept, and where.</h2>
-    <div class="grid cols-3 mt-6">
+    <span class="kicker">Section 1 of 4</span>
+    <h2>What we collect</h2>
+    <p style="max-width:var(--reading-max);margin-bottom:var(--sp-6)">FlashDesk keeps very
+    little — and what it does keep stays on your own computer or exists only for the instant
+    it is needed.</p>
+    <div class="grid cols-3">
       <div class="card">
+        <span class="icon-tile" aria-hidden="true">
+          <svg class="icon" aria-hidden="true"><use href="#i-log"/></svg>
+        </span>
+        <h3>Session log</h3>
         <!-- ⚠ HOTFIX 2026-09-04, kept verbatim: an independent fact-check for the round-4 redesign
              found "It never leaves your machine" false here too — the file panel's "copy their
              session log" button (FilePanel.cs:56, DownloadSessionLogAsync at :423) lets a helper
              with file-access consent copy it off, the same as any other file. The safety-accuracy
              rule outranks "don't touch untouched pages" for a claim already committed to this file.
              Re-verified again today (2026-09-09), same file:lines, still true. -->
-        <h3>Session log</h3>
-        <p>A plain text file on <strong>your own computer</strong>, nowhere else. It records who
-        connected, when, and what was decided — accepted, refused, or timed out. It stays there
-        unless you separately let your helper copy files off your computer; FlashDesk has no server
-        it reports session history to either way.</p>
+        <p>A plain text file saved on <strong>your own computer</strong>, nowhere else. It records
+        who connected, when the session started and ended, and what was decided — accepted, refused,
+        or timed out. FlashDesk has no server it reports session history to. A helper with file
+        access can copy this log the same way they can copy any other file; the file panel records
+        the name of anything copied.</p>
       </div>
       <div class="card">
+        <span class="icon-tile" aria-hidden="true">
+          <svg class="icon" aria-hidden="true"><use href="#i-address"/></svg>
+        </span>
         <h3>Your FlashDesk number</h3>
-        <p>Stored on your own computer. The relay that connects two numbers together knows your
-        number and a separate private value your computer proves ownership with — it does not know
-        your name, and nothing about who you are is attached to it.</p>
+        <p>Stored on your own computer. The relay server that connects two numbers together
+        knows your number and a separate private value your computer uses to prove it owns
+        that number — it does not know your name, and nothing about who you are is attached
+        to the number.</p>
       </div>
       <div class="card">
-        <h3>This website</h3>
-        <p>Loads nothing from any other server, sets no cookies, and runs no analytics of any kind.
-        There is no script on this site at all — unusual, since most sites load fonts, trackers or
-        analytics from somewhere else, and this one deliberately does not.</p>
+        <span class="icon-tile" aria-hidden="true">
+          <svg class="icon" aria-hidden="true"><use href="#i-arrival"/></svg>
+        </span>
+        <h3>Relay connection data</h3>
+        <p>When two FlashDesk numbers connect, a small relay server is involved for the
+        introduction — long enough to establish the direct connection between the two
+        computers. What that relay retains beyond that moment is documented below with an
+        honest caveat about what is still being verified.</p>
       </div>
     </div>
   </div>
 </section>
+
+<!-- ============================================================================================
+     SECTION 2 — WHAT WE DON'T COLLECT
+     The longer and more important list.
+     ============================================================================================ -->
 
 <section class="band band-alt">
   <div class="contained">
-    <span class="kicker">What is never recorded</span>
-    <h2>What is never recorded.</h2>
-    <p>During a session, your screen is sent live to whoever you accepted — that is
-    the product. What the code does <strong>not</strong> do is keep a copy of any of it:</p>
-    <div class="grid cols-3 mt-6">
+    <span class="kicker">Section 2 of 4</span>
+    <h2>What we don't collect</h2>
+    <p style="max-width:var(--reading-max);margin-bottom:var(--sp-6)">During a session, your
+    screen is sent live to whoever you accepted — that is the product. What the code does
+    <strong>not</strong> do is keep a copy of any of it.</p>
+    <div class="grid cols-3">
       <div class="card">
+        <span class="icon-tile" aria-hidden="true">
+          <svg class="icon" aria-hidden="true"><use href="#i-screen"/></svg>
+        </span>
         <h3>Screen contents</h3>
-        <p>Nothing captured from your screen is written to disk. It exists only for as long as it
-        takes to send it during a live session, then it is gone.</p>
+        <p>Nothing captured from your screen is written to disk. Screen pixels exist only for
+        as long as it takes to send them during a live session — then they are gone. There is
+        no recording, no screenshot history, and no cloud archive.</p>
       </div>
       <div class="card">
+        <span class="icon-tile" aria-hidden="true">
+          <svg class="icon" aria-hidden="true"><use href="#i-log"/></svg>
+        </span>
         <h3>Keystrokes</h3>
-        <p>What is typed during a session is not logged anywhere, by either side.</p>
+        <p>What is typed during a session is not logged anywhere, by either side. There is
+        no keylogger. The session log records decisions (accepted, ended, timed out) —
+        never what was typed.</p>
       </div>
       <div class="card">
+        <span class="icon-tile" aria-hidden="true">
+          <svg class="icon" aria-hidden="true"><use href="#i-file"/></svg>
+        </span>
         <h3>File contents</h3>
-        <p>If a file is copied during a session, its name is written to your session log — its
-        contents are not.</p>
+        <p>If a file is copied during a session, its filename is written to your session log
+        so you know what moved. The contents of the file are not stored, logged, or sent
+        anywhere except to the computer your helper is using during the session.</p>
       </div>
     </div>
-    <p class="mt-4">The program's own internal diagnostics — a capture-health log and a diagnostics
-    report, both for troubleshooting — record only technical numbers (timings, counts, which
-    capture method was used) and never anything you saw or typed.</p>
+    <div class="card mt-4" style="max-width:var(--reading-max)">
+      <h3>No account data</h3>
+      <p>There is no registration, no login, and no profile. FlashDesk does not know your
+      name, email address, location, or any other personal information — because you never
+      provide any. There is nothing to look up, hand over, or leak.</p>
+    </div>
+    <div class="card mt-3" style="max-width:var(--reading-max)">
+      <h3>No analytics or tracking</h3>
+      <p>The program sends no usage statistics back to FlashDesk. The website loads nothing
+      from any other server — no fonts from Google, no scripts from a CDN, no analytics
+      from anywhere. If you check your browser's network tab on this page, you will find a
+      single stylesheet request and nothing else.</p>
+    </div>
+    <p class="mt-4 text-muted" style="max-width:var(--reading-max);font-size:var(--fs-small)">The program's own internal
+    diagnostics — a capture-health log and a diagnostics report, both used for troubleshooting
+    — record only technical numbers (timings, counts, which capture method was used). They
+    never contain anything you saw or typed.</p>
   </div>
 </section>
 
+<!-- ============================================================================================
+     SECTION 3 — HOW LONG DATA IS KEPT
+     ============================================================================================ -->
+
 <section class="band band-paper">
-  <div class="contained prose">
-    <h2>Who this is shared with</h2>
-    <p>The only computer outside your own that FlashDesk ever talks to is the relay that connects
-    two sessions together — there is no other server, no analytics company, and no third party
-    anywhere in the path. What that relay itself retains about a connection, beyond the moment of
-    connecting two numbers, is not yet documented on this page — see the note below.</p>
+  <div class="contained">
+    <span class="kicker">Section 3 of 4</span>
+    <h2>How long data is kept</h2>
+    <div class="grid cols-2" style="max-width:52rem;margin-bottom:var(--sp-6)">
+      <div class="card">
+        <h3>Session log — kept by you</h3>
+        <p>The session log lives on your computer. It stays there until you delete it.
+        FlashDesk does not schedule deletion and does not access the file after writing it.
+        You can find and delete it at any time.</p>
+      </div>
+      <div class="card">
+        <h3>Your FlashDesk number — kept by you</h3>
+        <p>Your number is stored in a local config file and persists until you uninstall
+        or reset the program. No copy of it is held anywhere else beyond the relay's
+        connection table.</p>
+      </div>
+      <div class="card">
+        <h3>Live session data — session only</h3>
+        <p>Screen pixels, audio, and input events exist in memory only during an active
+        session. When the session ends — by either party, for any reason — that data
+        is gone immediately. It is not buffered to disk at any point.</p>
+      </div>
+      <div class="card">
+        <h3>Relay connection — connection only</h3>
+        <p>The relay that introduces two numbers to each other handles active connections.
+        What it retains in logs after a session ends is not yet fully documented on this
+        page — see the honest caveat in the next section.</p>
+      </div>
+    </div>
   </div>
 </section>
+
+<!-- ============================================================================================
+     SECTION 4 — YOUR RIGHTS
+     ============================================================================================ -->
+
+<section class="band band-alt">
+  <div class="contained">
+    <span class="kicker">Section 4 of 4</span>
+    <h2>Your rights</h2>
+    <div class="prose">
+      <p>Because FlashDesk holds almost no personal data, most of the standard data-rights
+      requests simply do not apply — there is nothing to request, correct, or port.</p>
+      <p>What you can do:</p>
+      <ul class="plain mt-3">
+        <li><strong>Delete your session log</strong> — it is a plain text file on your own
+        computer; you can open it, read it, and delete it at any time.</li>
+        <li><strong>Reset your FlashDesk number</strong> — uninstalling the program removes
+        the locally stored number. A fresh install generates a new one.</li>
+        <li><strong>Stop a session immediately</strong> — the stop button ends any session
+        at once. There is no "in progress" delay and no reconnect unless you explicitly
+        allow one.</li>
+        <li><strong>Refuse any connection</strong> — the consent dialog lets you decline
+        before any screen sharing begins. No connection can start without your active
+        acceptance.</li>
+      </ul>
+      <p>If you have a specific data request or concern not covered above, write to
+      <a class="inline-link" href="mailto:support@flashdesk.org">support@flashdesk.org</a>
+      and it will be handled directly by Conor Honor.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================================================
+     HONEST CAVEAT — relay side not yet documented
+     This section must not be removed or softened without the matching verification pass.
+     ============================================================================================ -->
+
+<section class="band band-paper">
+  <div class="contained prose">
+    <h2>Being honest about what is still open</h2>
+    <p>This page describes the <strong>client program</strong> with real confidence, checked
+    against its source. The relay side of the system — the small server that introduces two
+    FlashDesk numbers to each other — has not yet had the same documentation pass written
+    for exactly what it logs and for how long.</p>
+    <p>Nothing found while checking suggests it does anything beyond what connecting two numbers
+    requires, but "nothing found yet" is not the same promise as a page that has been written
+    and verified line by line the way the rest of this one has.</p>
+    <p>That section will be updated here once it has been through the same process. The caveat
+    stays until the work is done — removing it early would make this page less trustworthy,
+    not more.</p>
+  </div>
+</section>
+
+<!-- ============================================================================================
+     QUESTIONS / CONTACT
+     ============================================================================================ -->
 
 <section class="band band-alt">
   <div class="contained prose">
-    <h2>Being honest about what is still open</h2>
-    <p>This page describes the client program with real confidence, checked against its source.
-    The relay side of the system — the small server that introduces two FlashDesk numbers to each
-    other — has not yet had the same documentation pass written for exactly what it logs and for
-    how long. Nothing found while checking suggests it does anything beyond what connecting two
-    numbers requires, but "nothing found yet" is not the same promise as a page that has been
-    written and checked line by line the way the rest of this one has. That will be corrected here
-    once it has.</p>
+    <h2>Questions</h2>
+    <p>If anything on this page is unclear, or you want to ask about something it does not
+    cover, write to
+    <a class="inline-link" href="mailto:support@flashdesk.org">support@flashdesk.org</a>.
+    You will get a reply from Conor Honor directly, not a support bot.</p>
+    <p>For common questions about how sessions work, who can reconnect, and what the
+    90-second reconnect window means, the
+    <a class="inline-link" href="/faq/">FAQ</a> has specific answers.</p>
+    <p><a class="inline-link" href="/terms/">Terms of service</a> are on a separate page.</p>
   </div>
 </section>
 
-<section class="band band-paper">
-  <div class="contained prose">
-    <h2>Questions</h2>
-    <p><a class="inline-link" href="mailto:support@flashdesk.org">support@flashdesk.org</a></p>
-    <p class="mt-4"><a class="inline-link" href="/">&larr; Back to the download page</a></p>
+<!-- ============================================================================================
+     CTA BAND — every page ends with the download action.
+     Tile background: the mark's native colour. Consistent with every other v2 page.
+     ============================================================================================ -->
+
+<section class="band band-tile">
+  <div class="contained" style="text-align:center">
+    <p style="font-size:var(--fs-h2);font-weight:700;line-height:1.1;letter-spacing:-0.015em;
+    margin-bottom:var(--sp-3);color:var(--color-tile-text)">Ready to let someone help?</p>
+    <p style="color:var(--color-tile-muted);max-width:30rem;margin-inline:auto;
+    margin-bottom:var(--sp-6)">One .exe file. Nothing installs. Close it and it is gone.
+    You stay in control the whole time.</p>
+    <a class="btn btn-primary" href="https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe">
+      <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+      Download FlashDesk — free, 70&nbsp;MB
+    </a>
+    <p style="margin-top:var(--sp-3);font-size:var(--fs-small);color:var(--color-tile-muted)">
+      Windows only &middot; No installation &middot; No account &middot;
+      <a class="inline-link" href="/security-warning/" style="color:var(--color-tile-muted)">SmartScreen warning?</a>
+    </p>
   </div>
 </section>
+

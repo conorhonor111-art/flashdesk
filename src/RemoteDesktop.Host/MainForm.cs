@@ -166,10 +166,14 @@ public sealed class MainForm : Form
             WrapContents = false,
             AutoSize = true,
             AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            Location = new Point(Theme.S4, Theme.S3),
+            // No Location: absolute pixel position does not DPI-scale. The band's own Padding
+            // below pushes the row to the right inset regardless of display scale.
         };
         bandRow.Controls.Add(_stateDot);
         bandRow.Controls.Add(_stateText);
+        // Padding provides the inset instead of a hard-coded Location, so the row stays correctly
+        // positioned inside the band at 100%, 125%, 150% and 200% DPI alike.
+        _band.Padding = new Padding(Theme.S4, Theme.S3, 0, 0);
         _band.Controls.Add(bandRow);
 
         var actions = new FlowLayoutPanel
@@ -1019,9 +1023,12 @@ public sealed class MainForm : Form
             // state never depends on colour alone.
             _band.BackColor = Theme.AmberFill;
             _stateDot.Text = "◉";
-            _stateDot.ForeColor = Theme.TextPrimary;
+            // Text MUST be Theme.Amber on the amber band — TextPrimary is a higher-contrast dark
+            // ink that breaks the amber pair and the safety-colour vocabulary. Both controls use
+            // the same amber constant so icon and words read as one state signal.
+            _stateDot.ForeColor = Theme.Amber;
             _stateText.Text = "Someone is connected and can see this screen";
-            _stateText.ForeColor = Theme.TextPrimary;
+            _stateText.ForeColor = Theme.Amber;
         }
         else
         {

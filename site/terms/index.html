@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>FlashDesk — terms</title>
+<title>Terms of Service — FlashDesk</title>
 <!--
   GENERATED FILE — do not hand-edit. Source: site-src\pages\terms.html, assembled by
   scripts\Build-Site.ps1 from site-src\layout-v2.html + site-src\partials\*-v2.html.
@@ -27,13 +27,18 @@
 
   Nothing on this page loads from another host — same rule as the v1 track, unchanged.
 -->
-<meta name="description" content="FlashDesk's terms in plain language: free, provided as is, no warranty, and not to be used to deceive or defraud anyone.">
+<meta name="description" content="FlashDesk terms of service in plain language: free to use, no warranty, never use it to deceive or defraud anyone. Short and honest on purpose.">
+<link rel="canonical" href="https://flashdesk.org/terms/">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="en_GB">
 <meta property="og:url" content="https://flashdesk.org/terms/">
-<meta property="og:title" content="FlashDesk — terms">
-<meta property="og:description" content="FlashDesk's terms in plain language: free, provided as is, no warranty, and not to be used to deceive or defraud anyone.">
-<meta name="twitter:card" content="summary">
+<meta property="og:title" content="Terms of Service — FlashDesk">
+<meta property="og:description" content="FlashDesk terms of service in plain language: free to use, no warranty, never use it to deceive or defraud anyone. Short and honest on purpose.">
+<meta property="og:image" content="https://flashdesk.org/flashdesk-window.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Terms of Service — FlashDesk">
+<meta name="twitter:description" content="FlashDesk terms of service in plain language: free to use, no warranty, never use it to deceive or defraud anyone. Short and honest on purpose.">
+<meta name="twitter:image" content="https://flashdesk.org/flashdesk-window.png">
 
 <!-- MARK GEOMETRY IS LOCKED to assets\make-icon.ps1 — see site-src\partials\header-v2.html for the
      full note. The mark's SHAPE is unchanged this round (Conor: "it took seven rounds and it is
@@ -42,6 +47,9 @@
 <link rel="stylesheet" href="/site-v2.css">
 </head>
 <body>
+<!-- Skip link — first focusable element; announced by screen readers before the header. -->
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
 <!-- -----------------------------------------------------------------------------------------
      THE ICON SET — one sprite, defined once, used everywhere via <svg class="icon"><use
      href="#i-NAME"/></svg>. Built round 4 (2026-09-04) per Conor's instruction: "a coherent icon
@@ -155,6 +163,7 @@
     <a href="/privacy/" data-nav="privacy">Privacy</a>
     <a href="/faq/" data-nav="faq">FAQ</a>
     <a href="/terms/" data-nav="terms" aria-current="page">Terms</a>
+    <a href="/security-warning/" data-nav="security-warning">SmartScreen</a>
   </nav>
   <a class="header-cta" href="https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe">
     <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
@@ -162,60 +171,198 @@
   </a>
 </header>
 
-<main>
+<main id="main-content">
 <!-- ============================================================================================
-     ROUND 4 COMPLETION (2026-09-09). Content is UNCHANGED — nothing here made a checkable claim
-     about the code that needed correcting; only the visual system is new, ported onto the same
-     v2 components as the other four pages.
+     HERO BAND — title, lead, last-updated date
      ============================================================================================ -->
 
 <section class="band band-paper">
-  <div class="contained prose">
-    <h1>Terms</h1>
-    <p class="lead">Short and plain on purpose. This is not a page written by a lawyer, and it
-    does not try to sound like one.</p>
+  <div class="contained">
+    <div class="prose">
+      <span class="kicker">Legal</span>
+      <h1>Terms of service</h1>
+      <p class="lead">Plain language on purpose. This is not a wall of legalese — it says what you need to know and nothing more.</p>
+      <p class="meta mt-2">Last updated: 20 September 2026</p>
+    </div>
   </div>
 </section>
 
+<!-- ============================================================================================
+     PLAIN SUMMARY — the three most important things at a glance
+     ============================================================================================ -->
+
 <section class="band band-alt">
-  <div class="contained prose">
-    <h2>The plain version</h2>
-    <ul class="plain">
-      <li>FlashDesk is <strong>free</strong>.</li>
-      <li>It is provided <strong>as is</strong>, with no promise that it is fit for any particular
-        purpose, and no promise that it will always work perfectly, always be available, or never
-        contain a bug.</li>
-      <li>There is <strong>no warranty</strong>. If something goes wrong while you are using it, I
-        will try to help if you write to me, but I cannot promise a fix or take responsibility for
-        the outcome.</li>
-      <li><strong>Do not use FlashDesk to deceive or defraud anyone.</strong> That includes
-        connecting to someone's computer under false pretences, or telling someone to download it
-        as part of a scam. This tool exists to let people ask a helper they already trust to see
-        their screen — using it to manufacture that trust dishonestly is not a permitted use, and
-        the whole design of the consent dialog and the on-screen strip exists specifically to make
-        that harder to get away with.</li>
-      <li>You are responsible for what you do with the access someone grants you, and for what
-        you allow onto your own computer when you grant it.</li>
-    </ul>
+  <div class="contained">
+    <div class="prose">
+      <h2>The short version</h2>
+      <p>Three things that matter most:</p>
+
+      <div class="grid cols-3 mt-4" style="max-width: 100%;">
+
+        <div class="card">
+          <div class="icon-tile" aria-hidden="true">
+            <svg class="icon icon-lg"><use href="#i-file"/></svg>
+          </div>
+          <h3>It is free</h3>
+          <p>FlashDesk costs nothing to download or use. There is no subscription, no account, and no in-app purchase.</p>
+        </div>
+
+        <div class="card">
+          <div class="icon-tile" aria-hidden="true">
+            <svg class="icon icon-lg"><use href="#i-log"/></svg>
+          </div>
+          <h3>No warranty</h3>
+          <p>FlashDesk is provided as is. If something goes wrong I will try to help, but I cannot promise a fix or take responsibility for the outcome.</p>
+        </div>
+
+        <div class="card">
+          <div class="icon-tile" aria-hidden="true">
+            <svg class="icon icon-lg"><use href="#i-band"/></svg>
+          </div>
+          <h3>No deception</h3>
+          <p>You must not use FlashDesk to deceive or defraud anyone. Using it to gain access under false pretences is not a permitted use.</p>
+        </div>
+
+      </div>
+    </div>
   </div>
 </section>
+
+<!-- ============================================================================================
+     WHAT FLASHDESK DOES — context so users know what they are agreeing to
+     ============================================================================================ -->
 
 <section class="band band-paper">
-  <div class="contained prose">
-    <h2>Changes</h2>
-    <p>If these terms change, the change will be dated and posted here. There is no mailing list
-    to notify — check back if it matters to you.</p>
+  <div class="contained">
+    <div class="prose">
+      <h2>What FlashDesk is</h2>
+      <p>FlashDesk is a remote support tool for Windows. When you run it, it generates a 9-digit ID. Someone who already has your trust — a family member, a friend, a support person you called — can enter that ID on their own computer to see your screen and control your mouse, so they can help you with a problem.</p>
+      <p>Every session requires your active permission. You see a dialog showing the 9-digit number of the person requesting access. You can end the session at any time by clicking the visible amber strip or closing the window. No background process runs when the session ends, and nothing is left installed on your computer.</p>
+      <p>Using FlashDesk means you have read these terms and agree to them.</p>
+    </div>
   </div>
 </section>
 
+<!-- ============================================================================================
+     PERMITTED AND PROHIBITED USES
+     ============================================================================================ -->
+
 <section class="band band-alt">
-  <div class="contained prose">
-    <h2>Contact</h2>
-    <p>Questions about these terms:
-    <a class="inline-link" href="mailto:support@flashdesk.org">support@flashdesk.org</a></p>
-    <p class="mt-4"><a class="inline-link" href="/">&larr; Back to the download page</a></p>
+  <div class="contained">
+    <div class="prose">
+      <h2>What you can and cannot do</h2>
+
+      <h3 class="mt-3">Permitted uses</h3>
+      <ul class="plain mt-2">
+        <li>Helping someone you know with a computer problem over the phone or a video call.</li>
+        <li>Receiving help from someone you trust, such as a family member or a support person at a company you have contacted yourself.</li>
+        <li>Personal, business, or commercial use — there is no restriction on use case as long as both sides have genuinely consented.</li>
+      </ul>
+
+      <h3 class="mt-4">Prohibited uses</h3>
+      <ul class="plain mt-2">
+        <li><strong>Deception and fraud.</strong> You must not connect to someone's computer under false pretences — for example, by pretending to be a support person from a company you do not work for, or by asking someone to download FlashDesk as part of a scam.</li>
+        <li><strong>Uninvited access.</strong> Every session must start with the other person's free and informed consent. Do not enter someone's ID without their knowledge, and do not pressure, trick, or manipulate anyone into giving you access.</li>
+        <li><strong>Illegal activity.</strong> Do not use FlashDesk for anything prohibited by the laws of the country where you or the other person are located.</li>
+        <li><strong>Sharing access without consent.</strong> Do not allow a third party to use a session the other person did not know would be shared.</li>
+      </ul>
+
+      <div class="scam mt-4" role="note" aria-label="Scam warning">
+        <p><strong>FlashDesk will never telephone you unsolicited.</strong> If you receive a call from someone claiming to be from FlashDesk, Microsoft, your internet provider, or any other company — and they ask you to download FlashDesk or give them your 9-digit ID — hang up. That is a scam. Legitimate support starts with you making contact, not the other way around.</p>
+      </div>
+    </div>
   </div>
 </section>
+
+<!-- ============================================================================================
+     NO WARRANTY AND LIMITATION OF LIABILITY
+     ============================================================================================ -->
+
+<section class="band band-paper">
+  <div class="contained">
+    <div class="prose">
+      <h2>No warranty</h2>
+      <p>FlashDesk is provided <strong>as is</strong>, without any warranty of any kind — express or implied. This includes, but is not limited to, any implied warranty of merchantability, fitness for a particular purpose, or non-infringement.</p>
+
+      <p>There is no promise that:</p>
+      <ul class="plain mt-2">
+        <li>FlashDesk will always work correctly or without interruption.</li>
+        <li>FlashDesk will always be available or free from errors.</li>
+        <li>Any bug or problem you encounter will be fixed.</li>
+      </ul>
+
+      <p>To the maximum extent permitted by law, the author of FlashDesk accepts no liability for any direct, indirect, incidental, or consequential damages arising from your use of this software — including loss of data, loss of privacy, or financial harm — even if you have been advised of the possibility of such damages.</p>
+
+      <p>You are responsible for your own use of FlashDesk: what access you grant, who you grant it to, and what you do with access that others grant to you.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================================================
+     GOVERNING LAW AND JURISDICTION
+     ============================================================================================ -->
+
+<section class="band band-alt">
+  <div class="contained">
+    <div class="prose">
+      <h2>Governing law</h2>
+      <p>These terms are governed by the laws of Ireland. Any dispute that cannot be resolved informally will be subject to the non-exclusive jurisdiction of the courts of Ireland.</p>
+      <p>Nothing in these terms limits any rights you may have under the consumer protection laws of your own country. If a clause in these terms conflicts with a mandatory legal right you hold, that clause does not apply to you to the extent of the conflict.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================================================
+     CHANGES TO THESE TERMS
+     ============================================================================================ -->
+
+<section class="band band-paper">
+  <div class="contained">
+    <div class="prose">
+      <h2>Changes to these terms</h2>
+      <p>If these terms change, the revision will be dated and posted here. There is no mailing list or notification — check back if it matters to you. Continuing to use FlashDesk after a change has been posted means you accept the revised terms.</p>
+      <p>The current version of these terms was last updated on <strong>20 September 2026</strong>.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================================================
+     CONTACT
+     ============================================================================================ -->
+
+<section class="band band-alt">
+  <div class="contained">
+    <div class="prose">
+      <h2>Questions about these terms</h2>
+      <p>If anything here is unclear, or if you have a concern about how FlashDesk is being used, write to:</p>
+      <p class="mt-2"><a class="inline-link" href="mailto:support@flashdesk.org">support@flashdesk.org</a></p>
+      <p class="mt-4">
+        <a class="inline-link" href="/privacy/">Privacy policy</a>
+        &nbsp;&middot;&nbsp;
+        <a class="inline-link" href="/faq/">FAQ</a>
+        &nbsp;&middot;&nbsp;
+        <a class="inline-link" href="/">&larr; Back to the download page</a>
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================================================
+     CTA BAND — every page ends with a download call to action
+     ============================================================================================ -->
+
+<section class="band band-tile">
+  <div class="contained" style="text-align: center; padding-block: var(--sp-8);">
+    <p class="statement" style="color: var(--color-tile-text); margin-bottom: var(--sp-4);">Need remote help right now?</p>
+    <a class="btn btn-primary" href="https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe" style="margin-inline: auto;">
+      <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+      Download FlashDesk — free, 70 MB
+    </a>
+    <p class="meta mt-3" style="color: var(--color-tile-muted);">Windows only &middot; No installation &middot; Nothing left on your computer when done</p>
+    <p class="meta mt-2" style="color: var(--color-tile-muted);">SmartScreen warning expected — <a class="inline-link" href="/security-warning/" style="color: var(--color-tile-muted);">find out why</a></p>
+  </div>
+</section>
+
 
 </main>
 <!-- v2 footer — the one deliberately DARK moment on an otherwise light page. Not a leftover of the
@@ -253,6 +400,7 @@
     <nav class="footer-col" aria-label="Help">
       <h3>Help</h3>
       <a href="/faq/" data-nav="faq">FAQ</a>
+      <a href="/security-warning/" data-nav="security-warning">SmartScreen warning</a>
       <a href="mailto:support@flashdesk.org">support@flashdesk.org</a>
     </nav>
   </div>

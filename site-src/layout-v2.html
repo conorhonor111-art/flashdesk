@@ -28,12 +28,17 @@
   Nothing on this page loads from another host — same rule as the v1 track, unchanged.
 -->
 <meta name="description" content="{{DESCRIPTION}}">
+<link rel="canonical" href="{{CANONICAL}}">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="en_GB">
 <meta property="og:url" content="{{CANONICAL}}">
 <meta property="og:title" content="{{TITLE}}">
 <meta property="og:description" content="{{DESCRIPTION}}">
-<meta name="twitter:card" content="summary">
+<meta property="og:image" content="https://flashdesk.org/flashdesk-window.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{TITLE}}">
+<meta name="twitter:description" content="{{DESCRIPTION}}">
+<meta name="twitter:image" content="https://flashdesk.org/flashdesk-window.png">
 
 <!-- MARK GEOMETRY IS LOCKED to assets\make-icon.ps1 — see site-src\partials\header-v2.html for the
      full note. The mark's SHAPE is unchanged this round (Conor: "it took seven rounds and it is
@@ -42,6 +47,9 @@
 <link rel="stylesheet" href="/site-v2.css">
 </head>
 <body>
+<!-- Skip link — first focusable element; announced by screen readers before the header. -->
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
 <!-- -----------------------------------------------------------------------------------------
      THE ICON SET — one sprite, defined once, used everywhere via <svg class="icon"><use
      href="#i-NAME"/></svg>. Built round 4 (2026-09-04) per Conor's instruction: "a coherent icon
@@ -136,7 +144,7 @@
 
 <div class="page">
 {{HEADER}}
-<main>
+<main id="main-content">
 {{CONTENT}}
 </main>
 {{FOOTER}}
