@@ -73,9 +73,15 @@ internal sealed class HostFileService : IDisposable
     private readonly FileArrived? _fileArrived;
     private readonly PartialFiles _partials;
 
-    /// <summary>0 = free, 1 = in use. One listing and one transfer at a time, no more.</summary>
-    private int _listingBusy;
+    /// <summary>0 = free, 1 = in use. One transfer at a time — listings run concurrently.</summary>
     private int _transferBusy;
+
+    /// <summary>
+    /// True when <see cref="WriteChunksAsync"/> clears <see cref="_transferBusy"/> and sends the
+    /// terminal result itself, so the <see cref="AnswerSendAsync"/> finally block does not clear a
+    /// NEW transfer's flag that started the instant the old result landed on the wire.
+    /// </summary>
+    private bool _transferBusyClearedEarly;
 
     /// <summary>Guards the consent question itself, so a repeated request cannot raise two dialogs.</summary>
     private readonly SemaphoreSlim _consentGate = new(1, 1);
@@ -214,58 +220,44 @@ internal sealed class HostFileService : IDisposable
             return;
         }
 
-        if (Interlocked.CompareExchange(ref _listingBusy, 1, 0) != 0)
+        // An EMPTY path is the root of the browser: this machine's own drives. It is not a
+        // folder and must not go through the path rules, which would rightly reject "".
+        if (string.IsNullOrEmpty(request.Path))
         {
-            await ListFailureAsync(request, FileStatus.Busy,
-                "That computer is still working on the last folder.", ct).ConfigureAwait(false);
+            var drives = LocalDrives.Roots();
+            await SendAsync(MessageType.DirListReply,
+                new DirListReply(request.RequestId, FileStatus.Ok, string.Empty, 0, false, drives).ToBytes(),
+                ct).ConfigureAwait(false);
             return;
         }
 
-        try
+        if (!RemotePath.TryResolve(request.Path, out string? folder, out string? problem)
+            || !LocalDrives.IsOnLocalDrive(folder!, out problem))
         {
-            // An EMPTY path is the root of the browser: this machine's own drives. It is not a
-            // folder and must not go through the path rules, which would rightly reject "".
-            if (string.IsNullOrEmpty(request.Path))
-            {
-                var drives = LocalDrives.Roots();
-                await SendAsync(MessageType.DirListReply,
-                    new DirListReply(request.RequestId, FileStatus.Ok, string.Empty, 0, false, drives).ToBytes(),
-                    ct).ConfigureAwait(false);
-                return;
-            }
-
-            if (!RemotePath.TryResolve(request.Path, out string? folder, out string? problem)
-                || !LocalDrives.IsOnLocalDrive(folder!, out problem))
-            {
-                await ListFailureAsync(request, FileStatus.NotAllowed, problem!, ct).ConfigureAwait(false);
-                return;
-            }
-
-            // ⚠ THE HANDLE RE-CHECK BELONGS HERE TOO, AND UNTIL 2026-08-06 IT WAS ONLY ON THE
-            // READ-A-FILE PATH. Everything above this line looks at a string, and a directory
-            // symbolic link is invisible in a string: C:\Projects can BE \\fileserver\finance, and
-            // both checks above would pass it happily — LocalDrives only asks what kind of drive
-            // C:\ is. Directory.EnumerateFiles then walks straight through the link and hands back
-            // every file name, size and date on somebody's employer's share, which the person in
-            // front of us cannot consent for.
-            //
-            // The contents were never reachable this way (StreamFileAsync has always re-checked),
-            // so what leaked was the listing — but a listing of a finance share is not a small
-            // thing. LocalDrives' own comment already said OpenedPath was what caught this case;
-            // on this path it was never called. Found by an adversarial read.
-            if (!FolderIsWhereWeMeant(folder!, out string? elsewhere))
-            {
-                await ListFailureAsync(request, FileStatus.NotAllowed, elsewhere!, ct).ConfigureAwait(false);
-                return;
-            }
-
-            var reply = ReadPage(request.RequestId, folder!, request.Skip);
-            await SendAsync(MessageType.DirListReply, reply.ToBytes(), ct).ConfigureAwait(false);
+            await ListFailureAsync(request, FileStatus.NotAllowed, problem!, ct).ConfigureAwait(false);
+            return;
         }
-        finally
+
+        // ⚠ THE HANDLE RE-CHECK BELONGS HERE TOO, AND UNTIL 2026-08-06 IT WAS ONLY ON THE
+        // READ-A-FILE PATH. Everything above this line looks at a string, and a directory
+        // symbolic link is invisible in a string: C:\Projects can BE \\fileserver\finance, and
+        // both checks above would pass it happily — LocalDrives only asks what kind of drive
+        // C:\ is. Directory.EnumerateFiles then walks straight through the link and hands back
+        // every file name, size and date on somebody's employer's share, which the person in
+        // front of us cannot consent for.
+        //
+        // The contents were never reachable this way (StreamFileAsync has always re-checked),
+        // so what leaked was the listing — but a listing of a finance share is not a small
+        // thing. LocalDrives' own comment already said OpenedPath was what caught this case;
+        // on this path it was never called. Found by an adversarial read.
+        if (!FolderIsWhereWeMeant(folder!, out string? elsewhere))
         {
-            Interlocked.Exchange(ref _listingBusy, 0);
+            await ListFailureAsync(request, FileStatus.NotAllowed, elsewhere!, ct).ConfigureAwait(false);
+            return;
         }
+
+        var reply = ReadPage(request.RequestId, folder!, request.Skip);
+        await SendAsync(MessageType.DirListReply, reply.ToBytes(), ct).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -616,10 +608,15 @@ internal sealed class HostFileService : IDisposable
             return;
         }
 
+        // Reset early-clear flag for this transfer. WriteChunksAsync sets it and clears
+        // _transferBusy itself (BEFORE sending the result) so the next request is not blocked
+        // for the tiny window between the result landing and this finally executing.
+        _transferBusyClearedEarly = false;
+
         // _transferStarted no longer fires here — see steppedDownForThisTransfer inside
         // WriteChunksAsync. Same reasoning as StreamFileAsync's own copy of this comment.
         try { await ReceiveFileAsync(request, ct).ConfigureAwait(false); }
-        finally { Interlocked.Exchange(ref _transferBusy, 0); _transferEnded?.Invoke(); }
+        finally { if (!_transferBusyClearedEarly) Interlocked.Exchange(ref _transferBusy, 0); _transferEnded?.Invoke(); }
     }
 
     private async Task ReceiveFileAsync(FileSendRequest request, CancellationToken ct)
@@ -860,12 +857,16 @@ internal sealed class HostFileService : IDisposable
                 // nothing of theirs is destroyed, and the operator is told why.
                 TryDelete(temp);
                 _partials.Finished(temp);
+                _transferBusyClearedEarly = true;
+                Interlocked.Exchange(ref _transferBusy, 0);
                 await SendResultAsync(upload.RequestId, FileStatus.NameTaken, written,
                     "A file with that name appeared on that computer before this one could be saved.", ct).ConfigureAwait(false);
                 return;
             }
 
             _partials.Finished(temp);
+            _transferBusyClearedEarly = true;
+            Interlocked.Exchange(ref _transferBusy, 0);
             await SendResultAsync(upload.RequestId, FileStatus.Ok, written, string.Empty, ct).ConfigureAwait(false);
 
             try { _fileArrived?.Invoke(_callerId, savedAs, written, folder, isProgram, replacing); }
@@ -884,6 +885,8 @@ internal sealed class HostFileService : IDisposable
         try { file.Dispose(); } catch { }
         TryDelete(temp);
         _partials.Finished(temp);
+        _transferBusyClearedEarly = true;
+        Interlocked.Exchange(ref _transferBusy, 0);
         await SendResultAsync(upload.RequestId, status, written, message, ct).ConfigureAwait(false);
     }
 
