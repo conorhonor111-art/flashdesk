@@ -3831,3 +3831,31 @@ contain the same binary.
 **Check-LiveBuild result (v0.4.0-19):** READY — server serving `a465964`, exact HEAD match.
 Both download routes byte-identical (`2C66487348EBDCCE...`, 162,492,578 bytes). All 9 pages
 match repo with all assets resolving.
+
+
+---
+
+### 2026-09-21 — MSI installer fix: unblock instructions, non-advertised shortcut, MIME type
+
+Commit `5767ddf`. Three fixes for the "This installation package could not be opened" error
+users saw when trying to run the downloaded MSI.
+
+**Root cause:** Windows adds a hidden Zone.Identifier alternate data stream to files
+downloaded from the internet. Windows Installer refuses to open MSI files carrying this
+mark without an explicit user unblock action — producing exactly that error message.
+
+**Fixes:**
+1. `site/download/index.html` — "right-click → Properties → Unblock → OK" note added
+   directly under the MSI download button so visitors see it before they try to run it.
+2. `installer/Package.wxs` — Start Menu shortcut changed from `Advertise="yes"` to
+   `Advertise="no"`. Advertised shortcuts require Windows Installer to locate the original
+   source package at shortcut-click time — an unnecessary second failure point removed.
+3. `public_html/dl/.htaccess` (cPanel only, not in repo) — `AddType application/x-msi .msi`
+   so the MSI is served with the correct MIME type instead of `application/x-msdownload`.
+
+MSI rebuilt with the fixed shortcut and re-uploaded to cPanel and GitHub v0.4.0-20 (old
+asset deleted, new one uploaded). EXE unchanged.
+
+**Check-LiveBuild result:** READY — server serving `75f9cb9` (one doc-only commit behind:
+`5767ddf`, MSI fix). Both routes byte-identical (`9A471A09D1C54906...`, 162,492,578 bytes).
+All 9 pages match repo with all assets resolving.
