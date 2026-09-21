@@ -23,7 +23,7 @@
 
 [CmdletBinding()]
 param(
-    [string] $Url  = 'https://flashdesk.org/dl/FlashDesk.exe',
+    [string] $Url  = 'https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe',
     [string] $Site = 'https://flashdesk.org',
     [string] $RepoRoot
 )
