@@ -766,6 +766,13 @@ ul.plain li::before {
   flex-shrink: 0;
 }
 
+/* ── Brand mark visual upgrade ────────────────────────────────────────────── */
+/* Polished glow on every logo instance (header, drawer, footer) */
+.brand svg {
+  filter:        drop-shadow(0 0 6px rgba(43,209,107,.22)) drop-shadow(0 1px 3px rgba(0,0,0,.18));
+  border-radius: 5px;   /* softens the shadow edge */
+}
+
 .site-nav {
   display:   flex;
   flex-wrap: wrap;

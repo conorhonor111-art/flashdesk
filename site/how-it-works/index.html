@@ -813,14 +813,18 @@
 
     <symbol id="i-screen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
       <rect x="2" y="3" width="20" height="14"/>
+      <rect x="4" y="5" width="16" height="10" stroke-width="1"/>
       <line x1="8" y1="21" x2="16" y2="21"/>
       <line x1="12" y1="17" x2="12" y2="21"/>
-      <polyline points="9,7 13,15 15.5,10.5"/>
+      <line x1="6" y1="21" x2="18" y2="21"/>
+      <polyline points="6,11 9,8 12,13 15,9 18,11"/>
     </symbol>
 
     <symbol id="i-dialog" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
       <rect x="4" y="5" width="16" height="13"/>
       <line x1="4" y1="9" x2="20" y2="9"/>
+      <rect x="5" y="6" width="3" height="2" stroke-width="1"/>
+      <line x1="6" y1="11" x2="18" y2="11" stroke-width="1"/>
       <rect x="7" y="12.5" width="4" height="3"/>
       <rect x="13" y="12.5" width="4" height="3"/>
     </symbol>
@@ -876,7 +880,9 @@
     <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
       <line x1="12" y1="3" x2="12" y2="15"/>
       <polyline points="6,10 12,16 18,10"/>
-      <line x1="4" y1="21" x2="20" y2="21"/>
+      <polyline points="4,18 4,21 20,21 20,18"/>
+      <line x1="8" y1="21" x2="8" y2="19" stroke-width="1"/>
+      <line x1="16" y1="21" x2="16" y2="19" stroke-width="1"/>
     </symbol>
 
     <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
@@ -887,24 +893,33 @@
     <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
       <rect x="4" y="11" width="16" height="11"/>
       <polyline points="8,11 8,6 16,6 16,11"/>
-      <line x1="12" y1="15" x2="12" y2="19"/>
+      <circle cx="12" cy="15" r="2"/>
+      <line x1="12" y1="17" x2="12" y2="20"/>
+      <line x1="6" y1="13" x2="6" y2="13" stroke-width="3"/>
     </symbol>
 
     <symbol id="i-stop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
       <polygon points="8,3 16,3 21,8 21,16 16,21 8,21 3,16 3,8"/>
+      <polygon points="9.5,5.5 14.5,5.5 18.5,9.5 18.5,14.5 14.5,18.5 9.5,18.5 5.5,14.5 5.5,9.5" stroke-width="1"/>
       <line x1="8" y1="12" x2="16" y2="12"/>
     </symbol>
 
     <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
       <polyline points="4,4 4,14 12,21 20,14 20,4 4,4"/>
       <line x1="4" y1="8" x2="20" y2="8"/>
+      <polyline points="8,13 11,16 17,10"/>
     </symbol>
 
     <symbol id="i-relay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
       <rect x="2" y="7" width="6" height="10"/>
+      <line x1="3" y1="10" x2="7" y2="10" stroke-width="1"/>
+      <line x1="3" y1="13" x2="7" y2="13" stroke-width="1"/>
       <rect x="16" y="7" width="6" height="10"/>
+      <line x1="17" y1="10" x2="21" y2="10" stroke-width="1"/>
+      <line x1="17" y1="13" x2="21" y2="13" stroke-width="1"/>
       <line x1="8" y1="12" x2="16" y2="12"/>
       <polyline points="13,9 16,12 13,15"/>
+      <polyline points="11,9 8,12 11,15"/>
     </symbol>
 
   </defs>
@@ -927,8 +942,8 @@
   <a class="brand" href="/">
     <!-- Round 6: background rect added to match footer mark for dark-mode consistency -->
     <svg viewBox="0 0 16 16" aria-hidden="true" width="28" height="28">
-      <rect x="1" y="1" width="14" height="14" rx="3.5" fill="#F4F5F7"/>
-      <polyline points="4.631,2.512 9.387,11.495 11.325,7.620" fill="none" stroke="#17191E" stroke-width="2.6"/>
+      <rect x="1" y="1" width="14" height="14" rx="3.5" fill="#17191E"/>
+      <polyline points="4.631,2.512 9.387,11.495 11.325,7.620" fill="none" stroke="#2BD16B" stroke-width="2.6"/>
     </svg>
     <span>FlashDesk</span>
   </a>
@@ -953,9 +968,9 @@
   </nav>
 
   <div class="header-right">
-    <a class="header-cta" href="/download/">
+    <a class="header-cta" href="https://flashdesk.org/dl/FlashDesk-setup.msi">
       <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
-      <span class="cta-full">Download .exe — free</span>
+      <span class="cta-full">Download — free</span>
       <span class="cta-short" aria-hidden="true">Download</span>
     </a>
     <button class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-label="Open navigation" aria-controls="nav-drawer">
@@ -974,8 +989,8 @@
   <div class="nav-drawer-header">
     <a class="brand" href="/">
       <svg viewBox="0 0 16 16" aria-hidden="true" width="28" height="28">
-        <rect x="1" y="1" width="14" height="14" rx="3.5" fill="#F4F5F7"/>
-        <polyline points="4.631,2.512 9.387,11.495 11.325,7.620" fill="none" stroke="#17191E" stroke-width="2.6"/>
+        <rect x="1" y="1" width="14" height="14" rx="3.5" fill="#17191E"/>
+        <polyline points="4.631,2.512 9.387,11.495 11.325,7.620" fill="none" stroke="#2BD16B" stroke-width="2.6"/>
       </svg>
       <span>FlashDesk</span>
     </a>
@@ -1060,6 +1075,7 @@
         <li class="card--elevated">
           <span class="num step-dot step-dot--blue" aria-hidden="true">1</span>
           <div>
+            <div class="icon-tile icon-tile--blue" style="margin-bottom: var(--sp-3);"><svg class="icon-lg" aria-hidden="true"><use href="#i-download"/></svg></div>
             <h3>Your helper downloads FlashDesk on their computer.</h3>
             <p>Your helper goes to the <a class="inline-link" href="/download/">FlashDesk download page</a>
             and downloads the same single file you will. There is no installation step on their end either.
@@ -1080,6 +1096,7 @@
         <li class="card--elevated">
           <span class="num step-dot step-dot--green" aria-hidden="true">2</span>
           <div>
+            <div class="icon-tile icon-tile--green" style="margin-bottom: var(--sp-3);"><svg class="icon-lg" aria-hidden="true"><use href="#i-download"/></svg></div>
             <h3>You download FlashDesk on your computer.</h3>
             <p>Go to the <a class="inline-link" href="/download/">download page</a> and download
             <strong>FlashDesk.exe</strong>. Save it anywhere — your Desktop or Downloads folder
@@ -1108,6 +1125,7 @@
         <li class="card--elevated">
           <span class="num step-dot step-dot--purple" aria-hidden="true">3</span>
           <div>
+            <div class="icon-tile icon-tile--purple" style="margin-bottom: var(--sp-3);"><svg class="icon-lg" aria-hidden="true"><use href="#i-address"/></svg></div>
             <h3>Open FlashDesk — your 9-digit code appears.</h3>
             <p>When FlashDesk opens, you will see a large 9-digit number. This is your
             <strong>FlashDesk ID</strong>. It is generated fresh every time you open the program
@@ -1190,6 +1208,7 @@
         <li class="card--elevated">
           <span class="num step-dot step-dot--amber" aria-hidden="true">4</span>
           <div>
+            <div class="icon-tile icon-tile--amber" style="margin-bottom: var(--sp-3);"><svg class="icon-lg" aria-hidden="true"><use href="#i-shield"/></svg></div>
             <h3>Read your 9-digit code to your helper over the phone.</h3>
             <p>Tell your helper the number. They type it into FlashDesk on their end and press
             Connect. FlashDesk sends their request through a <strong>relay server</strong> —
@@ -1214,6 +1233,7 @@
         <li class="card--elevated">
           <span class="num step-dot step-dot--green" aria-hidden="true">5</span>
           <div>
+            <div class="icon-tile icon-tile--green" style="margin-bottom: var(--sp-3);"><svg class="icon-lg" aria-hidden="true"><use href="#i-dialog"/></svg></div>
             <h3>A dialog appears — read it, then press Accept.</h3>
             <p>FlashDesk shows a dialog with two equally-sized buttons: <strong>Accept</strong>
             and <strong>Reject</strong>. The Accept button is disabled for the first three seconds
