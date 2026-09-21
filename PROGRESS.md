@@ -3903,3 +3903,38 @@ Commit `4d3da16`. Script was silently 404-ing on every run; now resolves correct
 **Check-LiveBuild result (v0.4.0-21):** READY — server serving `daf29c5`, exact HEAD match.
 Both download routes byte-identical (`2C66487348EBDCCE...`, 162,492,578 bytes). All 9 pages
 match repo with all assets resolving.
+
+---
+
+### v0.4.0-23 — 2026-09-21 — full visual redesign (app + website)
+
+Major design upgrade across both the WinForms application and all 9 website pages, inspired by
+AnyDesk and RustDesk. Build: 0 errors, 0 warnings. 9-agent ultracode workflow; 87 tool uses.
+
+**App changes (5 files):**
+- `Theme.cs` — 6 new design tokens: `BlueGradientTop` (#2B8EFF), `BlueGradientBottom` (#1260C4),
+  `RedGradientTop` (#D42925), `RedGradientBottom` (#7A1512), `AccentStripe` (= BrandGreen),
+  `CardElevBorder` (#D0D6DF). All locked tokens (BrandGreen, BrandTile, Blue, Amber) unchanged.
+- `RoundedButton.cs` — Primary (blue) and Destructive (red) buttons now fill with a top-to-bottom
+  `LinearGradientBrush` when enabled and resting; pressed/disabled/neutral states keep flat fill.
+- `CardPanel.cs` — elevation shadow: 0.75px `CardElevBorder` hairlines along bottom + right edges;
+  cards now sit visibly off the window surface without composited alpha.
+- `MainForm.cs` — 4px `AccentStripe` (BrandGreen) `Panel` docked left; one brand-green frame on
+  every host window.
+- `ConsentDialog.cs` — 5px Blue accent strip at dialog top; light-blue (#F0F7FF) tint behind the
+  caller-ID number so it reads as a distinct verification chip.
+
+**Site changes (10 files):**
+- `site-v2.css` — 9 new component classes appended (zero existing rules modified):
+  `.hero-gradient-wrap`, `.trust-strip` / `__item` / `__dot`, `.feature-icon-tile` (+ 3 variants),
+  `.card--elevated`, `.cta-band--gradient`, `.btn-blue-gradient`, `.download-card--primary/secondary`,
+  `.section--tinted / --feature-bg / --dark-tile`, `.feature-grid-v2`.
+- `index.html` — hero gets dark brand-tile gradient + radial green glow; trust strip (4 items)
+  inserted after hero; 4 feature cards get icon tiles + elevation; CTA/download band gets dark
+  gradient; EXE card → `download-card--primary`, MSI card → `download-card--secondary`.
+- `download/index.html` — gradient hero, trust strip, download card variants.
+- `how-it-works/index.html` — gradient hero, all 5 step cards elevated.
+- `faq/index.html` — gradient hero, all 28 FAQ items elevated, FAQ section tinted.
+- `about/index.html` — gradient hero; info cards, status cards, contact card, oss-block elevated.
+- `changelog/index.html` — gradient hero, all 17 release entries elevated.
+- `security-warning/index.html`, `privacy/index.html`, `terms/index.html` — gradient heroes only.
