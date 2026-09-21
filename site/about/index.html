@@ -616,6 +616,55 @@
   line-height: 1.5;
   margin:      0;
 }
+
+/* ── NOT-list red left border ─────────────────────────────────────────────── */
+.not-list__item {
+  border-left: 3px solid #EF4444 !important;
+}
+
+/* ── OSS block dark panel ─────────────────────────────────────────────────── */
+.oss-block {
+  background:   #17191E !important;
+  border-color: #2BD16B !important;
+}
+.oss-block__badge {
+  color:        #2BD16B !important;
+  border-color: rgba(43,209,107,0.35) !important;
+  background:   rgba(43,209,107,0.08) !important;
+}
+.oss-block p {
+  color: #9BADC0 !important;
+}
+.oss-block h2 {
+  color: #ECEFF3 !important;
+}
+.oss-block__cta {
+  background: rgba(43,209,107,0.12) !important;
+  color:      #2BD16B !important;
+  border-color: rgba(43,209,107,0.35) !important;
+}
+.oss-block__cta:hover {
+  background: rgba(43,209,107,0.22) !important;
+}
+
+/* ── Avatar colored circle ────────────────────────────────────────────────── */
+.about-avatar {
+  background:    #1A73E8 !important;
+  border-color:  #1A73E8 !important;
+  color:         #ffffff !important;
+  border-radius: 50% !important;
+}
+
+/* ── Contact block blue accent ────────────────────────────────────────────── */
+.contact-card {
+  border-left: 4px solid #1A73E8 !important;
+  background: linear-gradient(to right, #EBF3FD 0%, var(--color-card) 60%) !important;
+}
+
+/* ── Status card icons colored ────────────────────────────────────────────── */
+.status-cards .status-card:nth-child(1) .status-card__icon { background:#EBF3FD; color:#1A73E8; border-color:#BBD4F7; }
+.status-cards .status-card:nth-child(2) .status-card__icon { background:#E6F9EE; color:#1A7040; border-color:#B3EDCC; }
+.status-cards .status-card:nth-child(3) .status-card__icon { background:#F3E8FF; color:#6D28D9; border-color:#DDD6FE; }
 </style>
 </head>
 <body>
@@ -1070,7 +1119,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter" aria-hidden="true"><rect x="2" y="3" width="20" height="14"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><polyline points="9,7 13,15 15.5,10.5"/></svg>
         </div>
         <h3>Actively maintained</h3>
-        <p>Current release: <strong>v0.4.0-17</strong>, updated September 2026. Releases happen when there is something worth changing, not on a schedule. There have been 17 revisions since the first public release.</p>
+        <p>Current release: <strong>v0.4.0-24</strong>, updated September 2026. Releases happen when there is something worth changing, not on a schedule. There have been 24 revisions since the first public release.</p>
       </div>
       <div class="status-card card--elevated">
         <div class="status-card__icon">

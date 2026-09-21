@@ -4,18 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>Changelog — FlashDesk v0.4.0-17</title>
-<meta name="description" content="Every FlashDesk release, listed plainly: what changed, what was fixed, and why. Current version: v0.4.0-17, released 15 September 2026. 17 releases since March 2026.">
+<title>Changelog — FlashDesk v0.4.0-24</title>
+<meta name="description" content="Every FlashDesk release, listed plainly: what changed, what was fixed, and why. Current version: v0.4.0-24, released 21 September 2026. 24 releases since March 2026.">
 <link rel="canonical" href="https://flashdesk.org/changelog/">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="en_GB">
 <meta property="og:url" content="https://flashdesk.org/changelog/">
-<meta property="og:title" content="Changelog — FlashDesk v0.4.0-17">
-<meta property="og:description" content="Every FlashDesk release, listed plainly: what changed, what was fixed, and why. Current version: v0.4.0-17.">
+<meta property="og:title" content="Changelog — FlashDesk v0.4.0-24">
+<meta property="og:description" content="Every FlashDesk release, listed plainly: what changed, what was fixed, and why. Current version: v0.4.0-24.">
 <meta property="og:image" content="https://flashdesk.org/flashdesk-window.png">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Changelog — FlashDesk v0.4.0-17">
-<meta name="twitter:description" content="Every FlashDesk release, listed plainly: what changed, what was fixed, and why. Current version: v0.4.0-17.">
+<meta name="twitter:title" content="Changelog — FlashDesk v0.4.0-24">
+<meta name="twitter:description" content="Every FlashDesk release, listed plainly: what changed, what was fixed, and why. Current version: v0.4.0-24.">
 <meta name="twitter:image" content="https://flashdesk.org/flashdesk-window.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Crect%20x='1'%20y='1'%20width='14'%20height='14'%20rx='3.5'%20fill='%2317191E'/%3E%3Cpolyline%20points='4.631,2.512%209.387,11.495%2011.325,7.620'%20fill='none'%20stroke='%232BD16B'%20stroke-width='2.6'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="/site-v2.css">
@@ -447,6 +447,75 @@
   .change-list li { flex-direction: column; gap: var(--sp-2); }
   .change-tag     { align-self: flex-start; }
 }
+
+/* ── Version stats row ────────────────────────────────────────────────────── */
+.version-stats {
+  display:    flex;
+  flex-wrap:  wrap;
+  gap:        var(--sp-4);
+  margin-top: var(--sp-5);
+}
+
+.version-stat {
+  background:    var(--color-card);
+  border:        1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding:       var(--sp-3) var(--sp-4);
+  display:       flex;
+  flex-direction: column;
+  gap:           2px;
+  min-width:     7rem;
+}
+
+.version-stat__num {
+  font-size:   1.5rem;
+  font-weight: 800;
+  color:       #1A73E8;
+  line-height: 1;
+}
+
+.version-stat__label {
+  font-size:  var(--fs-small);
+  color:      var(--color-muted);
+  font-weight: 500;
+}
+
+/* ── Enhanced CURRENT pill ────────────────────────────────────────────────── */
+.latest-pill {
+  display:       inline-block;
+  font-size:     0.6875rem !important;
+  font-weight:   800 !important;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background:    #2BD16B !important;
+  color:         #0e4d28 !important;
+  border:        none !important;
+  border-radius: 20px;
+  padding:       3px 10px;
+}
+
+/* ── Enhanced download card ───────────────────────────────────────────────── */
+.download-card {
+  background: linear-gradient(135deg, #1A3E6E 0%, #1A73E8 100%) !important;
+  border-color: #1A73E8 !important;
+}
+.download-card-title { color: #ffffff !important; font-size: var(--fs-h3) !important; }
+.download-card-meta  { color: rgba(255,255,255,0.75) !important; }
+.download-card .btn-blue {
+  background:   #ffffff !important;
+  color:        #1A3E6E !important;
+  border-color: #ffffff !important;
+  font-weight:  700 !important;
+}
+.download-card .btn-blue:hover {
+  background:   #EBF3FD !important;
+}
+.download-card .github-link {
+  color: rgba(255,255,255,0.85) !important;
+}
+.download-card .github-link:hover {
+  color: #ffffff !important;
+}
 </style>
 </head>
 <body>
@@ -621,7 +690,24 @@
     <span class="kicker">Release history</span>
     <h1>What has changed</h1>
     <p class="lead">FlashDesk is updated when something real changes &#8212; not on a schedule. Each entry below is a real change with a reason.</p>
-    <p class="meta" style="margin-top:var(--sp-4);">17 releases &middot; First release March 2026 &middot; Latest September 2026</p>
+    <div class="version-stats">
+      <div class="version-stat">
+        <span class="version-stat__num">24</span>
+        <span class="version-stat__label">Releases</span>
+      </div>
+      <div class="version-stat">
+        <span class="version-stat__num">v0.4.0&#8209;24</span>
+        <span class="version-stat__label">Current version</span>
+      </div>
+      <div class="version-stat">
+        <span class="version-stat__num">Sep 2026</span>
+        <span class="version-stat__label">Last updated</span>
+      </div>
+      <div class="version-stat">
+        <span class="version-stat__num">Mar 2026</span>
+        <span class="version-stat__label">First release</span>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -634,10 +720,67 @@
     <ul class="release-list">
 
       <!-- ================================================================
-           v0.4.0-17 — LATEST
+           v0.4.0-24 — LATEST
            ================================================================ -->
-      <li class="release-item is-latest card--elevated" id="v0.4.0-17">
-        <div class="version-badge">v0.4.0&#8209;17 <span class="latest-pill">Latest</span></div>
+      <li class="release-item is-latest card--elevated" id="v0.4.0-24">
+        <div class="version-badge">v0.4.0&#8209;24 <span class="latest-pill">Latest</span></div>
+        <time class="release-date" datetime="2026-09-21">21 September 2026</time>
+        <ul class="change-list">
+          <li>
+            <span class="change-tag tag-changed">Changed</span>
+            Site visual upgrade — per-page pass. Colored step-number circles on How&nbsp;it&nbsp;works; colored category badges (Safety/Privacy/Technical/Helpers) with SVG icons on FAQ; dark OSS panel with GitHub badge on About; version-stats hero strip and color-coded type badges on Changelog; step progress circles and scam-warning callouts on Security&nbsp;warning; glance-card summaries with green checkmarks on Privacy and Terms.
+          </li>
+          <li>
+            <span class="change-tag tag-changed">Changed</span>
+            No app code changes &#8212; exe is functionally identical to v0.4.0&#8209;23. Site-only release to lock the visual upgrade to a clean tagged commit.
+          </li>
+        </ul>
+        <div class="download-card" aria-label="Download current version">
+          <p class="download-card-title">Download v0.4.0&#8209;24 &#8212; current release</p>
+          <p class="download-card-meta">About 70&nbsp;MB &middot; Windows 10 and 11 &middot; No install required &middot; Free</p>
+          <div class="download-card-actions">
+            <a class="btn btn-blue" href="/download/">
+              <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+              Download FlashDesk &#8212; free
+            </a>
+            <a class="github-link"
+               href="https://github.com/conorhonor111-art/flashdesk/releases"
+               target="_blank"
+               rel="noopener noreferrer">
+              <svg class="icon" aria-hidden="true"><use href="#i-arrival"/></svg>
+              Full release notes and source diffs on GitHub
+            </a>
+          </div>
+        </div>
+      </li>
+
+      <!-- ================================================================
+           v0.4.0-23 — app + website visual redesign
+           ================================================================ -->
+      <li class="release-item card--elevated" id="v0.4.0-23">
+        <div class="version-badge">v0.4.0&#8209;23</div>
+        <time class="release-date" datetime="2026-09-21">21 September 2026</time>
+        <ul class="change-list">
+          <li>
+            <span class="change-tag tag-changed">Changed</span>
+            Full visual redesign of the WinForms app and all 9 website pages, inspired by AnyDesk and RustDesk. Gradient buttons (blue Primary, red Destructive), card elevation shadows, 4&nbsp;px brand-green accent stripe on the main window, blue title strip on the consent dialog.
+          </li>
+          <li>
+            <span class="change-tag tag-added">Added</span>
+            6 new design tokens in Theme.cs: BlueGradientTop/Bottom, RedGradientTop/Bottom, AccentStripe, CardElevBorder.
+          </li>
+          <li>
+            <span class="change-tag tag-changed">Changed</span>
+            All 9 site pages: dark gradient hero, trust strip, elevated feature cards, icon tiles, gradient CTA band, download card variants (primary/secondary).
+          </li>
+        </ul>
+      </li>
+
+      <!-- ================================================================
+           v0.4.0-17 — round-5 site rebuild
+           ================================================================ -->
+      <li class="release-item card--elevated" id="v0.4.0-17">
+        <div class="version-badge">v0.4.0&#8209;17</div>
         <time class="release-date" datetime="2026-09-20">20 September 2026</time>
         <ul class="change-list">
           <li>
@@ -666,24 +809,6 @@
           </li>
         </ul>
 
-        <!-- Download card — links to /download/, not GitHub directly -->
-        <div class="download-card" aria-label="Download current version">
-          <p class="download-card-title">Download v0.4.0&#8209;17 &#8212; current release</p>
-          <p class="download-card-meta">About 70&nbsp;MB &middot; Windows 10 and 11 &middot; No install required &middot; Free</p>
-          <div class="download-card-actions">
-            <a class="btn btn-blue" href="/download/">
-              <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
-              Download FlashDesk &#8212; free
-            </a>
-            <a class="github-link"
-               href="https://github.com/conorhonor111-art/flashdesk/releases"
-               target="_blank"
-               rel="noopener noreferrer">
-              <svg class="icon" aria-hidden="true"><use href="#i-arrival"/></svg>
-              Full release notes and source diffs on GitHub
-            </a>
-          </div>
-        </div>
       </li>
 
       <!-- ================================================================
