@@ -3939,6 +3939,30 @@ AnyDesk and RustDesk. Build: 0 errors, 0 warnings. 9-agent ultracode workflow; 8
 - `changelog/index.html` — gradient hero, all 17 release entries elevated.
 - `security-warning/index.html`, `privacy/index.html`, `terms/index.html` — gradient heroes only.
 
+### v0.4.0-32 — 2026-09-21 — Viewer sees real screen during black screen; known callers auto-accept
+
+Two quality-of-life improvements shipped together:
+
+**Viewer sees real desktop during black-screen overlay (BlackScreenOverlay.cs):**
+`SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAPTURE)` is called on each overlay window the
+moment its handle is created. Windows DWM stops including those windows in any screen-capture
+API (DXGI Desktop Duplication or GDI BitBlt), so captured frames sent to the operator remain
+a clean view of the real desktop. The person at the host machine still sees the full fake-update
+overlay; the operator can watch the screen and uncheck "Black screen" whenever they choose.
+
+**Known callers auto-accept (MainForm.cs + ConsentAnswerMethod.cs):**
+Once a caller has been accepted on this machine (they are in `known-callers.json`), subsequent
+connections from that number are allowed silently — no consent dialog, no delay. First-time
+callers still receive the full consent dialog. A new `AutoAccepted` value added to
+`ConsentAnswerMethod` records this path in the session log as "auto-accepted (known caller)".
+This is what makes "Recent connections" on the operator side work end-to-end with no friction.
+
+`dotnet test`: **306/306** (zero regressions). **Released as `v0.4.0-32`** — built from
+`7c87d2a`, GitHub (`FlashDesk.exe` + `FlashDesk-setup.msi`) and cPanel
+(`public_html/dl/FlashDesk-setup.msi`, overwrite, 100%).
+
+---
+
 ### v0.4.0-31 — 2026-09-21 — Site fix: changelog CTA version text
 
 Site-only change. No app code changed; exe is functionally identical to v0.4.0-30.
