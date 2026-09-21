@@ -843,8 +843,8 @@ the server IP, then the whole server setup runs over SSH from `.223`.
 
 ## Conor's hosting assessed from the cPanel screenshot (2026-07-30)
 
-**It is shared cPanel hosting** (Jupiter theme; user `flas01151844`; home `/home/flas01151844`;
-shared IP `64.187.97.203`; **Primary Domain = flashdesk.org, already attached** — so the site can
+**It is shared cPanel hosting** (Jupiter theme; user `[cpanel-user]`; home `/home/[cpanel-user]`;
+shared IP `[hosting-ip]`; **Primary Domain = flashdesk.org, already attached** — so the site can
 go live immediately; fresh account, 149/200,000 inodes). Verdict on the four questions:
 static site YES (File Manager → public_html); 65 MB download file YES (per-file no problem; the
 plan's disk/bandwidth quota not visible in the panel crop — ~100 client downloads ≈ 6.5 GB/month,
@@ -872,7 +872,7 @@ build on it; rebuild/relocate it to a European (ideally Warsaw/Amsterdam/Frankfu
 keep it and buy the small Warsaw VPS instead — his money, his call.** No server setup was
 performed.
 
-**Website check — NOT broken:** `flashdesk.org` → `64.187.97.203` (the cPanel shared IP, correct);
+**Website check — NOT broken:** `flashdesk.org` → `[hosting-ip]` (the cPanel shared IP, correct);
 `www` → CNAME → same; `relay.flashdesk.org` does not exist yet (expected). Important DNS fact
 found: the nameservers are `ns1/ns2.hostsilo.com`, i.e. **DNS is managed at the hosting side, so
 the future `relay` A record goes in cPanel → Domains → Zone Editor, NOT in Namecheap's panel.**
@@ -913,7 +913,7 @@ docs state alternative card-linked methods (Apple Pay etc.) are not accepted.
 
 ## RELAY SERVER CHOSEN AND MEASURED — DeltaHost Kyiv (2026-08-03)
 
-Conor bought the relay at **DeltaHost, Kyiv**: `139.28.36.247`, Ubuntu 24.04 Cloudinit, 4 GB RAM,
+Conor bought the relay at **DeltaHost, Kyiv**: `[relay-ip]`, Ubuntu 24.04 Cloudinit, 4 GB RAM,
 50 GB NVMe, 10 TB traffic, $15/month, root over SSH port 22. **Measured BEFORE any setup work
 (the Namecheap lesson): avg 0.1 ms (min 0 / max 1, 20/20 replies).** Traceroute: 5 hops, all
 domestic (via a Kyiv IXP at `185.1.62.193`), no international transit — the VPS really is in
@@ -961,7 +961,7 @@ Zone Editor A record from Conor first), step 5 /health in a browser.
 
 ## Stage 3 steps 2-3 DONE — Caddy, TLS, and the relay skeleton are live (2026-08-03)
 
-DNS: Conor added `relay` A → `139.28.36.247` in cPanel Zone Editor (flashdesk.org untouched).
+DNS: Conor added `relay` A → `[relay-ip]` in cPanel Zone Editor (flashdesk.org untouched).
 Console fallback TESTED by him and works (`root@ubuntu:~#`, exited cleanly) — so losing `.223`
 does not mean losing the server.
 
@@ -1054,7 +1054,7 @@ Built and verified this session (each proven by running it, not by reading code)
   separate identities paired through Kyiv; caller's window read "connected to 373 883 745",
   the viewed side read "Someone is connected and can see this screen".
 - **Nothing listens.** Port 7789 is gone; verified with `Get-NetTCPConnection` that FlashDesk has
-  zero listening sockets and only outbound connections to `139.28.36.247:443`. **That is why the
+  zero listening sockets and only outbound connections to `[relay-ip]:443`. **That is why the
   Windows Firewall prompt no longer appears** — outbound needs no permission.
 - **Consent dialog** — one dialog, first-contact flag in amber, 3-second delay on first contact
   only, 30-second timeout, X/Escape/timeout all mean Reject (proven: after WM_CLOSE the host
@@ -3420,7 +3420,7 @@ six pages as not matching the server — that is the check doing its job, not a 
 ## 2026-09-20 — Round 5 fully deployed, Check-LiveBuild READY
 
 **Everything is live and passing.** All 7 site files uploaded via FTPS (explicit TLS, Pure-FTPd on
-`64.187.97.203`), and a fresh `FlashDesk.exe` built from `312b5b8` and released to GitHub as
+`[hosting-ip]`), and a fresh `FlashDesk.exe` built from `312b5b8` and released to GitHub as
 `v0.4.0-2`. Check-LiveBuild runs clean — every section green.
 
 **What was uploaded (site):** `site-v2.css` first, then all six pages — `index.html`,
@@ -3788,7 +3788,7 @@ real numbers, not three numbers + platform label); relay encryption claim substa
 (1 for helper, 4 for host); relay diagram given proper figure/figcaption semantics;
 data-flow list converted to accessible table; private-key explanation rewritten; TLS 1.3
 row added to spec table; 90-second reconnect window explained; connection-failure behaviour
-documented; relay server IP (139.28.36.247) and port added for IT administrators.
+documented; relay server IP ([relay-ip]) and port added for IT administrators.
 
 `faq/index.html` — 15 new Q&A entries; answers expanded from one-liners to full paragraphs;
 hard questions answered (what if relay goes down, can Conor see my screen, antivirus
@@ -3938,6 +3938,34 @@ AnyDesk and RustDesk. Build: 0 errors, 0 warnings. 9-agent ultracode workflow; 8
 - `about/index.html` — gradient hero; info cards, status cards, contact card, oss-block elevated.
 - `changelog/index.html` — gradient hero, all 17 release entries elevated.
 - `security-warning/index.html`, `privacy/index.html`, `terms/index.html` — gradient heroes only.
+
+### v0.4.0-30 — 2026-09-21 — Connection history with one-click reconnect
+
+Operator-side quality-of-life: the last 10 peer IDs connected to are remembered and offered as a
+one-click "Recent connections" dropdown so the operator never has to retype a number for a repeat
+session.
+
+**ConnectionHistory (src/RemoteDesktop.Viewer/Files/ConnectionHistory.cs):** New sealed class.
+Stores raw 9-digit peer IDs (no spaces), most-recent first, deduplicates on add, caps at 10
+entries, persists to `connection-history.json` in `FlashDeskFolder.Current`. Read/write failures
+are silently swallowed — a history glitch must never interrupt a session. The host side is never
+informed the list exists.
+
+**MainForm.cs — "Recent connections" link:** A `LinkLabel` appears below the peer-ID field as soon
+as the history is non-empty. Clicking it opens a `ContextMenuStrip` with formatted IDs
+(`FlashDeskId.Format`); picking one fills the peer box and fires `ConnectToPeerAsync()` immediately.
+After every successful connection `ConnectionHistory.Add(digits)` is called and the link is made
+visible if it wasn't already.
+
+**Portable and installed both supported:** `FlashDeskFolder.Current` resolves to
+`%APPDATA%\FlashDesk` for the installed build and to the executable's directory for portable use;
+`connection-history.json` lands in the right place in both cases.
+
+`dotnet test`: **306/306** (zero regressions). **Released as `v0.4.0-30`** — built from
+`b56bae0`, GitHub (`FlashDesk.exe` + `FlashDesk-setup.msi`) and cPanel
+(`public_html/dl/FlashDesk-setup.msi`, overwrite, 100%).
+
+---
 
 ### v0.4.0-29 — 2026-09-21 — Black-screen timer loops; MSI adds desktop shortcut
 
