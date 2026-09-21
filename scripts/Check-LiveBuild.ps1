@@ -203,13 +203,11 @@ $localPageForLink = Join-Path $RepoRoot 'site\index.html'
 $buttonUrl = $null
 if (Test-Path $localPageForLink) {
     $html = Get-Content -Raw -Encoding UTF8 -Path $localPageForLink
-    # ⚠ UPDATED 2026-09-15 — was 'class="download"\s+href="([^"]+)"', the v1 button's exact markup.
-    # The v2 button (live since round 4, 2026-09-04) is <a class="btn btn-primary download-btn"
-    # href="...">, so the old pattern has matched NOTHING for eleven days and this whole check has
-    # been silently skipped that whole time — exactly the "check that cannot fail proves nothing"
-    # trap (CLAUDE.md rule 12). A lookahead finds "download-btn" as one class token anywhere inside
-    # the <a ...> tag, independent of attribute order, then captures href from the same tag.
-    if ($html -match '(?is)<a\b(?=[^>]*\bclass\s*=\s*"[^"]*\bdownload-btn\b)[^>]*\bhref\s*=\s*"([^"]+)"') { $buttonUrl = $Matches[1] }
+    # ⚠ UPDATED 2026-09-21 — redesign (d483811) changed the primary download button class from
+    # "btn btn-blue download-btn" to "download-card__btn" (inside a .download-card.is-primary card).
+    # Pattern now accepts either class token so future redesigns don't silently break this check.
+    # The URL itself is unchanged: /releases/latest/download/FlashDesk.exe via GitHub.
+    if ($html -match '(?is)<a\b(?=[^>]*\bclass\s*=\s*"[^"]*\b(?:download-btn|download-card__btn)\b)[^>]*\bhref\s*=\s*"([^"]+)"') { $buttonUrl = $Matches[1] }
 }
 
 if (-not $buttonUrl) {

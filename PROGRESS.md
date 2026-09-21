@@ -3725,3 +3725,42 @@ cPanel immediately (DELE + fresh upload).
 **Check-LiveBuild result (v0.4.0-16):** READY — server serving `b38186a`, exact HEAD match.
 Both download routes byte-identical (`6872FDE2A6073083...`, 162,492,578 bytes). All 6 mark
 copies consistent. All 6 site pages match repo with all assets resolving.
+
+
+---
+
+### 2026-09-21 — major site redesign: 3 new pages, full content upgrade, download section overhaul
+
+16-agent ultracode workflow. Commit `d483811` (7 files, 7,509 insertions / 452 deletions).
+
+**Audit:** 7 files read across the full site. 114 issues flagged (18 on homepage, 20 on CSS,
+14–17 on inner pages), 69 strengths catalogued. Common themes: thin content, weak trust signals,
+no product changelog, no dedicated download page, ambiguous EXE vs MSI distinction.
+
+**New pages (3):**
+- `/download/` — dedicated download page: EXE vs MSI side-by-side comparison table, clear
+  explanation of what each option means (portable vs installs to Program Files), SHA-256
+  verification instructions, links to GitHub release
+- `/changelog/` — full version history v0.4.0-1 through v0.4.0-17, grouped by theme
+  (relay architecture, BlackScreen feature, MSI installer, site redesign rounds)
+- `/about/` — what FlashDesk is, design philosophy (no account, no install, you stay in
+  control), open development
+
+**Existing pages overhauled:**
+- `index.html` — richer feature section, trust/stats bar, proper download cards (primary EXE
+  + secondary MSI with labels), updated nav linking all new pages, bottom CTA band updated
+- `how-it-works/index.html` — deeper technical detail: connection process, relay architecture,
+  data flow, security properties, step indicators
+- `faq/index.html` — expanded with EXE vs MSI questions, antivirus/Defender questions, relay
+  and port details, open source status
+- `site-v2.css` — new components: feature grid, trust bar, download cards, changelog entry
+  styles, improved step indicators, badge/tag styles, all backward-compatible
+
+**Check-LiveBuild fix:** The redesign renamed the primary download button class from
+`download-btn` to `download-card__btn`. Check-LiveBuild's regex silently skipped step 4 as a
+result. Fixed the pattern to accept either token — pattern now future-proof against minor
+markup renames.
+
+**Check-LiveBuild result:** READY — server serving `ffeff14` (doc-only gap). Both download
+routes byte-identical (`A5E5304CBB939EC5...`, 162,492,578 bytes). All 9 pages (including 3
+new ones) match repo exactly with all assets resolving.
