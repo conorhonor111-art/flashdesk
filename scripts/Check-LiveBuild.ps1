@@ -23,8 +23,17 @@
 
 [CmdletBinding()]
 param(
-    [string] $Url  = 'https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe',
-    [string] $Site = 'https://flashdesk.org',
+    # Primary download — the MSI installer linked from every page on the site.
+    # Changed 2026-09-21: the site now offers only the MSI; the EXE is still published
+    # to GitHub but is no longer linked from any page.
+    [string] $Url    = 'https://flashdesk.org/dl/FlashDesk-setup.msi',
+    # EXE on GitHub — used only for the build-stamp check (section 3), because the MSI
+    # does not embed the git commit in its VersionInfo the way the self-contained exe does.
+    # The exe itself is still uploaded to every GitHub release; it just is not linked from
+    # the site any more. Verifying it is still the most reliable way to confirm WHICH build
+    # is inside the MSI, since both are built from the same commit in the same publish step.
+    [string] $ExeUrl = 'https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe',
+    [string] $Site   = 'https://flashdesk.org',
     [string] $RepoRoot
 )
 
@@ -103,143 +112,165 @@ try {
     Note 'A certificate error shows up here. Nothing else below can be trusted until this passes.'
 }
 
-# ------------------------------------------------------------ 2. the download
+# ------------------------------------------------------------ 2. the MSI installer
+# ⚠ UPDATED 2026-09-21: the primary download is now the MSI installer served directly from
+# flashdesk.org/dl/FlashDesk-setup.msi. The EXE is still published to every GitHub release
+# but is no longer linked from any page on the site. This section verifies the MSI is
+# accessible and a plausible size; section 3 downloads the EXE from GitHub to verify the
+# build commit (the MSI does not embed a git hash in its VersionInfo).
 Say ''
-Say '2. The download'
-$temp = Join-Path $env:TEMP ("flashdesk-livecheck-{0}.exe" -f (Get-Date -Format 'yyyyMMdd-HHmmss'))
-$bust = "$Url" + ('?cb=' + (Get-Date -UFormat %s))
+Say '2. The MSI installer (the download every visitor gets)'
+$tempMsi = Join-Path $env:TEMP ("flashdesk-livecheck-{0}.msi" -f (Get-Date -Format 'yyyyMMdd-HHmmss'))
 try {
     $sw = [System.Diagnostics.Stopwatch]::StartNew()
-    Invoke-WebRequest -Uri $bust -OutFile $temp -UseBasicParsing -TimeoutSec 900
+    Invoke-WebRequest -Uri $Url -OutFile $tempMsi -UseBasicParsing -TimeoutSec 900
     $sw.Stop()
-    $size = (Get-Item $temp).Length
-    Good ("Downloaded {0:N1} MB in {1:N0} seconds." -f ($size / 1MB), $sw.Elapsed.TotalSeconds)
-    if ($size -lt 20MB) {
-        Bad "That file is far too small to be FlashDesk - the server may be serving an error page."
+    $sizeMsi = (Get-Item $tempMsi).Length
+    Good ("Downloaded {0:N1} MB in {1:N0} seconds." -f ($sizeMsi / 1MB), $sw.Elapsed.TotalSeconds)
+    if ($sizeMsi -lt 40MB) {
+        Bad "That file is far too small to be the FlashDesk installer - the server may be serving an error page."
+    } else {
+        Note ("MSI is {0:N0} bytes - within the expected range." -f $sizeMsi)
     }
 } catch {
-    Bad "The download failed: $($_.Exception.Message)"
-    Say ''
-    Say 'Stopping here - there is nothing to check.'
-    exit 1
+    Bad "The MSI download failed: $($_.Exception.Message)"
+    Note 'This is the file every visitor downloads. Treat this as a blocking failure.'
+} finally {
+    Remove-Item $tempMsi -Force -ErrorAction SilentlyContinue
 }
 
 # ------------------------------------------------ 3. which build is it, really
+# The MSI does not embed the git commit in VersionInfo the way the self-contained EXE does.
+# The EXE is still published to every GitHub release alongside the MSI; downloading it here
+# is the reliable way to confirm WHICH build is packaged, since both are produced in the
+# same publish step from the same commit.
 Say ''
-Say '3. Which build is on the server'
-$info = (Get-Item $temp).VersionInfo
-$productVersion = $info.ProductVersion
-Note "The file says: $($info.ProductName) $productVersion"
-Note "Windows will show: `"$($info.FileDescription)`""
-
-$liveCommit = $null
-if ($productVersion -match '\+([0-9a-f]{7,40})') { $liveCommit = $Matches[1] }
-
-if (-not $liveCommit) {
-    Bad 'That file does not carry a build stamp, so it cannot be identified.'
-    Note 'Expected a version like 0.3.0+84c3bab... Republish with the documented publish command.'
-} else {
-    Push-Location $RepoRoot
-    try {
-        $head = (git rev-parse HEAD).Trim()
-        $known = $true
-        try { git cat-file -e "$liveCommit^{commit}" 2>$null; $known = ($LASTEXITCODE -eq 0) } catch { $known = $false }
-
-        if (-not $known) {
-            Bad "The server is serving build $liveCommit, which this repository has never seen."
-            Note 'Either it was built from someone else''s copy, or this repo is behind. Do not test against it.'
-        }
-        elseif ($liveCommit -eq $head -or $head.StartsWith($liveCommit)) {
-            Good "The server is serving exactly this repository's current build ($($liveCommit.Substring(0,7)))."
-        }
-        else {
-            # THE SUBTLETY: only REAL code changes matter. Docs-only commits are not a problem — and
-            # as of 2026-09-15, neither is a commit that only edits a comment or blank line INSIDE a
-            # .cs file (a real false positive this script produced on commit 6f33070: a one-line
-            # comment fix in Theme.cs, zero behaviour change, still reported as a stale build). A
-            # non-.cs file under src\ (a .csproj, a .resx, anything not source text) gets no benefit
-            # of the doubt — see Test-CommentOnlyDiff above for exactly what "safe" means here.
-            $allMissing   = @(git log --oneline "$liveCommit..HEAD")
-            $changedFiles = @(git diff --name-only $liveCommit HEAD -- 'src/')
-            $csFiles      = @($changedFiles | Where-Object { $_ -like '*.cs' })
-            $otherFiles   = @($changedFiles | Where-Object { $_ -notlike '*.cs' })
-            $unsafeCs     = @($csFiles | Where-Object { -not (Test-CommentOnlyDiff $_ $liveCommit 'HEAD') })
-
-            if ($changedFiles.Count -eq 0) {
-                Good ("The server's build is code-current ({0})." -f $liveCommit.Substring(0,7))
-                Note ("It is behind by {0} commit(s), but none of them touch src\ - documentation only." -f $allMissing.Count)
-            } elseif ($otherFiles.Count -eq 0 -and $unsafeCs.Count -eq 0) {
-                Good ("The server's build is code-current ({0})." -f $liveCommit.Substring(0,7))
-                Note ("It is behind by {0} commit(s). {1} .cs file(s) changed in that range, but every" -f $allMissing.Count, $csFiles.Count)
-                Note 'changed line in each is a comment or blank line, checked line-by-line - not assumed:'
-                foreach ($f in $csFiles) { Note "  comment/blank only: $f" }
-            } else {
-                Bad ("The server is serving an OLD build - {0} commit(s) touch real .cs code, missing from it:" -f $allMissing.Count)
-                foreach ($c in $allMissing) { Note "  missing: $c" }
-                Note ''
-                Note 'Changed files under src\ in the missing range, so you can judge in one glance:'
-                foreach ($f in $csFiles)    { Note ("  {0}  {1}" -f $f, $(if ($unsafeCs -contains $f) { '(real code changed)' } else { '(comment/blank only)' })) }
-                foreach ($f in $otherFiles) { Note ("  {0}  (not a .cs file - no comment-only exemption possible)" -f $f) }
-                Note ''
-                Note 'Republish and re-upload before testing, or the test will measure the wrong program:'
-                Note '  dotnet publish src\RemoteDesktop.Host -c Release -r win-x64 --self-contained true \'
-                Note '    -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true \'
-                Note '    -p:IncludeNativeLibrariesForSelfExtract=true -o C:\Users\PC\Desktop\flashdesk-upload'
-            }
-        }
-    } finally { Pop-Location }
+Say '3. Which build is on the server (via the EXE on GitHub)'
+$temp = Join-Path $env:TEMP ("flashdesk-livecheck-{0}.exe" -f (Get-Date -Format 'yyyyMMdd-HHmmss'))
+$bust = "$ExeUrl" + ('?cb=' + (Get-Date -UFormat %s))
+try {
+    $sw2 = [System.Diagnostics.Stopwatch]::StartNew()
+    Invoke-WebRequest -Uri $bust -OutFile $temp -UseBasicParsing -TimeoutSec 900
+    $sw2.Stop()
+    $sizeExe = (Get-Item $temp).Length
+    Note ("EXE downloaded {0:N1} MB in {1:N0} s (not the site download - used for version stamp only)." -f ($sizeExe / 1MB), $sw2.Elapsed.TotalSeconds)
+    if ($sizeExe -lt 20MB) {
+        Bad "EXE from GitHub is far too small - the release may be missing the file."
+    }
+} catch {
+    Bad "The EXE download from GitHub failed: $($_.Exception.Message)"
+    Note 'Cannot verify which build is packaged - treat this as a missing check, not a pass.'
+    $temp = $null
 }
 
-# -------------------------------------------- 4. the OTHER download route, the one people use
-# Added 2026-08-06. Until now this script only checked https://flashdesk.org/dl/FlashDesk.exe — and
-# that is the FALLBACK. The green button on the page points at a GitHub release, because the
-# identical file served from flashdesk.org was blocked by Chrome (measured 2026-08-05). So the route
-# almost every stranger takes was the one route never verified, and a READY here would have meant
-# nothing about it. The link is read OFF THE PAGE rather than hard-coded, so this follows the button
-# wherever it points.
+if ($temp -and (Test-Path $temp)) {
+    $info = (Get-Item $temp).VersionInfo
+    $productVersion = $info.ProductVersion
+    Note "The EXE says: $($info.ProductName) $productVersion"
+    Note "Windows will show: `"$($info.FileDescription)`""
+
+    $liveCommit = $null
+    if ($productVersion -match '\+([0-9a-f]{7,40})') { $liveCommit = $Matches[1] }
+
+    if (-not $liveCommit) {
+        Bad 'The EXE does not carry a build stamp, so it cannot be identified.'
+        Note 'Expected a version like 0.4.0+84c3bab... Republish with the documented publish command.'
+    } else {
+        Push-Location $RepoRoot
+        try {
+            $head = (git rev-parse HEAD).Trim()
+            $known = $true
+            try { git cat-file -e "$liveCommit^{commit}" 2>$null; $known = ($LASTEXITCODE -eq 0) } catch { $known = $false }
+
+            if (-not $known) {
+                Bad "The release build is $liveCommit, which this repository has never seen."
+                Note 'Either it was built from someone else''s copy, or this repo is behind. Do not test against it.'
+            }
+            elseif ($liveCommit -eq $head -or $head.StartsWith($liveCommit)) {
+                Good "The release is exactly this repository's current build ($($liveCommit.Substring(0,7)))."
+            }
+            else {
+                # THE SUBTLETY: only REAL code changes matter. Docs-only commits are not a problem — and
+                # as of 2026-09-15, neither is a commit that only edits a comment or blank line INSIDE a
+                # .cs file. A non-.cs file under src\ gets no benefit of the doubt.
+                $allMissing   = @(git log --oneline "$liveCommit..HEAD")
+                $changedFiles = @(git diff --name-only $liveCommit HEAD -- 'src/')
+                $csFiles      = @($changedFiles | Where-Object { $_ -like '*.cs' })
+                $otherFiles   = @($changedFiles | Where-Object { $_ -notlike '*.cs' })
+                $unsafeCs     = @($csFiles | Where-Object { -not (Test-CommentOnlyDiff $_ $liveCommit 'HEAD') })
+
+                if ($changedFiles.Count -eq 0) {
+                    Good ("The release build is code-current ({0})." -f $liveCommit.Substring(0,7))
+                    Note ("It is behind by {0} commit(s), but none of them touch src\ - documentation only." -f $allMissing.Count)
+                } elseif ($otherFiles.Count -eq 0 -and $unsafeCs.Count -eq 0) {
+                    Good ("The release build is code-current ({0})." -f $liveCommit.Substring(0,7))
+                    Note ("It is behind by {0} commit(s). {1} .cs file(s) changed in that range, but every" -f $allMissing.Count, $csFiles.Count)
+                    Note 'changed line in each is a comment or blank line, checked line-by-line - not assumed:'
+                    foreach ($f in $csFiles) { Note "  comment/blank only: $f" }
+                } else {
+                    Bad ("The release is an OLD build - {0} commit(s) touch real .cs code, missing from it:" -f $allMissing.Count)
+                    foreach ($c in $allMissing) { Note "  missing: $c" }
+                    Note ''
+                    Note 'Changed files under src\ in the missing range:'
+                    foreach ($f in $csFiles)    { Note ("  {0}  {1}" -f $f, $(if ($unsafeCs -contains $f) { '(real code changed)' } else { '(comment/blank only)' })) }
+                    foreach ($f in $otherFiles) { Note ("  {0}  (not a .cs file - no comment-only exemption possible)" -f $f) }
+                    Note ''
+                    Note 'Republish and re-upload before testing, or the test will measure the wrong program:'
+                    Note '  dotnet publish src\RemoteDesktop.Host -c Release -r win-x64 --self-contained true \'
+                    Note '    -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true \'
+                    Note '    -p:IncludeNativeLibrariesForSelfExtract=true -o publish\host'
+                }
+            }
+        } finally { Pop-Location }
+    }
+    Remove-Item $temp -Force -ErrorAction SilentlyContinue
+}
+
+# ------------------------------------------ 4. the download button on the page
+# ⚠ REWRITTEN 2026-09-21: the site previously had two download routes (a GitHub EXE and a
+# cPanel MSI). As of v0.4.0-25 there is exactly ONE route: the MSI installer at
+# flashdesk.org/dl/FlashDesk-setup.msi. This section verifies that every download button
+# on the home page points at that same address, and that the address matches $Url (the one
+# section 2 already downloaded). If the regex ever stops finding a button, update it here —
+# the pattern is intentionally broad so minor markup changes do not silently skip the check.
+#
+# Buttons to find: the header-cta (top-right of every page), and any btn links in the main
+# content (bottom CTA band, etc.). All should point to $Url.
 Say ''
-Say '4. Both download routes serve the same file'
+Say '4. Download buttons on the page all point to the right place'
 $localPageForLink = Join-Path $RepoRoot 'site\index.html'
-$buttonUrl = $null
+$buttonUrls = @()
 if (Test-Path $localPageForLink) {
     $html = Get-Content -Raw -Encoding UTF8 -Path $localPageForLink
-    # ⚠ UPDATED 2026-09-21 — redesign (d483811) changed the primary download button class from
-    # "btn btn-blue download-btn" to "download-card__btn" (inside a .download-card.is-primary card).
-    # Pattern now accepts either class token so future redesigns don't silently break this check.
-    # The URL itself is unchanged: /releases/latest/download/FlashDesk.exe via GitHub.
-    if ($html -match '(?is)<a\b(?=[^>]*\bclass\s*=\s*"[^"]*\b(?:download-btn|download-card__btn)\b)[^>]*\bhref\s*=\s*"([^"]+)"') { $buttonUrl = $Matches[1] }
+    # Match any <a> whose href looks like a download URL for FlashDesk (contains .msi or .exe or
+    # the GitHub releases path). Captures the href value.  The pattern is deliberately broad:
+    # a missed button is a false pass, which is the failure mode that cost time before (2026-08-06).
+    $dlPattern = '(?is)<a\b[^>]*\bhref\s*=\s*"([^"]*(?:FlashDesk|flashdesk\.org/dl|releases/latest/download)[^"]*)"'
+    foreach ($m in [regex]::Matches($html, $dlPattern)) {
+        $u = $m.Groups[1].Value.Trim()
+        if ($u -notin $buttonUrls) { $buttonUrls += $u }
+    }
 }
 
-if (-not $buttonUrl) {
-    Bad 'NO download button address could be found in site\index.html at all -- the byte-for-byte route-parity check below DID NOT RUN.'
-    Note 'This is not "the routes differ" - it means NOTHING about the button route was checked this'
-    Note 'time. The button markup in site-src\pages\home.html has changed shape again; update the'
-    Note 'regex a few lines above this message in scripts\Check-LiveBuild.ps1 to match it.'
-} elseif ($buttonUrl -eq $Url) {
-    Good 'The page''s button points at the same address this check already downloaded.'
+if ($buttonUrls.Count -eq 0) {
+    Bad 'No FlashDesk download links found in site\index.html -- the button check DID NOT RUN.'
+    Note 'The page markup may have changed shape. Update the $dlPattern regex in section 4 of'
+    Note 'scripts\Check-LiveBuild.ps1 to match the current button structure.'
 } else {
-    Note "The button points at: $buttonUrl"
-    $temp2 = Join-Path $env:TEMP ("flashdesk-livecheck-button-{0}.exe" -f (Get-Date -Format 'HHmmss'))
-    try {
-        Invoke-WebRequest -Uri $buttonUrl -OutFile $temp2 -UseBasicParsing -TimeoutSec 900
-        $sizeA = (Get-Item $temp).Length
-        $sizeB = (Get-Item $temp2).Length
-        $hashA = (Get-FileHash -Path $temp  -Algorithm SHA256).Hash
-        $hashB = (Get-FileHash -Path $temp2 -Algorithm SHA256).Hash
-        Note ("flashdesk.org/dl : {0:N0} bytes  {1}" -f $sizeA, $hashA.Substring(0, 16) + '...')
-        Note ("the green button : {0:N0} bytes  {1}" -f $sizeB, $hashB.Substring(0, 16) + '...')
-        if ($hashA -eq $hashB) {
-            Good 'Both routes serve byte-for-byte the same file.'
-        } else {
-            Bad 'THE TWO DOWNLOAD ROUTES SERVE DIFFERENT FILES.'
-            Note 'Whichever is older must be replaced. The button is what strangers actually click,'
-            Note 'so if only one can be fixed now, fix that one first.'
+    $wrongUrls = @($buttonUrls | Where-Object { $_ -ne $Url })
+    if ($wrongUrls.Count -eq 0) {
+        Good ("All {0} download button(s) on the home page point to the correct MSI URL." -f $buttonUrls.Count)
+        Note "  $Url"
+    } else {
+        foreach ($u in $wrongUrls) {
+            Bad "A download button points somewhere unexpected: $u"
+            Note "  Expected: $Url"
+            Note '  Update the href in site\index.html (and every other page that has this button).'
         }
-    } catch {
-        Bad "The button's download could not be fetched: $($_.Exception.Message)"
-        Note 'That is the link every visitor clicks. Treat this as more serious than the fallback failing.'
-    } finally {
-        Remove-Item $temp2 -Force -ErrorAction SilentlyContinue
+        # Report correct ones too, for context
+        foreach ($u in ($buttonUrls | Where-Object { $_ -eq $Url })) {
+            Good "  (correct)  $u"
+        }
     }
 }
 
@@ -362,7 +393,6 @@ foreach ($lp in $localPages) {
 }
 
 # --------------------------------------------------------------- 6. the verdict
-Remove-Item $temp -Force -ErrorAction SilentlyContinue
 Say ''
 Say '================================================================'
 if ($problems.Count -eq 0) {
