@@ -78,7 +78,7 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/site-v2.css">
+<link rel="stylesheet" href="/site-v2.css?v=0427">
 <style>
 /* ─── ROUND-6 ADDITIONS ──────────────────────────────────────────────────────
    All rules are scoped to new class names so they cannot break any existing
@@ -781,9 +781,32 @@ body.nav-open .mobile-nav-drawer {
      ROUND 6 CHANGES: Download section replaced with two-card layout + verify block.
      ------------------------------------------------------------------------------------------ -->
 <section class="band band-paper hero-gradient-wrap">
+  <!-- Decorative circuit-node pattern — visual depth, no semantic content -->
+  <svg class="hero-deco-svg" viewBox="0 0 700 500" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+    <g fill="none" stroke="#2BD16B">
+      <line x1="0"   y1="160" x2="160" y2="160" stroke-width="1" opacity="0.20"/>
+      <line x1="160" y1="0"   x2="160" y2="160" stroke-width="1" opacity="0.20"/>
+      <circle cx="160" cy="160" r="4"  fill="#2BD16B" stroke="none" opacity="0.42"/>
+      <line x1="160" y1="160" x2="340" y2="160" stroke-width="1" opacity="0.20"/>
+      <line x1="340" y1="0"   x2="340" y2="160" stroke-width="1" opacity="0.14"/>
+      <line x1="340" y1="160" x2="340" y2="300" stroke-width="1" opacity="0.20"/>
+      <circle cx="340" cy="160" r="4"  fill="#2BD16B" stroke="none" opacity="0.42"/>
+      <line x1="340" y1="300" x2="540" y2="300" stroke-width="1" opacity="0.20"/>
+      <circle cx="340" cy="300" r="4"  fill="#2BD16B" stroke="none" opacity="0.42"/>
+      <line x1="540" y1="80"  x2="700" y2="80"  stroke-width="1" opacity="0.13"/>
+      <circle cx="540" cy="80"  r="3"  fill="#2BD16B" stroke="none" opacity="0.30"/>
+      <line x1="540" y1="0"   x2="540" y2="300" stroke-width="1" opacity="0.15"/>
+      <line x1="540" y1="300" x2="540" y2="500" stroke-width="1" opacity="0.11"/>
+      <circle cx="540" cy="300" r="6" fill="none" stroke="#2BD16B" stroke-width="1.5" opacity="0.38"/>
+      <line x1="80"  y1="380" x2="220" y2="380" stroke-width="1" opacity="0.11"/>
+      <circle cx="80"  cy="380" r="3"  fill="#2BD16B" stroke="none" opacity="0.22"/>
+      <circle cx="220" cy="380" r="3"  fill="#2BD16B" stroke="none" opacity="0.18"/>
+      <line x1="220" y1="380" x2="220" y2="500" stroke-width="1" opacity="0.09"/>
+    </g>
+  </svg>
   <div class="contained hero-grid">
     <div class="hero-copy">
-      <h1>Remote support in one file</h1>
+      <h1>Remote support in <span class="hero-accent">one file</span></h1>
       <p class="lead">Your mum calls — her laptop won't start. You need to see her screen. One
       file, nothing to install, no account to create. You watch everything the whole time and can
       disconnect with one click.</p>

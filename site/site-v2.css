@@ -1870,6 +1870,112 @@ ol.steps .num {
   background: rgba(236,239,243,0.08);
 }
 
+/* ── HERO VISUAL UPGRADE ─────────────────────────────────────────────────────
+   Dot-grid texture, stronger dual-radial glow, floating screenshot,
+   frosted-glass download cards, always-light callout labels, h1 accent.
+   All rules are scoped to .hero-gradient-wrap — zero bleed to other sections.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* Darker, more dramatic base gradient */
+.hero-gradient-wrap {
+  background: linear-gradient(145deg, #0D0F12 0%, #121A14 45%, #0F1A12 100%);
+}
+
+/* Dot-grid texture overlay — 28 px pitch, 5.5 % white dots */
+.hero-gradient-wrap::before {
+  content:          '';
+  position:         absolute;
+  inset:            0;
+  background-image: radial-gradient(rgba(255,255,255,0.055) 1px, transparent 1px);
+  background-size:  28px 28px;
+  pointer-events:   none;
+}
+
+/* Dual-radial glow: green spotlight behind screenshot + faint blue bottom-left */
+.hero-gradient-wrap::after {
+  background:
+    radial-gradient(ellipse 58% 70% at 82% 28%, rgba(43,209,107,0.18) 0%, transparent 62%),
+    radial-gradient(ellipse 40% 55% at 10% 90%, rgba(26,115,232,0.07) 0%, transparent 55%);
+}
+
+/* Lift hero content above the pseudo-element layers */
+.hero-gradient-wrap > .contained { position: relative; z-index: 1; }
+
+/* Circuit-node decorative SVG — positioned behind content on desktop */
+.hero-deco-svg {
+  position:       absolute;
+  top:            0;
+  right:          0;
+  width:          55%;
+  max-width:      560px;
+  height:         100%;
+  pointer-events: none;
+  z-index:        0;
+}
+@media (max-width: 899px) { .hero-deco-svg { display: none; } }
+
+/* Screenshot: floating elevation + ambient green glow ring */
+.hero-gradient-wrap .shot-frame img {
+  border-color: rgba(255,255,255,0.10);
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.06),
+    0 8px 32px  rgba(0,0,0,0.45),
+    0 32px 80px rgba(0,0,0,0.55),
+    0 0 70px    rgba(43,209,107,0.12);
+}
+
+/* Callout labels: force light background regardless of OS colour scheme */
+.hero-gradient-wrap .callout-label {
+  background:   rgba(255,255,255,0.96);
+  border-color: rgba(0,0,0,0.07);
+  color:        #1B1F24;
+  box-shadow:   0 4px 18px rgba(0,0,0,0.28);
+}
+
+/* h1 accent word */
+.hero-accent { color: #2BD16B; }
+
+/* Download cards: frosted-glass on dark hero */
+.hero-gradient-wrap .download-card {
+  background:   rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.11);
+}
+.hero-gradient-wrap .download-card.is-primary {
+  background:   rgba(21,88,176,0.22);
+  border-color: rgba(74,150,230,0.44);
+  box-shadow:   0 0 0 3px rgba(21,88,176,0.08);
+}
+.hero-gradient-wrap .download-card__filename { color: #FFFFFF; }
+.hero-gradient-wrap .download-card__pill {
+  background:   rgba(255,255,255,0.10);
+  color:        rgba(236,239,243,0.85);
+  border-color: rgba(255,255,255,0.14);
+}
+.hero-gradient-wrap .is-primary .download-card__pill {
+  background: rgba(21,88,176,0.55);
+  color:      #FFFFFF;
+}
+.hero-gradient-wrap .download-card__btn {
+  background:   rgba(255,255,255,0.09);
+  color:        #ECEFF3;
+  border-color: rgba(255,255,255,0.18);
+}
+.hero-gradient-wrap .download-card__btn:hover        { background: rgba(255,255,255,0.15); transform: translateY(-1px); }
+.hero-gradient-wrap .is-primary .download-card__btn  { background: #1558B0; color: #FFFFFF; border-color: transparent; }
+.hero-gradient-wrap .is-primary .download-card__btn:hover { background: #0F4A99; }
+.hero-gradient-wrap .download-card__meta,
+.hero-gradient-wrap .download-card__sub,
+.hero-gradient-wrap .download-card__note,
+.hero-gradient-wrap .download-card__hash             { color: rgba(236,239,243,0.58); }
+.hero-gradient-wrap .download-card__hash a,
+.hero-gradient-wrap .download-card__note a           { color: rgba(236,239,243,0.62); }
+
+/* Verify / SHA block on dark hero */
+.hero-gradient-wrap .verify-block summary   { color: rgba(236,239,243,0.70); }
+.hero-gradient-wrap .verify-block[open]     { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.09); }
+.hero-gradient-wrap .verify-block__code     { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.09); color: #ECEFF3; }
+.hero-gradient-wrap .verify-block summary::before { color: rgba(236,239,243,0.60); }
+
 /* ── TRUST STRIP ─────────────────────────────────────────────────────────── */
 .trust-strip {
   display: flex;
