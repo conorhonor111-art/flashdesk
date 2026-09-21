@@ -83,7 +83,22 @@ public sealed class RoundedButton : Button
         var bounds = new RectangleF(0.5f, 0.5f, Width - 1f, Height - 1f);
         using (var path = Theme.RoundedPath(bounds, radius))
         {
-            using (var brush = new SolidBrush(fill)) g.FillPath(brush, path);
+            // Gradient fill for Primary (blue) and Destructive (red) when enabled and in resting state.
+            // All other states (disabled, pressed, neutral) keep the flat fill from Theme.ButtonColors.
+            if (Enabled && !_pressed && (_kind == ButtonKind.Primary || _kind == ButtonKind.Destructive))
+            {
+                var gradTop = _kind == ButtonKind.Primary ? Theme.BlueGradientTop : Theme.RedGradientTop;
+                var gradBot = _kind == ButtonKind.Primary ? Theme.BlueGradientBottom : Theme.RedGradientBottom;
+                using var grad = new LinearGradientBrush(
+                    new PointF(bounds.X, bounds.Y), new PointF(bounds.X, bounds.Bottom),
+                    gradTop, gradBot);
+                g.FillPath(grad, path);
+            }
+            else
+            {
+                using var brush = new SolidBrush(fill);
+                g.FillPath(brush, path);
+            }
             using (var pen = new Pen(border, Theme.BorderThickness)) g.DrawPath(pen, path);
         }
 

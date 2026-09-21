@@ -221,6 +221,11 @@ public sealed class MainForm : Form
         Controls.Add(_band);
         content.BringToFront(); // Fill must claim the space left after the Top band and Bottom actions
 
+        // 4px brand-green accent stripe on the window's left edge — one thin line of identity.
+        var _accentStripe = new Panel { Dock = DockStyle.Left, Width = 4, BackColor = Theme.AccentStripe };
+        Controls.Add(_accentStripe);
+        _accentStripe.BringToFront();
+
         // Nothing is served until this returns true. Marshalled to the UI thread because it is
         // asked from the relay's background loop, and it must be a real dialog on this screen.
         _server.ConsentAsk = callerId =>

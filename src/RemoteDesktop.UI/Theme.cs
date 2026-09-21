@@ -159,6 +159,34 @@ public static class Theme
     public static readonly Color RedPressed = Color.FromArgb(0x8F, 0x18, 0x15);
 
     // =========================================================================
+    // COLOURS — gradient fill pairs (LinearGradientBrush targets)
+    // =========================================================================
+
+    /// <summary>Top of the Primary (blue) button gradient. #2B8EFF — brighter than Blue.</summary>
+    public static readonly Color BlueGradientTop = Color.FromArgb(0x2B, 0x8E, 0xFF);
+
+    /// <summary>Bottom of the Primary (blue) button gradient. #1260C4 — deeper than Blue.</summary>
+    public static readonly Color BlueGradientBottom = Color.FromArgb(0x12, 0x60, 0xC4);
+
+    /// <summary>Top of the Destructive (red) button gradient. #D42925.</summary>
+    public static readonly Color RedGradientTop = Color.FromArgb(0xD4, 0x29, 0x25);
+
+    /// <summary>Bottom of the Destructive (red) button gradient. #7A1512.</summary>
+    public static readonly Color RedGradientBottom = Color.FromArgb(0x7A, 0x15, 0x12);
+
+    /// <summary>
+    /// Four-pixel accent stripe on the main window left edge. Alias of BrandGreen — one thin
+    /// line of brand identity framing the content without intruding on it.
+    /// </summary>
+    public static readonly Color AccentStripe = BrandGreen;
+
+    /// <summary>
+    /// Subtle bottom+right border on elevated cards. #D0D6DF — one step darker than Border.
+    /// Simulates a soft drop-shadow without requiring composited alpha in WinForms.
+    /// </summary>
+    public static readonly Color CardElevBorder = Color.FromArgb(0xD0, 0xD6, 0xDF);
+
+    // =========================================================================
     // COLOURS — disabled state (visibly inert, still readable)
     // =========================================================================
 

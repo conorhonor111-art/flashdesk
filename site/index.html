@@ -455,6 +455,97 @@ body.nav-open .mobile-nav-drawer {
 .compare-check { color: #1CA352; font-weight: 700; }
 .compare-cross  { color: var(--color-muted); }
 
+/* GRADIENT HERO ──────────────────────────────────────────────────────────── */
+.hero-gradient-wrap {
+  background: linear-gradient(135deg, #1A1A2E 0%, #0F0F23 100%) !important;
+}
+.hero-gradient-wrap .hero-copy h1 {
+  color: #fff;
+}
+.hero-gradient-wrap .hero-copy .lead {
+  color: rgba(255,255,255,0.82);
+}
+.hero-gradient-wrap .hero-copy .touch-note {
+  color: rgba(255,255,255,0.70);
+}
+.hero-gradient-wrap .hero-copy > p:not(.lead):not(.touch-note) {
+  color: rgba(255,255,255,0.70);
+}
+.hero-gradient-wrap .callout-label {
+  background: rgba(255,255,255,0.92);
+  color: #1B1F24;
+}
+.hero-gradient-wrap figcaption {
+  color: rgba(255,255,255,0.60);
+}
+
+/* TRUST STRIP ────────────────────────────────────────────────────────────── */
+.trust-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-6);
+  justify-content: center;
+  padding: var(--sp-3) var(--sp-4);
+  background: #F0F4F8;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+.trust-strip__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--color-text);
+}
+.trust-strip__dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2BD16B;
+  flex-shrink: 0;
+}
+
+/* ELEVATED FEATURE CARDS ─────────────────────────────────────────────────── */
+.card--elevated {
+  border-right-color: #D0D6DF;
+  border-bottom-color: #D0D6DF;
+  box-shadow: 1px 2px 0 0 #D0D6DF;
+}
+
+/* FEATURE ICON TILES ─────────────────────────────────────────────────────── */
+.feature-icon-tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--radius);
+  background: #EFF6FF;
+  font-size: 1.375rem;
+  line-height: 1;
+  margin-bottom: var(--sp-3);
+  border: 1px solid #BFDBFE;
+}
+.feature-icon-tile--blue {
+  background: #1A73E8;
+  border-color: #1A73E8;
+}
+
+/* CTA BAND GRADIENT ──────────────────────────────────────────────────────── */
+.cta-band--gradient {
+  background: linear-gradient(150deg, #1A1A2E 0%, #0D2045 60%, #0F0F23 100%) !important;
+}
+
+/* DOWNLOAD CARD VARIANTS ─────────────────────────────────────────────────── */
+.download-card--primary {
+  border-left: 3px solid #1A73E8;
+}
+.download-card--secondary {
+  border-left: 3px solid var(--color-border-strong);
+}
+
 /* STAT STRIP ─────────────────────────────────────────────────────────────── */
 .stat-strip {
   display: flex;
@@ -687,7 +778,7 @@ body.nav-open .mobile-nav-drawer {
      ROUND 5 CHANGES: h1, button colour (green → blue), CTA label, trust strip.
      ROUND 6 CHANGES: Download section replaced with two-card layout + verify block.
      ------------------------------------------------------------------------------------------ -->
-<section class="band band-paper">
+<section class="band band-paper hero-gradient-wrap">
   <div class="contained hero-grid">
     <div class="hero-copy">
       <h1>Remote support in one file</h1>
@@ -714,7 +805,7 @@ body.nav-open .mobile-nav-drawer {
            the release's earned reputation score. -->
       <div class="download-cards">
         <!-- PRIMARY CARD — Portable EXE (recommended) -->
-        <div class="download-card is-primary">
+        <div class="download-card is-primary download-card--primary">
           <span class="download-card__pill">Recommended · Portable</span>
           <span class="download-card__filename">FlashDesk.exe</span>
           <a class="download-card__btn" href="https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe">
@@ -732,7 +823,7 @@ body.nav-open .mobile-nav-drawer {
         </div>
 
         <!-- SECONDARY CARD — Windows Installer (.msi) -->
-        <div class="download-card">
+        <div class="download-card download-card--secondary">
           <span class="download-card__pill">Alternative · Installer</span>
           <span class="download-card__filename">FlashDesk-setup.msi</span>
           <a class="download-card__btn" href="https://flashdesk.org/dl/FlashDesk-setup.msi">
@@ -796,6 +887,12 @@ body.nav-open .mobile-nav-drawer {
     </figure>
   </div>
 </section>
+<div class="trust-strip" role="list" aria-label="Key product facts">
+  <div class="trust-strip__item" role="listitem"><span class="trust-strip__dot" aria-hidden="true"></span>100% free</div>
+  <div class="trust-strip__item" role="listitem"><span class="trust-strip__dot" aria-hidden="true"></span>No account needed</div>
+  <div class="trust-strip__item" role="listitem"><span class="trust-strip__dot" aria-hidden="true"></span>Nothing installs</div>
+  <div class="trust-strip__item" role="listitem"><span class="trust-strip__dot" aria-hidden="true"></span>Windows 10 &amp; 11</div>
+</div>
 
 <!-- ---- FEATURE HIGHLIGHTS -------------------------------------------------------------------
      Four verifiable properties of FlashDesk — no marketing superlatives. Each claim is a fact
@@ -808,28 +905,32 @@ body.nav-open .mobile-nav-drawer {
     <p class="lead">Four properties that separate FlashDesk from every other remote support tool.</p>
 
     <div class="feature-grid">
-      <div class="feature-card">
+      <div class="feature-card card--elevated">
+        <div class="feature-icon-tile" aria-hidden="true">⚡</div>
         <div class="feature-card__icon">
           <svg class="icon-lg" aria-hidden="true"><use href="#i-file"/></svg>
         </div>
         <h3>No install required</h3>
         <p>One .exe file. Run it, get help, close it. Nothing is written to your system. Delete the file and FlashDesk is completely gone — no uninstaller needed, no registry entries left behind.</p>
       </div>
-      <div class="feature-card">
+      <div class="feature-card card--elevated">
+        <div class="feature-icon-tile feature-icon-tile--blue" aria-hidden="true">🔑</div>
         <div class="feature-card__icon">
           <svg class="icon-lg" aria-hidden="true"><use href="#i-user"/></svg>
         </div>
         <h3>No account needed</h3>
         <p>No email address. No sign-up form. No licence key. You open the file, a number appears, you read it to someone — that is the entire setup.</p>
       </div>
-      <div class="feature-card">
+      <div class="feature-card card--elevated">
+        <div class="feature-icon-tile" aria-hidden="true">👁</div>
         <div class="feature-card__icon">
           <svg class="icon-lg" aria-hidden="true"><use href="#i-eye"/></svg>
         </div>
         <h3>You control it, always</h3>
         <p>You see everything your helper does while they are connected. A permanent amber band across the top of the window shows when anyone is connected. One click ends the session immediately.</p>
       </div>
-      <div class="feature-card">
+      <div class="feature-card card--elevated">
+        <div class="feature-icon-tile feature-icon-tile--blue" aria-hidden="true">🔒</div>
         <div class="feature-card__icon">
           <svg class="icon-lg" aria-hidden="true"><use href="#i-lock"/></svg>
         </div>
@@ -1055,7 +1156,7 @@ body.nav-open .mobile-nav-drawer {
      The /security-warning/ link is repeated here because some visitors reach the bottom still
      uncertain about the Windows warning — this is where they need the reassurance most.
      ------------------------------------------------------------------------------------------ -->
-<section class="band band-tile">
+<section class="band band-tile cta-band--gradient">
   <div class="contained" style="text-align:center;">
     <h2 style="color:var(--color-tile-text);margin-bottom:var(--sp-4);">Ready to get help?</h2>
     <p class="lead" style="color:var(--color-tile-muted);margin-bottom:var(--sp-5);">One portable file. Nothing installs. Works on Windows 10 and 11.</p>

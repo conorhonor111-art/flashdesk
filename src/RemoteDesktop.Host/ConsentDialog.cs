@@ -81,6 +81,9 @@ public sealed class ConsentDialog : Form
         TopMost = true;         // a decision the person must see, not one hidden behind a window
         ClientSize = Theme.ConsentDialogSize;
         Theme.ApplyWindow(this);
+        // Thin accent strip at the top — a quiet brand signal that this is a FlashDesk dialog.
+        var titleStrip = new Panel { Dock = DockStyle.Top, Height = 5, BackColor = Theme.Blue };
+        Controls.Add(titleStrip);
 
         try
         {
@@ -124,6 +127,9 @@ public sealed class ConsentDialog : Form
             Height = 56,
             Margin = new Padding(0, 0, 0, Theme.S1),
         };
+        // Very light blue tint — makes the caller's number read as a distinct "chip" rather than
+        // floating text; reinforces that this number is the thing to verify before clicking.
+        who.BackColor = Color.FromArgb(0xF0, 0xF7, 0xFF);
         root.Controls.Add(who);
 
         // First contact or not — in words, not an icon. The most valuable line in the dialog, so it

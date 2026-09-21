@@ -33,5 +33,11 @@ public sealed class CardPanel : Panel
         using var path = Theme.RoundedPath(bounds, Theme.ScaledRadius(this));
         using (var fill = new SolidBrush(Theme.Card)) g.FillPath(fill, path);
         using (var pen = new Pen(Theme.Border, Theme.BorderThickness)) g.DrawPath(pen, path);
+        // Elevation shadow: a slightly darker hairline along bottom and right edges only.
+        // Gives cards a soft "sitting on the surface" depth without composited alpha.
+        var elevR = new RectangleF(bounds.X + 1f, bounds.Y + 1f, bounds.Width - 2f, bounds.Height - 2f);
+        using var elevPen = new Pen(Theme.CardElevBorder, 0.75f);
+        g.DrawLine(elevPen, elevR.X + 2f, elevR.Bottom, elevR.Right - 2f, elevR.Bottom);
+        g.DrawLine(elevPen, elevR.Right, elevR.Y + 2f, elevR.Right, elevR.Bottom - 2f);
     }
 }

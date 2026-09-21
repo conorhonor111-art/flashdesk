@@ -1812,3 +1812,235 @@ ol.steps .num {
 
 .text-center { text-align: center;        }
 .text-muted  { color: var(--color-muted); }
+
+/* =============================================================================
+   REDESIGN ADDITIONS — round 7 (2026-09-21)
+   All new — zero modifications to any existing rule above.
+   Inspired by AnyDesk (professional shadows, trust bar) and RustDesk (dark gradient
+   hero, coloured icon tiles, feature card elevation).
+   ============================================================================= */
+
+/* ── GRADIENT HERO WRAP ──────────────────────────────────────────────────── */
+/*
+  Applied to a hero <section> that sits on a dark-gradient background.
+  The brand-tile-to-green-tinted-dark gradient echoes the app's own BrandTile dark
+  and keeps the visual language unified between the exe and the marketing page.
+*/
+.hero-gradient-wrap {
+  background: linear-gradient(155deg, #17191E 0%, #1A231D 55%, #1C2B1E 100%);
+  color: #ECEFF3;
+  position: relative;
+}
+.hero-gradient-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 70% 60% at 75% 40%, rgba(43,209,107,0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-gradient-wrap h1 { color: #FFFFFF; }
+.hero-gradient-wrap .hero-kicker { color: #2BD16B; letter-spacing: 0.04em; }
+.hero-gradient-wrap .hero-lead { color: rgba(236,239,243,0.80); }
+.hero-gradient-wrap p { color: rgba(236,239,243,0.75); }
+.hero-gradient-wrap .btn-green {
+  background: #2BD16B;
+  color: #17191E;
+  font-weight: 700;
+  box-shadow: 0 4px 20px rgba(43,209,107,0.38);
+  transition: background 180ms, box-shadow 180ms, transform 150ms;
+}
+.hero-gradient-wrap .btn-green:hover {
+  background: #23B860;
+  box-shadow: 0 6px 28px rgba(43,209,107,0.50);
+  transform: translateY(-1px);
+}
+.hero-gradient-wrap .btn-ghost {
+  border-color: rgba(236,239,243,0.40);
+  color: #ECEFF3;
+}
+.hero-gradient-wrap .btn-ghost:hover {
+  border-color: #ECEFF3;
+  background: rgba(236,239,243,0.08);
+}
+
+/* ── TRUST STRIP ─────────────────────────────────────────────────────────── */
+.trust-strip {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0;
+  background: #F0F2F5;
+  border-top: 1px solid #E2E6EC;
+  border-bottom: 1px solid #E2E6EC;
+  padding: 0 24px;
+  list-style: none;
+}
+.trust-strip__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 22px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #1B1F24;
+  border-right: 1px solid #C6CCD4;
+  white-space: nowrap;
+}
+.trust-strip__item:last-child { border-right: none; }
+.trust-strip__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2BD16B;
+  flex-shrink: 0;
+  display: inline-block;
+}
+@media (max-width: 600px) {
+  .trust-strip { flex-direction: column; align-items: center; padding: 0; }
+  .trust-strip__item {
+    border-right: none;
+    border-bottom: 1px solid #C6CCD4;
+    width: 100%;
+    justify-content: center;
+    padding: 12px 16px;
+  }
+  .trust-strip__item:last-child { border-bottom: none; }
+}
+
+/* ── FEATURE ICON TILE ───────────────────────────────────────────────────── */
+/*
+  40×40 rounded-square icon tile — the RustDesk pattern: each feature gets a
+  small coloured tile before its heading so the grid reads as icons not bullets.
+*/
+.feature-icon-tile {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #2BD16B 0%, #1CA352 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-bottom: 16px;
+  font-size: 22px;
+  line-height: 1;
+  user-select: none;
+}
+.feature-icon-tile--blue {
+  background: linear-gradient(135deg, #1A73E8 0%, #0D5FC4 100%);
+}
+.feature-icon-tile--amber {
+  background: linear-gradient(135deg, #F4B400 0%, #D09900 100%);
+}
+.feature-icon-tile--red {
+  background: linear-gradient(135deg, #C5221F 0%, #8F1815 100%);
+}
+
+/* ── ELEVATED CARD ───────────────────────────────────────────────────────── */
+/*
+  The AnyDesk pattern: white cards that visually sit off the page surface.
+  Used by adding class="card--elevated" to any existing .card or feature card.
+*/
+.card--elevated {
+  background: #FFFFFF;
+  border: 1px solid #C6CCD4;
+  border-radius: 16px;
+  box-shadow:
+    0 1px 3px rgba(27,31,36,0.06),
+    0 4px 12px rgba(27,31,36,0.07),
+    0 12px 32px rgba(27,31,36,0.04);
+  transition: box-shadow 220ms ease, transform 220ms ease;
+}
+.card--elevated:hover {
+  box-shadow:
+    0 2px 6px rgba(27,31,36,0.08),
+    0 8px 24px rgba(27,31,36,0.10),
+    0 20px 48px rgba(27,31,36,0.06);
+  transform: translateY(-2px);
+}
+
+/* ── GRADIENT CTA BAND ───────────────────────────────────────────────────── */
+.cta-band--gradient {
+  background: linear-gradient(135deg, #17191E 0%, #1C2B24 100%);
+  color: #ECEFF3;
+  text-align: center;
+}
+.cta-band--gradient h2 { color: #FFFFFF; }
+.cta-band--gradient p { color: rgba(236,239,243,0.75); max-width: 520px; margin-left: auto; margin-right: auto; }
+.cta-band--gradient .btn-green {
+  background: #2BD16B;
+  color: #17191E;
+  font-weight: 700;
+  box-shadow: 0 4px 20px rgba(43,209,107,0.35);
+}
+.cta-band--gradient .btn-green:hover {
+  background: #23B860;
+  box-shadow: 0 6px 28px rgba(43,209,107,0.48);
+  transform: translateY(-1px);
+}
+
+/* ── GRADIENT BLUE BUTTON ────────────────────────────────────────────────── */
+.btn-blue-gradient {
+  background: linear-gradient(180deg, #2B8EFF 0%, #1A73E8 50%, #1260C4 100%);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 28px;
+  font-weight: 600;
+  font-size: var(--fs-small);
+  cursor: pointer;
+  display: inline-block;
+  text-decoration: none;
+  box-shadow: 0 2px 8px rgba(26,115,232,0.30);
+  transition: box-shadow 200ms, transform 150ms;
+  white-space: nowrap;
+}
+.btn-blue-gradient:hover {
+  box-shadow: 0 4px 18px rgba(26,115,232,0.46);
+  transform: translateY(-1px);
+}
+.btn-blue-gradient:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(26,115,232,0.20);
+}
+.btn-blue-gradient:focus-visible {
+  outline: 3px solid var(--color-blue-aa);
+  outline-offset: 3px;
+}
+
+/* ── DOWNLOAD CARD VARIANTS ──────────────────────────────────────────────── */
+.download-card--primary {
+  border: 2px solid #1A73E8;
+  border-radius: 16px;
+  background: linear-gradient(160deg, #F5F8FF 0%, #FFFFFF 100%);
+  box-shadow: 0 4px 20px rgba(26,115,232,0.12);
+}
+.download-card--secondary {
+  border: 1px solid #C6CCD4;
+  border-radius: 16px;
+  background: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(27,31,36,0.06);
+}
+
+/* ── SECTION TINT VARIANTS ───────────────────────────────────────────────── */
+.section--tinted        { background: #F0F7F3; } /* soft brand-green tint */
+.section--feature-bg    { background: linear-gradient(180deg, #F5F6F8 0%, #EDF7F3 100%); }
+.section--dark-tile {
+  background: #17191E;
+  color: #ECEFF3;
+}
+.section--dark-tile h2,
+.section--dark-tile h3 { color: #FFFFFF; }
+.section--dark-tile p { color: rgba(236,239,243,0.75); }
+
+/* ── FEATURE GRID UPGRADE ────────────────────────────────────────────────── */
+.feature-grid-v2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 24px;
+}
+@media (max-width: 600px) {
+  .feature-grid-v2 { grid-template-columns: 1fr; }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
