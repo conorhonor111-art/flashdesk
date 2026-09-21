@@ -78,7 +78,7 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/site-v2.css?v=0427">
+<link rel="stylesheet" href="/site-v2.css?v=0921b">
 <style>
 /* ─── ROUND-6 ADDITIONS ──────────────────────────────────────────────────────
    All rules are scoped to new class names so they cannot break any existing
@@ -414,8 +414,16 @@ body.nav-open .mobile-nav-drawer {
   height: 3rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  color: var(--color-text);
-  margin-bottom: var(--sp-4);
+  /* color: var(--color-text) removed — variant classes (--green/--blue) set per-card color */
+  /* margin-bottom removed — .feature-card flex gap handles chip↔heading spacing */
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.feature-card__icon svg {
+  width:  1.375rem;
+  height: 1.375rem;
+}
+.feature-card:hover .feature-card__icon {
+  transform: translateY(-2px) scale(1.06);
 }
 .feature-card h3 {
   font-size: var(--fs-h3);
@@ -597,25 +605,31 @@ body.nav-open .mobile-nav-drawer {
 <svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
   <defs>
 
+      <!-- Monitor with eye inside screen — "you watch everything" -->
       <symbol id="i-screen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="2" y="3" width="20" height="14"/>
-        <line x1="8" y1="21" x2="16" y2="21"/>
-        <line x1="12" y1="17" x2="12" y2="21"/>
-        <polyline points="9,7 13,15 15.5,10.5"/>
+        <rect x="2" y="3" width="20" height="13"/>
+        <line x1="8" y1="20" x2="16" y2="20"/>
+        <line x1="12" y1="16" x2="12" y2="20"/>
+        <polyline points="5,9.5 7.5,7 12,6 16.5,7 19,9.5 16.5,12 12,13 7.5,12 5,9.5" stroke-width="1.25"/>
+        <circle cx="12" cy="9.5" r="2" stroke-width="1.25"/>
       </symbol>
       <!-- ⚠ REDESIGNED — an independent review found this too similar to i-band (both were "a
            rectangle with a line near the top"). Now a smaller, centred dialog with two actual
            button RECTANGLES (not lines) at the bottom, reading unambiguously as "a decision with
            two buttons" rather than "a window with a divider." -->
+      <!-- Dialog with reject (thin) + accept (heavy border) buttons -->
       <symbol id="i-dialog" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
         <rect x="4" y="5" width="16" height="13"/>
-        <line x1="4" y1="9" x2="20" y2="9"/>
-        <rect x="7" y="12.5" width="4" height="3"/>
-        <rect x="13" y="12.5" width="4" height="3"/>
+        <line x1="4" y1="9" x2="20" y2="9" stroke-width="1.5"/>
+        <rect x="6" y="12.5" width="4.5" height="3" stroke-width="1.25"/>
+        <rect x="13.5" y="12.5" width="4.5" height="3" stroke-width="2.25"/>
       </symbol>
-      <symbol id="i-band" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="2" y="3" width="20" height="16"/>
-        <line x1="2" y1="7.5" x2="22" y2="7.5" stroke-width="3"/>
+      <!-- Window with AMBER top band — semantically always amber, never currentColor -->
+      <symbol id="i-band" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="3" width="20" height="16" stroke="currentColor" stroke-width="1.75"/>
+        <rect x="2" y="3" width="20" height="4.5" fill="#F4B400" stroke="none"/>
+        <line x1="5" y1="12" x2="14" y2="12" stroke="currentColor" stroke-width="1.25"/>
+        <line x1="5" y1="15" x2="11" y2="15" stroke="currentColor" stroke-width="1.25"/>
       </symbol>
       <symbol id="i-log" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
         <rect x="5" y="2" width="14" height="20"/>
@@ -626,6 +640,14 @@ body.nav-open .mobile-nav-drawer {
       <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
         <polyline points="6,2 6,22 18,22 18,8 12,2 6,2"/>
         <polyline points="12,2 12,8 18,8"/>
+        <line x1="9" y1="14" x2="15" y2="14" stroke-width="1.25"/>
+        <line x1="9" y1="17" x2="13" y2="17" stroke-width="1.25"/>
+      </symbol>
+      <!-- File with green checkmark — "nothing left behind" -->
+      <symbol id="i-file-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="5,2 5,22 19,22 19,9 14,2 5,2"/>
+        <polyline points="14,2 14,9 19,9"/>
+        <polyline points="8,13 10.5,16 16,10" stroke="#2BD16B" stroke-width="2.25"/>
       </symbol>
       <!-- ⚠ REDESIGNED — an independent review found the original (three separate small blocks)
            read ambiguously as a "more options" ellipsis or a loading indicator. Now ONE field
@@ -651,6 +673,12 @@ body.nav-open .mobile-nav-drawer {
       <symbol id="i-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
         <line x1="4" y1="4" x2="20" y2="20"/>
         <line x1="20" y1="4" x2="4" y2="20"/>
+      </symbol>
+      <!-- Circle with X — "end it any time" -->
+      <symbol id="i-end" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9"/>
+        <line x1="8.5" y1="8.5" x2="15.5" y2="15.5" stroke-width="2"/>
+        <line x1="15.5" y1="8.5" x2="8.5" y2="15.5" stroke-width="2"/>
       </symbol>
       <symbol id="i-monitors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
         <rect x="2" y="4" width="12" height="9"/>
@@ -933,66 +961,29 @@ body.nav-open .mobile-nav-drawer {
 
     <div class="feature-grid">
       <div class="feature-card card--elevated">
-        <div class="feature-card__icon">
-          <svg viewBox="0 0 48 48" width="48" height="48" aria-hidden="true">
-            <defs>
-              <linearGradient id="fc1-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#3EE07F"/><stop offset="100%" stop-color="#1DB358"/></linearGradient>
-              <filter id="fc1-sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#2BD16B" flood-opacity="0.3"/></filter>
-            </defs>
-            <rect x="4" y="4" width="40" height="40" rx="10" fill="url(#fc1-bg)" filter="url(#fc1-sh)"/>
-            <polyline points="16,11 16,37 32,37 32,21 24,11 16,11" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-            <polyline points="24,11 24,21 32,21" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-            <line x1="20" y1="27" x2="28" y2="27" stroke="white" stroke-width="2" stroke-linecap="round"/>
-            <line x1="20" y1="32" x2="26" y2="32" stroke="white" stroke-width="2" stroke-linecap="round"/>
-          </svg>
+        <div class="feature-card__icon feature-card__icon--green">
+          <svg class="icon" aria-hidden="true"><use href="#i-file"/></svg>
         </div>
         <h3>No install required</h3>
         <p>One .exe file. Run it, get help, close it. Nothing is written to your system. Delete the file and FlashDesk is completely gone — no uninstaller needed, no registry entries left behind.</p>
       </div>
       <div class="feature-card card--elevated">
-        <div class="feature-card__icon">
-          <svg viewBox="0 0 48 48" width="48" height="48" aria-hidden="true">
-            <defs>
-              <linearGradient id="fc2-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4D9FFF"/><stop offset="100%" stop-color="#1557B0"/></linearGradient>
-              <filter id="fc2-sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#1A73E8" flood-opacity="0.3"/></filter>
-            </defs>
-            <rect x="4" y="4" width="40" height="40" rx="10" fill="url(#fc2-bg)" filter="url(#fc2-sh)"/>
-            <circle cx="24" cy="18" r="7" fill="none" stroke="white" stroke-width="2.5"/>
-            <polyline points="10,38 10,33 38,33 38,38" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-            <line x1="10" y1="33" x2="17" y2="25" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
-            <line x1="38" y1="33" x2="31" y2="25" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
-          </svg>
+        <div class="feature-card__icon feature-card__icon--blue">
+          <svg class="icon" aria-hidden="true"><use href="#i-user"/></svg>
         </div>
         <h3>No account needed</h3>
         <p>No email address. No sign-up form. No licence key. You open the file, a number appears, you read it to someone — that is the entire setup.</p>
       </div>
       <div class="feature-card card--elevated">
-        <div class="feature-card__icon">
-          <svg viewBox="0 0 48 48" width="48" height="48" aria-hidden="true">
-            <defs>
-              <linearGradient id="fc3-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#3EE07F"/><stop offset="100%" stop-color="#1DB358"/></linearGradient>
-              <filter id="fc3-sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#2BD16B" flood-opacity="0.3"/></filter>
-            </defs>
-            <rect x="4" y="4" width="40" height="40" rx="10" fill="url(#fc3-bg)" filter="url(#fc3-sh)"/>
-            <polyline points="8,24 13,16 22,12 26,12 35,16 40,24 35,32 26,36 22,36 13,32 8,24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="24" cy="24" r="5" fill="none" stroke="white" stroke-width="2.5"/>
-          </svg>
+        <div class="feature-card__icon feature-card__icon--green">
+          <svg class="icon" aria-hidden="true"><use href="#i-eye"/></svg>
         </div>
         <h3>You control it, always</h3>
         <p>You see everything your helper does while they are connected. A permanent amber band across the top of the window shows when anyone is connected. One click ends the session immediately.</p>
       </div>
       <div class="feature-card card--elevated">
-        <div class="feature-card__icon">
-          <svg viewBox="0 0 48 48" width="48" height="48" aria-hidden="true">
-            <defs>
-              <linearGradient id="fc4-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4D9FFF"/><stop offset="100%" stop-color="#1557B0"/></linearGradient>
-              <filter id="fc4-sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#1A73E8" flood-opacity="0.3"/></filter>
-            </defs>
-            <rect x="4" y="4" width="40" height="40" rx="10" fill="url(#fc4-bg)" filter="url(#fc4-sh)"/>
-            <rect x="13" y="23" width="22" height="15" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-            <polyline points="18,23 18,16 30,16 30,23" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="24" cy="31" r="2.5" fill="white" stroke="none"/>
-          </svg>
+        <div class="feature-card__icon feature-card__icon--blue">
+          <svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>
         </div>
         <h3>Encrypted connection</h3>
         <p>The session traffic between your machine and your helper's is encrypted end-to-end. No third party can intercept what is shown on your screen during a FlashDesk session.</p>
@@ -1170,35 +1161,15 @@ body.nav-open .mobile-nav-drawer {
 
     <div class="grid cols-3 mt-6">
       <div class="card">
-        <div class="icon-tile">
-          <svg viewBox="0 0 48 48" width="40" height="40" aria-hidden="true">
-            <defs>
-              <linearGradient id="ta1-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#F1F3F5"/><stop offset="100%" stop-color="#DEE2E6"/></linearGradient>
-              <filter id="ta1-sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#868E96" flood-opacity="0.2"/></filter>
-            </defs>
-            <rect x="3" y="3" width="42" height="42" rx="9" fill="url(#ta1-bg)" filter="url(#ta1-sh)"/>
-            <rect x="9" y="10" width="30" height="20" fill="none" stroke="#495057" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <line x1="15" y1="34" x2="33" y2="34" stroke="#495057" stroke-width="2" stroke-linecap="round"/>
-            <line x1="24" y1="30" x2="24" y2="34" stroke="#495057" stroke-width="2" stroke-linecap="round"/>
-            <polyline points="16,16 21,26 25,18" fill="none" stroke="#495057" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
+        <div class="icon-tile icon-tile--teal">
+          <svg class="icon" aria-hidden="true"><use href="#i-screen"/></svg>
         </div>
         <h3>You watch everything</h3>
         <p>Your helper sees and controls your screen — while you watch everything they do.</p>
       </div>
       <div class="card">
-        <div class="icon-tile">
-          <svg viewBox="0 0 48 48" width="40" height="40" aria-hidden="true">
-            <defs>
-              <linearGradient id="ta2-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#E8FAF0"/><stop offset="100%" stop-color="#C8F0DC"/></linearGradient>
-              <filter id="ta2-sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#2BD16B" flood-opacity="0.25"/></filter>
-            </defs>
-            <rect x="3" y="3" width="42" height="42" rx="9" fill="url(#ta2-bg)" filter="url(#ta2-sh)"/>
-            <rect x="9" y="11" width="30" height="24" fill="none" stroke="#1A8040" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <line x1="9" y1="17" x2="39" y2="17" stroke="#1A8040" stroke-width="2" stroke-linecap="round"/>
-            <rect x="12" y="21" width="9" height="8" fill="none" stroke="#1A8040" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <rect x="27" y="21" width="9" height="8" fill="none" stroke="#1A8040" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
+        <div class="icon-tile icon-tile--green">
+          <svg class="icon" aria-hidden="true"><use href="#i-dialog"/></svg>
         </div>
         <h3>Accept, the first time</h3>
         <p>The first connection always shows an Accept / Reject dialog — nothing gets in until you
@@ -1206,69 +1177,31 @@ body.nav-open .mobile-nav-drawer {
         again; that is the same session resuming, not a new one.</p>
       </div>
       <div class="card">
-        <div class="icon-tile">
-          <svg viewBox="0 0 48 48" width="40" height="40" aria-hidden="true">
-            <defs>
-              <linearGradient id="ta3-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#E8FAF0"/><stop offset="100%" stop-color="#C8F0DC"/></linearGradient>
-              <filter id="ta3-sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#2BD16B" flood-opacity="0.25"/></filter>
-            </defs>
-            <rect x="3" y="3" width="42" height="42" rx="9" fill="url(#ta3-bg)" filter="url(#ta3-sh)"/>
-            <rect x="8" y="11" width="32" height="26" fill="none" stroke="#1A8040" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <line x1="8" y1="17" x2="40" y2="17" stroke="#2BD16B" stroke-width="4" stroke-linecap="round"/>
-            <line x1="14" y1="24" x2="34" y2="24" stroke="#1A8040" stroke-width="1.5" stroke-linecap="round"/>
-            <line x1="14" y1="29" x2="28" y2="29" stroke="#1A8040" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
+        <div class="icon-tile icon-tile--amber">
+          <svg class="icon" aria-hidden="true"><use href="#i-band"/></svg>
         </div>
         <h3>Can't be hidden</h3>
         <p>A band across the top of the window turns amber while anyone is connected. They
         cannot turn it off.</p>
       </div>
       <div class="card">
-        <div class="icon-tile">
-          <svg viewBox="0 0 48 48" width="40" height="40" aria-hidden="true">
-            <defs>
-              <linearGradient id="ta4-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#E8FAF0"/><stop offset="100%" stop-color="#C8F0DC"/></linearGradient>
-              <filter id="ta4-sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#2BD16B" flood-opacity="0.25"/></filter>
-            </defs>
-            <rect x="3" y="3" width="42" height="42" rx="9" fill="url(#ta4-bg)" filter="url(#ta4-sh)"/>
-            <circle cx="24" cy="24" r="12" fill="none" stroke="#1A8040" stroke-width="2"/>
-            <line x1="18" y1="18" x2="30" y2="30" stroke="#1A8040" stroke-width="2.5" stroke-linecap="round"/>
-            <line x1="30" y1="18" x2="18" y2="30" stroke="#1A8040" stroke-width="2.5" stroke-linecap="round"/>
-          </svg>
+        <div class="icon-tile icon-tile--red">
+          <svg class="icon" aria-hidden="true"><use href="#i-end"/></svg>
         </div>
         <h3>End it any time</h3>
         <p>One click, at any moment, ends the session immediately.</p>
       </div>
       <div class="card">
-        <div class="icon-tile">
-          <svg viewBox="0 0 48 48" width="40" height="40" aria-hidden="true">
-            <defs>
-              <linearGradient id="ta5-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#F1F3F5"/><stop offset="100%" stop-color="#DEE2E6"/></linearGradient>
-              <filter id="ta5-sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#868E96" flood-opacity="0.2"/></filter>
-            </defs>
-            <rect x="3" y="3" width="42" height="42" rx="9" fill="url(#ta5-bg)" filter="url(#ta5-sh)"/>
-            <polyline points="14,9 14,39 30,39 30,21 22,9 14,9" fill="none" stroke="#495057" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <polyline points="22,9 22,21 30,21" fill="none" stroke="#495057" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <polyline points="18,28 21,32 28,24" fill="none" stroke="#2BD16B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
+        <div class="icon-tile icon-tile--neutral">
+          <svg class="icon" aria-hidden="true"><use href="#i-file-check"/></svg>
         </div>
         <h3>Nothing left behind</h3>
         <p>It does not run when you close it. Close the window and it is gone — nothing was
         installed.</p>
       </div>
       <div class="card">
-        <div class="icon-tile">
-          <svg viewBox="0 0 48 48" width="40" height="40" aria-hidden="true">
-            <defs>
-              <linearGradient id="ta6-bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#EBF3FF"/><stop offset="100%" stop-color="#C8DFFF"/></linearGradient>
-              <filter id="ta6-sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#1A73E8" flood-opacity="0.2"/></filter>
-            </defs>
-            <rect x="3" y="3" width="42" height="42" rx="9" fill="url(#ta6-bg)" filter="url(#ta6-sh)"/>
-            <line x1="11" y1="24" x2="34" y2="24" stroke="#1A73E8" stroke-width="2.5" stroke-linecap="round"/>
-            <polyline points="27,17 34,24 27,31" fill="none" stroke="#1A73E8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-            <line x1="11" y1="17" x2="22" y2="17" stroke="#1A73E8" stroke-width="1.5" stroke-linecap="round"/>
-            <line x1="11" y1="31" x2="22" y2="31" stroke="#1A73E8" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
+        <div class="icon-tile icon-tile--blue">
+          <svg class="icon" aria-hidden="true"><use href="#i-arrow-right"/></svg>
         </div>
         <h3>Read the full story</h3>
         <p><a class="inline-link" href="/how-it-works/">File access, multiple screens, what is
