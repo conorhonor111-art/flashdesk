@@ -3704,3 +3704,24 @@ one doc-only commit behind HEAD. Rebuilt and released from `c3b3125`. Uploaded t
 **Check-LiveBuild result (v0.4.0-15):** READY — server serving `c3b3125`, exact HEAD match.
 Both download routes byte-identical (`1A2D1102FE47CFCB...`, 162,492,578 bytes). All 6 mark
 copies consistent. All 6 site pages match repo with all assets resolving.
+
+
+---
+
+### v0.4.0-16 — 2026-09-21 — documentation rebuild, exe brought to HEAD; MSI link added to site
+
+No source changes. v0.4.0-15 entry updated PROGRESS.md (`b38186a`), leaving the live exe
+one doc-only commit behind HEAD. Rebuilt and released from `b38186a`. Uploaded to GitHub
+(`v0.4.0-16`, both `FlashDesk.exe` and `FlashDesk-setup.msi`) and to
+`public_html/dl/FlashDesk.exe` on cPanel (DELE + fresh upload, 155 MB, 100%).
+
+**MSI link added to homepage (`969733f`):** Both download CTAs on `site/index.html` — the
+hero section and the bottom "Ready to get help?" band — now carry a secondary
+"Prefer a Windows installer (.msi)?" link pointing to
+`https://flashdesk.org/dl/FlashDesk-setup.msi`. Styled in the same muted meta register as
+the surrounding copy so it does not compete with the primary EXE button. Page uploaded to
+cPanel immediately (DELE + fresh upload).
+
+**Check-LiveBuild result (v0.4.0-16):** READY — server serving `b38186a`, exact HEAD match.
+Both download routes byte-identical (`6872FDE2A6073083...`, 162,492,578 bytes). All 6 mark
+copies consistent. All 6 site pages match repo with all assets resolving.
