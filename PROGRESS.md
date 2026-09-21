@@ -3859,3 +3859,28 @@ asset deleted, new one uploaded). EXE unchanged.
 **Check-LiveBuild result:** READY — server serving `75f9cb9` (one doc-only commit behind:
 `5767ddf`, MSI fix). Both routes byte-identical (`9A471A09D1C54906...`, 162,492,578 bytes).
 All 9 pages match repo with all assets resolving.
+
+
+---
+
+### 2026-09-21 — SmartScreen: Microsoft WDSI submissions (EXE + MSI)
+
+Both files submitted to Microsoft Defender Security Intelligence for false-positive review.
+Submitted as **Software developer / Incorrect detection / Microsoft Defender SmartScreen**.
+VirusTotal scan run same day returned 0/90 (completely clean across all vendors).
+
+| File | Submission ID | Status |
+|---|---|---|
+| `flashdesk.exe` | `88f2448c-0d6b-44aa-9347-0d7bba00731c` | Submitted |
+| `flashdesk-setup.msi` | `f376099c-0458-4872-931a-bd2c327c5e13` | Submitted |
+
+Updates sent to `conor.honor111@gmail.com`. Microsoft review typically takes 1–7 business
+days. Once cleared, SmartScreen reputation accumulates with each download.
+
+**Root cause of SmartScreen warning:** both files are unsigned — no EV code signing
+certificate. The only permanent fix is an EV cert (~$300–500/yr from Sectigo/DigiCert).
+The WDSI submission builds reputation in the interim.
+
+**Submission pages:**
+- EXE: `https://www.microsoft.com/en-us/wdsi/submission/88f2448c-0d6b-44aa-9347-0d7bba00731c`
+- MSI: `https://www.microsoft.com/en-us/wdsi/submission/f376099c-0458-4872-931a-bd2c327c5e13`
