@@ -9,15 +9,21 @@
   GENERATED FILE — do not hand-edit. Source: site-src\pages\how-it-works.html, assembled by
   scripts\Build-Site.ps1 from site-src\layout-v2.html + site-src\partials\*-v2.html.
 
-  ⚠ ROUND-5 REBUILD — 2026-09-21.
-  Full nav redesign: Download page added, SmartScreen renamed to Security warning,
-  Privacy/Terms/Changelog moved into More ▾ dropdown on desktop, mobile hamburger drawer added.
-  Icon sprite patched: i-lock and i-stop symbols added (were missing, rendering blank boxes).
-  Step 2 link fixed (was pointing to raw GitHub URL with text 'flashdesk.org').
-  All download hrefs updated to /download/.
-  CTA band button changed from btn-primary (green) to btn-blue per design-system spec.
-  Relay architecture section added for technical readers.
-  Duplicate safety/verification section removed — replaced with FAQ callout.
+  ⚠ ROUND-6 REBUILD — 2026-09-21.
+  HowTo JSON-LD schema added. Mini table of contents added. Step count corrected (one helper
+  step, four user steps). Windows-required callout added to Step 1 covering both machines.
+  'About a minute on most connections' removed from Step 1. App screenshot added to Step 3.
+  Step 4 security-check ('Check the number') promoted to amber callout box. Coloured session
+  bar described fully (shows helper ID, elapsed time, Disconnect button). Cryptographic key
+  explanation replaces vague 'private authentication value' wording. 90-second reconnect note
+  consolidated into relay section with WHY explained; italic footnote removed from 'When done'
+  card. Connection-failure paragraph added. Relay diagram converted to figure/figcaption.
+  Data-flow list converted to proper table with thead. Relay server IP (139.28.36.247) added
+  to spec table. 'On the roadmap' removed from Hard Limits. 'Plain facts — no marketing copy'
+  disclaimer removed from spec intro. File panel copy reframed as user-facing guarantee.
+  Confusing relay-callout text corrected. 'About' link added to More dropdown and footer.
+  Header brand mark background rect added for dark-mode consistency. 'You are in control'
+  repetition reduced to once. Footer attribution line clarified.
 
   Nothing on this page loads from another host — same rule as the v1 track, unchanged.
 -->
@@ -34,6 +40,54 @@
 <meta name="twitter:description" content="A plain-language, step-by-step guide to getting remote help on your PC with FlashDesk. What happens during a session, what data flows, and how to end it safely.">
 <meta name="twitter:image" content="https://flashdesk.org/flashdesk-window.png">
 
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "How to get remote help on your PC with FlashDesk",
+  "description": "A five-step guide to running a FlashDesk remote support session — from download to disconnect. Both computers must be running Windows 10 x64 or Windows 11 x64.",
+  "totalTime": "PT5M",
+  "supply": [
+    {
+      "@type": "HowToSupply",
+      "name": "FlashDesk.exe (Windows 10 x64 or Windows 11 x64, ~70 MB download, no install)"
+    }
+  ],
+  "step": [
+    {
+      "@type": "HowToStep",
+      "position": "1",
+      "name": "Your helper downloads FlashDesk on their Windows PC",
+      "text": "Your helper goes to flashdesk.org/download/ and downloads FlashDesk.exe. They double-click it — no installation step, no administrator password. Both machines must be running Windows 10 x64 or Windows 11 x64. FlashDesk does not run on macOS, Linux, or mobile."
+    },
+    {
+      "@type": "HowToStep",
+      "position": "2",
+      "name": "You download FlashDesk on your Windows PC",
+      "text": "Go to flashdesk.org/download/, save FlashDesk.exe to your Desktop or Downloads folder, and double-click it. No installation wizard. No administrator password required. Windows will show a security warning the first time — this is expected. The window opens immediately."
+    },
+    {
+      "@type": "HowToStep",
+      "position": "3",
+      "name": "Open FlashDesk — your 9-digit code appears on screen",
+      "text": "When FlashDesk opens, a large 9-digit number appears. This is your FlashDesk ID, generated fresh every time you open the program. It is formatted in three groups of three for easy reading aloud. Read it to your helper."
+    },
+    {
+      "@type": "HowToStep",
+      "position": "4",
+      "name": "Read your code to your helper, then verify their ID",
+      "text": "Tell your helper your 9-digit number. They type it into FlashDesk and press Connect. A connection request arrives at your computer. Before pressing Accept, ask your helper to read their own FlashDesk ID back to you and confirm it matches what FlashDesk is showing you on screen. Nothing has happened yet — no screen has been shared."
+    },
+    {
+      "@type": "HowToStep",
+      "position": "5",
+      "name": "A dialog appears — read it, then press Accept",
+      "text": "FlashDesk shows a dialog displaying the connecting helper's 9-digit ID, an Accept button, and a Reject button. The Accept button is disabled for the first three seconds so you have time to read it. Once you press Accept, a coloured bar appears at the top of your screen showing the helper's ID, the elapsed session time, and a Disconnect button."
+    }
+  ]
+}
+</script>
+
 <!-- MARK GEOMETRY IS LOCKED to assets\make-icon.ps1 — see site-src\partials\header-v2.html for the
      full note. The mark's SHAPE is unchanged this round; only where and in what colour it appears
      changed. -->
@@ -43,7 +97,8 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    PAGE-LEVEL ADDITIONS
    These supplement site-v2.css with: nav dropdown, mobile drawer, consent
-   dialog mock, relay diagram, data-flow table, version badge, info callout.
+   dialog mock, relay diagram, data-flow table, version badge, info callout,
+   mini table of contents, app screenshot, security check callout.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* Stronger active nav underline (overrides site-v2.css) */
@@ -316,6 +371,91 @@
 .smartscreen-note a { color: var(--color-blue-aa); text-decoration: underline; text-underline-offset: 2px; }
 .smartscreen-note a:hover { color: var(--color-text); }
 
+/* ── SECURITY CHECK CALLOUT (amber, for Step 4 number-verification action) ── */
+.check-callout {
+  display:       flex;
+  align-items:   flex-start;
+  gap:           var(--sp-3);
+  background:    var(--color-bg);
+  border:        1px solid var(--color-border);
+  border-left:   4px solid var(--color-amber);
+  border-radius: var(--radius);
+  padding:       var(--sp-4);
+  margin-top:    var(--sp-4);
+  font-size:     var(--fs-small);
+  color:         var(--color-muted);
+  line-height:   1.6;
+}
+
+.check-callout strong { color: var(--color-text); }
+
+/* ── MINI TABLE OF CONTENTS ───────────────────────────────────────────────── */
+.page-toc {
+  border-top:    1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  padding-block: var(--sp-3);
+  background:    var(--color-card);
+}
+
+.page-toc .contained {
+  display:     flex;
+  align-items: baseline;
+  gap:         var(--sp-4);
+  flex-wrap:   wrap;
+}
+
+.toc-label {
+  font-size:   var(--fs-small);
+  font-weight: 600;
+  color:       var(--color-muted);
+  white-space: nowrap;
+  margin:      0;
+  flex-shrink: 0;
+}
+
+.toc-links {
+  list-style: none;
+  padding:    0;
+  margin:     0;
+  display:    flex;
+  flex-wrap:  wrap;
+  gap:        var(--sp-1) var(--sp-4);
+}
+
+.toc-links li { margin: 0; }
+
+.toc-links a {
+  font-size:             var(--fs-small);
+  color:                 var(--color-blue-aa);
+  text-decoration:       underline;
+  text-underline-offset: 2px;
+}
+
+.toc-links a:hover { color: var(--color-text); }
+
+/* ── APP SCREENSHOT ───────────────────────────────────────────────────────── */
+.app-screenshot {
+  margin:        var(--sp-5) 0;
+  border:        1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow:      hidden;
+  max-width:     32rem;
+}
+
+.app-screenshot img {
+  display: block;
+  width:   100%;
+  height:  auto;
+}
+
+.app-screenshot figcaption {
+  padding:    var(--sp-2) var(--sp-3);
+  font-size:  0.8rem;
+  color:      var(--color-muted);
+  background: var(--color-bg);
+  border-top: 1px solid var(--color-border);
+}
+
 /* ── CONSENT DIALOG MOCK ──────────────────────────────────────────────────── */
 .dialog-mock {
   background:    var(--color-card);
@@ -354,36 +494,36 @@
 }
 
 .dialog-mock-label {
-  font-size:  0.8125rem;
-  color:      var(--color-muted);
+  font-size:     0.8125rem;
+  color:         var(--color-muted);
   margin-bottom: var(--sp-2);
 }
 
 .dialog-mock-id {
-  font-family:   ui-monospace, 'Cascadia Code', Consolas, monospace;
-  font-size:     1.625rem;
-  font-weight:   700;
+  font-family:    ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size:      1.625rem;
+  font-weight:    700;
   letter-spacing: 0.12em;
-  color:         var(--color-text);
-  margin-bottom: var(--sp-4);
+  color:          var(--color-text);
+  margin-bottom:  var(--sp-4);
 }
 
 .dialog-mock-notice {
-  font-size:   0.9375rem;
-  color:       var(--color-muted);
-  line-height: 1.55;
-  padding:     var(--sp-3) var(--sp-3);
-  background:  var(--color-bg);
-  border:      1px solid var(--color-border);
+  font-size:     0.9375rem;
+  color:         var(--color-muted);
+  line-height:   1.55;
+  padding:       var(--sp-3) var(--sp-3);
+  background:    var(--color-bg);
+  border:        1px solid var(--color-border);
   border-radius: calc(var(--radius) - 2px);
   margin-bottom: var(--sp-3);
 }
 
 .dialog-mock-timer {
-  font-size:  0.8rem;
-  color:      var(--color-muted);
-  font-style: italic;
-  display:    block;
+  font-size:     0.8rem;
+  color:         var(--color-muted);
+  font-style:    italic;
+  display:       block;
   margin-bottom: var(--sp-1);
 }
 
@@ -403,7 +543,16 @@
   border:          1px solid var(--color-border);
   border-radius:   var(--radius);
   overflow:        hidden;
-  margin:          var(--sp-5) 0;
+  margin:          var(--sp-5) 0 0;
+}
+
+.relay-diagram-figure { margin: var(--sp-5) 0; }
+
+.relay-diagram-caption {
+  font-size:   var(--fs-small);
+  color:       var(--color-muted);
+  margin-top:  var(--sp-2);
+  line-height: 1.5;
 }
 
 .relay-node {
@@ -455,10 +604,10 @@
 }
 
 .relay-node-sub {
-  font-size:  0.8125rem;
-  color:      var(--color-muted);
+  font-size:   0.8125rem;
+  color:       var(--color-muted);
   line-height: 1.3;
-  max-width:  9rem;
+  max-width:   9rem;
 }
 
 .relay-arrow {
@@ -480,45 +629,55 @@
 }
 
 /* ── DATA FLOW TABLE ──────────────────────────────────────────────────────── */
-.data-flow {
-  list-style:    none;
-  padding:       0;
-  margin-top:    var(--sp-4);
-  border:        1px solid var(--color-border);
-  border-radius: var(--radius);
-  overflow:      hidden;
-  font-size:     var(--fs-small);
+.data-flow-table {
+  width:           100%;
+  border-collapse: collapse;
+  font-size:       var(--fs-small);
+  margin-top:      var(--sp-4);
+  border:          1px solid var(--color-border);
+  border-radius:   var(--radius);
+  overflow:        hidden;
 }
 
-.data-flow li {
-  display:       flex;
-  align-items:   flex-start;
-  gap:           var(--sp-3);
-  padding:       var(--sp-3) var(--sp-4);
-  border-bottom: 1px solid var(--color-border);
-  line-height:   1.5;
+.data-flow-table th,
+.data-flow-table td {
+  padding:        var(--sp-3) var(--sp-4);
+  text-align:     left;
+  border-bottom:  1px solid var(--color-border);
+  vertical-align: top;
+  line-height:    1.5;
 }
 
-.data-flow li:last-child { border-bottom: none; }
-.data-flow li:nth-child(odd)  { background: var(--color-bg); }
-.data-flow li:nth-child(even) { background: var(--color-card); }
+.data-flow-table tr:last-child th,
+.data-flow-table tr:last-child td { border-bottom: none; }
 
-.data-flow-dir {
-  flex-shrink:  0;
-  width:        6.5rem;
+.data-flow-table thead th {
+  font-size:      var(--fs-kicker);
+  font-weight:    600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color:          var(--color-muted);
+  background:     var(--color-bg);
+}
+
+.data-flow-table tbody tr:nth-child(odd)  td { background: var(--color-bg); }
+.data-flow-table tbody tr:nth-child(even) td { background: var(--color-card); }
+
+.flow-dir {
+  white-space:  nowrap;
   font-family:  ui-monospace, monospace;
   font-size:    0.8rem;
   font-weight:  700;
+  width:        7rem;
   padding-top:  0.1em;
-  white-space:  nowrap;
 }
 
-.data-flow-dir.your-pc-out   { color: var(--color-blue-aa); }
-.data-flow-dir.helper-out    { color: #B26A00; }
-.data-flow-dir.relay-only    { color: var(--color-muted); }
+.flow-dir.your-pc-out { color: var(--color-blue-aa); }
+.flow-dir.helper-out  { color: #B26A00; }
+.flow-dir.relay-only  { color: var(--color-muted); }
 
-.data-flow-detail { color: var(--color-muted); }
-.data-flow-detail strong { color: var(--color-text); }
+.flow-detail         { color: var(--color-muted); }
+.flow-detail strong  { color: var(--color-text); }
 
 /* ── FAQ CTA BLOCK ────────────────────────────────────────────────────────── */
 .faq-cta {
@@ -539,26 +698,26 @@
 
 /* ── FILE CAPABILITIES SECTION HEADER ────────────────────────────────────── */
 .file-caps-intro {
-  max-width: 38rem;
+  max-width:     38rem;
   margin-bottom: var(--sp-5);
 }
 
 /* ── SPEC TABLE ───────────────────────────────────────────────────────────── */
 .spec-table {
-  width:         100%;
+  width:           100%;
   border-collapse: collapse;
-  font-size:     var(--fs-small);
-  margin-top:    var(--sp-4);
-  border:        1px solid var(--color-border);
-  border-radius: var(--radius);
-  overflow:      hidden;
+  font-size:       var(--fs-small);
+  margin-top:      var(--sp-4);
+  border:          1px solid var(--color-border);
+  border-radius:   var(--radius);
+  overflow:        hidden;
 }
 
 .spec-table th,
 .spec-table td {
-  padding:       var(--sp-3) var(--sp-4);
-  text-align:    left;
-  border-bottom: 1px solid var(--color-border);
+  padding:        var(--sp-3) var(--sp-4);
+  text-align:     left;
+  border-bottom:  1px solid var(--color-border);
   vertical-align: top;
 }
 
@@ -590,10 +749,8 @@
        · Straight lines, rectangles and closed polylines only — no curves, no circles
 
      New in round 5:
-       · i-lock  — padlock: rectangular body + rectangular shackle (U made of two
-                   verticals and a horizontal bar) — straight-line approximation of the
-                   shackle; reads unambiguously as "locked, cannot re-enter"
-       · i-stop  — octagonal stop outline + horizontal bar — reads as "blocked / no"
+       · i-lock  — padlock: rectangular body + rectangular shackle
+       · i-stop  — octagonal stop outline + horizontal bar
      ───────────────────────────────────────────────────────────────────────── -->
 <svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
   <defs>
@@ -605,7 +762,6 @@
       <polyline points="9,7 13,15 15.5,10.5"/>
     </symbol>
 
-    <!-- dialog: smaller centred box with two button rectangles at the bottom -->
     <symbol id="i-dialog" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
       <rect x="4" y="5" width="16" height="13"/>
       <line x1="4" y1="9" x2="20" y2="9"/>
@@ -630,7 +786,6 @@
       <polyline points="12,2 12,8 18,8"/>
     </symbol>
 
-    <!-- address: one field divided by two internal dividers — reads as a 9-digit-in-three-groups number -->
     <symbol id="i-address" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
       <rect x="2" y="8" width="20" height="8"/>
       <line x1="9.33" y1="8" x2="9.33" y2="16"/>
@@ -673,34 +828,22 @@
       <polyline points="14,6 20,12 14,18"/>
     </symbol>
 
-    <!-- i-lock — padlock shape using straight lines only.
-         Body: rectangle 4 11 → 20 21.
-         Shackle: two vertical lines (8,6→8,11 and 16,6→16,11) connected by a
-         horizontal bar (8,6→16,6) — a rectangular U. No curves.
-         Keyhole: small vertical line inside the body. -->
     <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
       <rect x="4" y="11" width="16" height="11"/>
       <polyline points="8,11 8,6 16,6 16,11"/>
       <line x1="12" y1="15" x2="12" y2="19"/>
     </symbol>
 
-    <!-- i-stop — octagonal outline (eight straight segments, no curves) with
-         a horizontal bar inside — reads as "stop / blocked / no entry". -->
     <symbol id="i-stop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
       <polygon points="8,3 16,3 21,8 21,16 16,21 8,21 3,16 3,8"/>
       <line x1="8" y1="12" x2="16" y2="12"/>
     </symbol>
 
-    <!-- i-shield — rectangular outline with a pointed base and a centre check line.
-         Used in the relay/security section. Straight lines only: the "point" is two
-         diagonal lines meeting at the bottom centre. -->
     <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
       <polyline points="4,4 4,14 12,21 20,14 20,4 4,4"/>
       <line x1="4" y1="8" x2="20" y2="8"/>
     </symbol>
 
-    <!-- i-relay — two rectangles connected by a horizontal line — reads as
-         "two computers linked through a middle point". -->
     <symbol id="i-relay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
       <rect x="2" y="7" width="6" height="10"/>
       <rect x="16" y="7" width="6" height="10"/>
@@ -716,18 +859,19 @@
 <!-- ═══════════════════════════════════════════════════════════════════════════
      HEADER — sticky, light, download action on every page.
 
-     Nav redesign (round 5):
+     Nav (round 6):
        Desktop (≥720px): Home · How it works · Download · FAQ · Security warning · More ▾
-         More ▾ dropdown: Privacy · Terms · Changelog
+         More ▾ dropdown: About · Privacy · Terms · Changelog
        Mobile (<720px): hamburger button opens full-screen drawer with all links flat
 
      Header CTA: "Download .exe — free" on desktop, "Download" on mobile (CSS swap).
-     All download links now point to /download/ not the raw GitHub release URL.
      ═══════════════════════════════════════════════════════════════════════════ -->
 <header class="site-header">
 
   <a class="brand" href="/">
+    <!-- Round 6: background rect added to match footer mark for dark-mode consistency -->
     <svg viewBox="0 0 16 16" aria-hidden="true" width="28" height="28">
+      <rect x="1" y="1" width="14" height="14" rx="3.5" fill="#F4F5F7"/>
       <polyline points="4.631,2.512 9.387,11.495 11.325,7.620" fill="none" stroke="#17191E" stroke-width="2.6"/>
     </svg>
     <span>FlashDesk</span>
@@ -744,6 +888,7 @@
         More <span aria-hidden="true">▾</span>
       </button>
       <div class="nav-more-menu" id="nav-more-menu" hidden>
+        <a href="/about/"     data-nav="about">About</a>
         <a href="/privacy/"   data-nav="privacy">Privacy</a>
         <a href="/terms/"     data-nav="terms">Terms</a>
         <a href="/changelog/" data-nav="changelog">Changelog</a>
@@ -768,13 +913,12 @@
 
 <!-- ─────────────────────────────────────────────────────────────────────────
      MOBILE NAV DRAWER — full-screen, slides in from the right.
-     All primary links flat (no dropdown). Drawer section labels are not
-     interactive — they act as visual dividers only.
      ───────────────────────────────────────────────────────────────────────── -->
 <div class="nav-drawer" id="nav-drawer" aria-label="Site navigation" aria-hidden="true" role="dialog" aria-modal="true">
   <div class="nav-drawer-header">
     <a class="brand" href="/">
       <svg viewBox="0 0 16 16" aria-hidden="true" width="28" height="28">
+        <rect x="1" y="1" width="14" height="14" rx="3.5" fill="#F4F5F7"/>
         <polyline points="4.631,2.512 9.387,11.495 11.325,7.620" fill="none" stroke="#17191E" stroke-width="2.6"/>
       </svg>
       <span>FlashDesk</span>
@@ -789,6 +933,7 @@
     <a href="/security-warning/">Security warning</a>
     <hr>
     <span class="drawer-section">More</span>
+    <a href="/about/">About</a>
     <a href="/privacy/">Privacy</a>
     <a href="/terms/">Terms</a>
     <a href="/changelog/">Changelog</a>
@@ -803,10 +948,8 @@
   <section class="band band-paper">
     <div class="contained prose">
       <span class="kicker">How it works</span>
-      <h1>How to get help on your PC — from start to finish.</h1>
-      <p class="lead">This page explains exactly what happens when someone connects to your computer
-      with FlashDesk: what they can do, what they cannot do, how the relay works, what data flows,
-      and how to close the session the moment you are done.</p>
+      <h1>What happens when someone connects to your PC with FlashDesk.</h1>
+      <p class="lead">This page covers the full picture — for the person receiving help and the person giving it. Five steps from download to session, how the relay works, what data flows, and how to end a session cleanly.</p>
     </div>
   </section>
 
@@ -828,14 +971,31 @@
   </section>
 
   <!-- ══════════════════════════════════════════════════════════════════════
+       MINI TABLE OF CONTENTS
+       ══════════════════════════════════════════════════════════════════════ -->
+  <nav class="page-toc" aria-label="Page sections">
+    <div class="contained">
+      <p class="toc-label">On this page:</p>
+      <ul class="toc-links">
+        <li><a href="#steps">Five steps</a></li>
+        <li><a href="#relay">How the relay works</a></li>
+        <li><a href="#ending">Ending a session</a></li>
+        <li><a href="#what-it-can-do">What it can do</a></li>
+        <li><a href="#hard-limits">Hard limits</a></li>
+        <li><a href="#specs">Technical specs</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
        STEP-BY-STEP GUIDE
        ══════════════════════════════════════════════════════════════════════ -->
-  <section class="band band-paper">
+  <section class="band band-paper" id="steps">
     <div class="contained">
       <span class="kicker">Step by step</span>
       <h2>What actually happens during a FlashDesk session.</h2>
       <p class="text-muted" style="margin-bottom: var(--sp-7); max-width: 38rem;">
-        Five steps — two for your helper, three for you. You are in control at every point.
+        Five steps — one for your helper, four for you.
         Nothing happens to your computer without you pressing a button.
       </p>
 
@@ -847,11 +1007,17 @@
             <h3>Your helper downloads FlashDesk on their computer.</h3>
             <p>Your helper goes to the <a class="inline-link" href="/download/">FlashDesk download page</a>
             and downloads the same single file you will. There is no installation step on their end either.
-            They open the file and FlashDesk is running — it takes about a minute on most connections.</p>
+            They open the file and FlashDesk is running.</p>
             <p style="margin-top: var(--sp-3);">
-              Both sides must be running FlashDesk for anything to happen. There is no web interface, no browser
-              plug-in, and no third-party app involved on either end.
+              Both sides must be running FlashDesk for anything to happen. There is no web interface, no
+              browser plug-in, and no third-party app involved on either end.
             </p>
+
+            <div class="info-callout">
+              <strong>Both computers must be running Windows.</strong> FlashDesk requires Windows 10 x64
+              or Windows 11 x64 on <em>both</em> machines — yours and your helper's. FlashDesk does not
+              run on macOS, Linux, or mobile. If your helper is on a Mac or phone, they cannot use FlashDesk.
+            </div>
           </div>
         </li>
 
@@ -896,6 +1062,14 @@
               It functions like a phone number for your current session — your helper dials it to find you.
             </p>
 
+            <figure class="app-screenshot">
+              <img src="/flashdesk-window.png"
+                   alt="The FlashDesk application window. A large 9-digit session ID is displayed in three groups of three digits — for example, 4 8 2 · 9 1 7 · 3 0 5. Below the number are instructions to read it aloud to the helper."
+                   width="600"
+                   loading="lazy">
+              <figcaption>The FlashDesk window showing the 9-digit session ID. The number shown is an example — yours will be different each time you open the program.</figcaption>
+            </figure>
+
             <div class="quote" style="margin-top: var(--sp-4); display: inline-block;">
               <p style="font-size: var(--fs-small); color: var(--color-muted); margin-bottom: var(--sp-2);">
                 Your ID — read this aloud to your helper:
@@ -921,15 +1095,18 @@
             your helper's computer does not make a direct connection to yours. The relay finds
             your session and forwards the request. Your computer receives it.
             <strong>Nothing has happened yet.</strong> No screen has been shared. No connection
-            is open. You are still in full control.</p>
+            is open.</p>
 
-            <p style="margin-top: var(--sp-3);">
-              <strong>Check the number before you accept.</strong> FlashDesk shows you your
-              helper's ID number — not their name. Names can be invented; a 9-digit ID is
-              generated by their copy of FlashDesk and cannot be faked. Before pressing Accept,
-              ask your helper to read their number back to you and confirm it matches what
-              FlashDesk is showing you.
-            </p>
+            <div class="check-callout" role="note">
+              <svg class="icon" aria-hidden="true" style="flex-shrink:0; margin-top:1px; color: var(--color-amber-text-aa);"><use href="#i-shield"/></svg>
+              <div>
+                <strong>Verify the number before you press Accept.</strong><br>
+                FlashDesk shows you your helper's 9-digit ID — not their name. Names can be invented;
+                a 9-digit ID is generated by their copy of FlashDesk and cannot be faked. Before pressing
+                Accept, ask your helper to read <em>their</em> number back to you and confirm it matches
+                what FlashDesk is showing on your screen. If the numbers do not match, press Reject.
+              </div>
+            </div>
           </div>
         </li>
 
@@ -942,8 +1119,8 @@
             so you have time to read it. The connected helper's input cannot reach that dialog —
             the person asking for access cannot also press Accept on your behalf.</p>
 
-            <!-- Consent dialog mockup -->
-            <div class="dialog-mock" role="img" aria-label="Mockup of the FlashDesk connection-request dialog">
+            <!-- Consent dialog mockup — decorative, described by adjacent prose -->
+            <div class="dialog-mock" role="img" aria-label="Mockup of the FlashDesk connection-request dialog showing a 9-digit helper ID, an Accept button, and a Reject button">
               <div class="dialog-mock-titlebar">
                 <span class="dialog-mock-titlebar-dot"></span>
                 FlashDesk — incoming connection request
@@ -964,9 +1141,12 @@
             </div>
 
             <p style="margin-top: var(--sp-4); font-size: var(--fs-small);">
-              Once you press Accept, a coloured bar appears at the top of your screen for the
-              entire session. It belongs to FlashDesk running on your own computer — nothing
-              the connected helper sends can touch it or hide it.
+              Once you press Accept, a coloured bar appears at the top of your screen and stays there
+              for the entire session. The bar shows three things: your helper's 9-digit ID (so you always
+              know who is connected), the elapsed session time, and a <strong>Disconnect</strong> button.
+              Pressing Disconnect ends the session immediately — no confirmation step. The bar belongs to
+              FlashDesk running on your own computer; there is nothing the connected helper can send that
+              touches or hides it.
             </p>
           </div>
         </li>
@@ -978,7 +1158,7 @@
   <!-- ══════════════════════════════════════════════════════════════════════
        HOW THE CONNECTION WORKS — relay architecture, data flow, encryption
        ══════════════════════════════════════════════════════════════════════ -->
-  <section class="band band-alt">
+  <section class="band band-alt" id="relay">
     <div class="contained">
       <span class="kicker">Under the hood</span>
       <h2>How the connection actually works.</h2>
@@ -987,32 +1167,39 @@
         what data travels where, and what the relay server can and cannot see.
       </p>
 
-      <!-- Relay architecture diagram -->
-      <div class="relay-diagram" role="img" aria-label="Relay architecture: your PC connects through the FlashDesk relay server to your helper's PC">
-        <div class="relay-node">
-          <div class="relay-node-icon">
-            <svg class="icon-lg" aria-hidden="true"><use href="#i-screen"/></svg>
+      <!-- Relay architecture diagram — converted to figure/figcaption for accessible structure -->
+      <figure class="relay-diagram-figure">
+        <div class="relay-diagram" role="presentation">
+          <div class="relay-node">
+            <div class="relay-node-icon" aria-hidden="true">
+              <svg class="icon-lg" aria-hidden="true"><use href="#i-screen"/></svg>
+            </div>
+            <span class="relay-node-label">Your PC</span>
+            <span class="relay-node-sub">Runs FlashDesk.<br>Sends screen frames.</span>
           </div>
-          <span class="relay-node-label">Your PC</span>
-          <span class="relay-node-sub">Runs FlashDesk.<br>Sends screen frames.</span>
-        </div>
-        <div class="relay-arrow" aria-hidden="true">⇄</div>
-        <div class="relay-node relay-center">
-          <div class="relay-node-icon">
-            <svg class="icon-lg" aria-hidden="true"><use href="#i-relay"/></svg>
+          <div class="relay-arrow" aria-hidden="true">⇄</div>
+          <div class="relay-node relay-center">
+            <div class="relay-node-icon" aria-hidden="true">
+              <svg class="icon-lg" aria-hidden="true"><use href="#i-relay"/></svg>
+            </div>
+            <span class="relay-node-label">FlashDesk Relay</span>
+            <span class="relay-node-sub">Forwards encrypted packets only. Cannot read contents.</span>
           </div>
-          <span class="relay-node-label">FlashDesk Relay</span>
-          <span class="relay-node-sub">Forwards encrypted packets only. Cannot read contents.</span>
-        </div>
-        <div class="relay-arrow" aria-hidden="true">⇄</div>
-        <div class="relay-node">
-          <div class="relay-node-icon">
-            <svg class="icon-lg" aria-hidden="true"><use href="#i-screen"/></svg>
+          <div class="relay-arrow" aria-hidden="true">⇄</div>
+          <div class="relay-node">
+            <div class="relay-node-icon" aria-hidden="true">
+              <svg class="icon-lg" aria-hidden="true"><use href="#i-screen"/></svg>
+            </div>
+            <span class="relay-node-label">Helper's PC</span>
+            <span class="relay-node-sub">Runs FlashDesk.<br>Sends input events.</span>
           </div>
-          <span class="relay-node-label">Helper's PC</span>
-          <span class="relay-node-sub">Runs FlashDesk.<br>Sends input events.</span>
         </div>
-      </div>
+        <figcaption class="relay-diagram-caption">
+          Both PCs connect outbound to the FlashDesk relay server (139.28.36.247). The relay forwards
+          encrypted packets between them — it sees session IDs and packet sizes but cannot read screen
+          contents, keyboard input, or file data.
+        </figcaption>
+      </figure>
 
       <h3 style="margin-top: var(--sp-6); margin-bottom: var(--sp-3);">Why a relay?</h3>
       <p>Most home and office computers sit behind a router that uses Network Address Translation
@@ -1023,79 +1210,97 @@
       internet.</p>
 
       <h3 style="margin-top: var(--sp-5); margin-bottom: var(--sp-3);">What the relay can and cannot see</h3>
-      <p>The connection between the two copies of FlashDesk is encrypted end-to-end. The relay
-      server forwards packets it cannot decrypt. It sees the source and destination session IDs
-      (the 9-digit numbers) and the size and timing of packets — the same metadata any router
+      <p>The connection between the two copies of FlashDesk is encrypted end-to-end using TLS 1.3.
+      The relay server forwards packets it cannot decrypt. It sees the source and destination session
+      IDs (the 9-digit numbers) and the size and timing of packets — the same metadata any router
       on the path sees. It does not see your screen contents, your mouse movements, your keyboard
       input, or the names or contents of any files.</p>
 
       <h3 style="margin-top: var(--sp-5); margin-bottom: var(--sp-3);">What travels in each direction</h3>
-      <ul class="data-flow" aria-label="Data flow during a FlashDesk session">
-        <li>
-          <span class="data-flow-dir your-pc-out">Your PC →</span>
-          <span class="data-flow-detail">
-            <strong>Compressed, encrypted screen frames</strong> — a capture of your display,
-            compressed and sent continuously while the session is open. Only the display area
-            that has changed since the last frame is re-sent (delta encoding).
-          </span>
-        </li>
-        <li>
-          <span class="data-flow-dir helper-out">← Helper</span>
-          <span class="data-flow-detail">
-            <strong>Encrypted input events</strong> — mouse position, button clicks, scroll
-            events, and keystrokes. These are the only things that flow from the helper's computer
-            to yours. They cannot cause any action that your own mouse and keyboard could not cause.
-          </span>
-        </li>
-        <li>
-          <span class="data-flow-dir your-pc-out">Your PC →</span>
-          <span class="data-flow-detail">
-            <strong>File data (only after explicit permission)</strong> — raw bytes of the specific
-            file the helper has asked to copy, if you have granted file-access permission and
-            confirmed the transfer. No other file data ever leaves your computer.
-          </span>
-        </li>
-        <li>
-          <span class="data-flow-dir helper-out">← Helper</span>
-          <span class="data-flow-detail">
-            <strong>Inbound file data (only after explicit permission)</strong> — if your helper
-            sends a file to you, the bytes of that file arrive here. You are shown the file name
-            and destination before anything is written to disk.
-          </span>
-        </li>
-        <li>
-          <span class="data-flow-dir relay-only">Relay only</span>
-          <span class="data-flow-detail">
-            <strong>Session IDs and packet metadata</strong> — the 9-digit IDs used to route
-            packets, plus packet size and timestamp. No content. The relay does not log session
-            contents and discards routing data when the session ends.
-          </span>
-        </li>
-      </ul>
 
-      <h3 style="margin-top: var(--sp-5); margin-bottom: var(--sp-3);">The private authentication value</h3>
-      <p>Your 9-digit ID is public — it is what you read aloud to your helper. But possessing
-      the ID alone is not enough to connect to your session. Each copy of FlashDesk holds a
-      separate private value, generated locally and never transmitted. When a connection request
-      arrives, the relay challenges the requester to prove they hold the private value that
-      corresponds to the ID they claimed. Only a copy of FlashDesk that generated that value
-      can respond correctly. An attacker who intercepts your 9-digit ID cannot use it to connect.</p>
+      <!-- Data-flow converted from ul to a proper table for semantic correctness and screen reader navigation -->
+      <table class="data-flow-table" aria-label="Data flow during a FlashDesk session">
+        <thead>
+          <tr>
+            <th scope="col">Direction</th>
+            <th scope="col">Data</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="flow-dir your-pc-out">Your PC →</td>
+            <td class="flow-detail">
+              <strong>Compressed, encrypted screen frames</strong> — a capture of your display,
+              compressed and sent continuously while the session is open. Only the display area
+              that has changed since the last frame is re-sent (delta encoding).
+            </td>
+          </tr>
+          <tr>
+            <td class="flow-dir helper-out">← Helper</td>
+            <td class="flow-detail">
+              <strong>Encrypted input events</strong> — mouse position, button clicks, scroll
+              events, and keystrokes. These are the only things that flow from the helper's computer
+              to yours. They cannot cause any action that your own mouse and keyboard could not cause.
+            </td>
+          </tr>
+          <tr>
+            <td class="flow-dir your-pc-out">Your PC →</td>
+            <td class="flow-detail">
+              <strong>File data (only after explicit permission)</strong> — raw bytes of the specific
+              file the helper has asked to copy, if you have granted file-access permission and
+              confirmed the transfer. No other file data ever leaves your computer.
+            </td>
+          </tr>
+          <tr>
+            <td class="flow-dir helper-out">← Helper</td>
+            <td class="flow-detail">
+              <strong>Inbound file data (only after explicit permission)</strong> — if your helper
+              sends a file to you, the bytes of that file arrive here. You are shown the file name
+              and destination before anything is written to disk.
+            </td>
+          </tr>
+          <tr>
+            <td class="flow-dir relay-only">Relay only</td>
+            <td class="flow-detail">
+              <strong>Session IDs and packet metadata</strong> — the 9-digit IDs used to route
+              packets, plus packet size and timestamp. No content. The relay does not log session
+              contents and discards routing data when the session ends.
+            </td>
+          </tr>
+        </tbody>
+      </table>
 
-      <h3 style="margin-top: var(--sp-5); margin-bottom: var(--sp-3);">Session lifetime</h3>
+      <h3 style="margin-top: var(--sp-5); margin-bottom: var(--sp-3);">Your ID is public. Your cryptographic key is not.</h3>
+      <p>Your 9-digit ID is what you read aloud — it is how your helper finds your session, like a
+      phone number finds a house. But possessing the ID alone is not enough to connect.</p>
+      <p style="margin-top: var(--sp-3);">
+        When FlashDesk starts, it generates a cryptographic key on your device. This key never leaves
+        your computer — it is never transmitted, never displayed, and never stored anywhere the relay
+        can access. When a connection request arrives claiming your ID, the relay issues a cryptographic
+        challenge. Only the copy of FlashDesk that holds the matching key can answer it correctly. An
+        attacker who intercepts your 9-digit ID during a phone call cannot use it to connect to your
+        session.
+      </p>
+
+      <h3 style="margin-top: var(--sp-5); margin-bottom: var(--sp-3);">Session lifetime and what happens if the connection drops</h3>
       <p>A session begins when you press Accept and ends the moment FlashDesk's window is closed
       or the Disconnect button is pressed on either side. At that point the relay terminates the
-      routing entry and both ends receive a clean disconnect signal. There is no grace period
-      during which the session stays open — the close is immediate.</p>
+      routing entry, both ends receive a clean disconnect signal, and your helper's view goes blank
+      immediately.</p>
       <p style="margin-top: var(--sp-3);">
-        One exception: if the network drops and the same helper reconnects within 90 seconds,
-        that reconnect is treated as the same session resuming — the Accept dialog is not shown
-        again. After 90 seconds, a full new session (new ID, new Accept dialog) is required.
+        If the network drops mid-session — a Wi-Fi hiccup, a cable unplugged — FlashDesk detects
+        the disconnect immediately. Your screen capture pauses and your helper's view freezes. A
+        90-second window opens. If the same helper reconnects within 90 seconds, the session resumes
+        without a new Accept dialog. This is intentional: forcing a re-accept every time a home Wi-Fi
+        blips would make the tool unusable on unstable connections. After 90 seconds the window closes
+        and the session is gone — a full new session (new ID, new Accept dialog) is required for
+        anyone to connect.
       </p>
 
       <div class="info-callout" style="margin-top: var(--sp-5);">
-        <strong>The file the relay runs on:</strong> FlashDesk.exe. There is no separate relay
-        process on your machine. The relay is a server-side component operated by FlashDesk —
-        your computer connects to it; it does not run on your computer.
+        <strong>Relay server address:</strong> 139.28.36.247 — outbound HTTPS on port 443. If FlashDesk
+        cannot connect in a corporate environment, add this address to your firewall or proxy allowlist.
+        The relay is a server-side component operated by FlashDesk. It does not run on your computer.
       </div>
     </div>
   </section>
@@ -1103,7 +1308,7 @@
   <!-- ══════════════════════════════════════════════════════════════════════
        WHEN YOU ARE DONE — ending the session
        ══════════════════════════════════════════════════════════════════════ -->
-  <section class="band band-paper">
+  <section class="band band-paper" id="ending">
     <div class="contained">
       <span class="kicker">When you are done</span>
       <h2>Ending the session.</h2>
@@ -1115,23 +1320,22 @@
           </div>
           <h3>Close FlashDesk or press Disconnect.</h3>
           <p>When your helper is finished, close the FlashDesk window or press the Disconnect
-          button. The session ends immediately. Your helper's screen goes blank — they can no
-          longer see or control anything on your computer. The relay drops the routing entry
-          at the same moment.</p>
+          button in the session bar at the top of your screen. The session ends immediately.
+          Your helper's view goes blank — they can no longer see or control anything on your
+          computer. The relay drops the routing entry at the same moment.</p>
         </div>
 
         <div class="card">
           <div class="icon-tile">
-            <!-- i-lock was missing in the previous version — added to sprite in round 5 -->
             <svg class="icon-lg" aria-hidden="true"><use href="#i-lock"/></svg>
           </div>
           <h3>They cannot reconnect without you accepting again.</h3>
           <p>Once you close FlashDesk, it is over. Your 9-digit code changes the next time you
           open the program. If the same person calls back and asks to connect, they will need your
           new code — and you will see the Accept / Reject dialog again before anything happens.</p>
-          <p style="margin-top: var(--sp-3); font-size: var(--fs-small);">
-            <em>Note: if the network drops and the same helper reconnects within 90 seconds, that
-            reconnect skips the dialog — it is treated as the same session resuming, not a new one.</em>
+          <p style="margin-top: var(--sp-3);">
+            The one exception is a brief reconnect window after a network drop — see the
+            <a class="inline-link" href="#relay">relay section above</a> for the full explanation.
           </p>
         </div>
 
@@ -1140,7 +1344,7 @@
   </section>
 
   <!-- ══════════════════════════════════════════════════════════════════════
-       FILE PANEL — named section; promotes the orphaned statement band
+       FILE PANEL — named section
        ══════════════════════════════════════════════════════════════════════ -->
   <section class="band band-tile" aria-labelledby="file-panel-heading">
     <div class="contained" style="max-width: 52rem;">
@@ -1151,9 +1355,12 @@
       <p style="color: var(--color-tile-muted); max-width: 36rem; line-height: 1.6;">
         Accepting a session gives your helper screen access only. They cannot open your files without
         a second, separate permission. When that permission is given, they can browse your files and
-        copy one to their computer, or send one of theirs to you. Delete, rename, and move do not
-        exist in the file panel — they are not hidden behind a permission level, they are not
-        implemented in the code.
+        copy one to their computer, or send one of theirs to you.
+      </p>
+      <p style="color: var(--color-tile-muted); max-width: 36rem; line-height: 1.6; margin-top: var(--sp-3);">
+        Delete, rename, and move are not available in the file panel. This is not a permission
+        level — there is no setting that unlocks them. They are a category of action the file panel
+        was built to exclude. The file panel has exactly two operations: copy out, and copy in.
       </p>
     </div>
   </section>
@@ -1161,13 +1368,12 @@
   <!-- ══════════════════════════════════════════════════════════════════════
        WHAT A SESSION CAN DO — 8 verifiable features
        ══════════════════════════════════════════════════════════════════════ -->
-  <section class="band band-paper">
+  <section class="band band-paper" id="what-it-can-do">
     <div class="contained">
       <span class="kicker">What a session can do</span>
-      <h2>Eight things — each one checkable against the code.</h2>
+      <h2>Eight things FlashDesk does — each one a specific, verifiable behaviour.</h2>
       <p class="text-muted" style="margin-bottom: var(--sp-6); max-width: 38rem;">
-        Not something the program is meant to do — something it actually does.
-        Every claim below was verified against the source before it appeared on this page.
+        These are behaviours with concrete, observable consequences — not design intentions.
       </p>
       <div class="grid cols-3">
 
@@ -1180,28 +1386,29 @@
 
         <div class="card">
           <div class="icon-tile"><svg class="icon-lg" aria-hidden="true"><use href="#i-address"/></svg></div>
-          <h3>The number is an address, not a password</h3>
+          <h3>The ID is an address, not a key</h3>
           <p>Your 9-digit FlashDesk number is how a helper finds your session — the way a phone
-          number finds a house. A separate private value, held only on your machine and never
-          displayed, is what actually proves ownership of that number. The relay checks it on
+          number finds a house. A cryptographic key, held only on your machine and never
+          transmitted, is what proves ownership of that number. The relay challenges it on
           every connection attempt.</p>
         </div>
 
         <div class="card">
           <div class="icon-tile"><svg class="icon-lg" aria-hidden="true"><use href="#i-dialog"/></svg></div>
           <h3>Every new session is accepted by hand</h3>
-          <p>An incoming connection shows a dialog with the caller's number and two equally-weighted
+          <p>An incoming connection shows a dialog with the caller's 9-digit ID and two equally-weighted
           buttons, Accept and Reject. The Accept button is disabled for three seconds so it cannot
-          be clicked immediately. While the dialog is open, the connected helper's remote-control
-          input cannot reach it — the person asking for control cannot also press Accept.</p>
+          be clicked immediately. While the dialog is open, the remote-control input from the
+          connecting party cannot reach it — the person asking for control cannot also press Accept.</p>
         </div>
 
         <div class="card">
           <div class="icon-tile"><svg class="icon-lg" aria-hidden="true"><use href="#i-band"/></svg></div>
-          <h3>A coloured strip stays on screen, always</h3>
-          <p>While anyone is connected, a coloured band stays visible on your screen for the whole
-          session. It belongs to the FlashDesk window running on your own computer — there is nothing
-          the connected helper can send that touches or hides it.</p>
+          <h3>A session bar stays on screen, always</h3>
+          <p>While anyone is connected, a coloured bar stays visible at the top of your screen for
+          the whole session. It shows your helper's 9-digit ID, the elapsed session time, and a
+          Disconnect button. The bar belongs to FlashDesk running on your own computer — there is
+          nothing the connected helper can send that touches or hides it.</p>
         </div>
 
         <div class="card">
@@ -1224,8 +1431,8 @@
           <div class="icon-tile"><svg class="icon-lg" aria-hidden="true"><use href="#i-copy"/></svg></div>
           <h3>Copy, never delete or rename</h3>
           <p>Once file access is granted, a helper can look through your files and copy one to their
-          own computer, or send you one of theirs. There is no delete, rename or move — not a
-          permission level, not a hidden feature. Those operations do not exist in the file panel.</p>
+          own computer, or send you one of theirs. There is no delete, rename or move. Those
+          operations do not exist in the file panel.</p>
         </div>
 
         <div class="card">
@@ -1243,20 +1450,19 @@
   <!-- ══════════════════════════════════════════════════════════════════════
        HARD LIMITS — deliberate design decisions
        ══════════════════════════════════════════════════════════════════════ -->
-  <section class="band band-alt">
+  <section class="band band-alt" id="hard-limits">
     <div class="contained">
       <span class="kicker">Hard limits</span>
       <h2>What FlashDesk deliberately cannot do.</h2>
       <p class="text-muted" style="margin-bottom: var(--sp-6); max-width: 40rem;">
         These are not features planned for later. They are design decisions that make the program
         safer by making certain things structurally impossible — not restricted by a setting, but
-        absent from the code entirely.
+        absent entirely.
       </p>
       <div class="grid cols-3">
 
         <div class="card">
           <div class="icon-tile">
-            <!-- i-stop was missing in the previous version — added to sprite in round 5 -->
             <svg class="icon-lg" aria-hidden="true"><use href="#i-stop"/></svg>
           </div>
           <h3>No background service</h3>
@@ -1290,8 +1496,8 @@
           </div>
           <h3>No file deletion or renaming</h3>
           <p>A helper with file access can copy a file to their computer or send one to you. Delete,
-          rename, and move are not implemented in the file panel — not behind a permission level,
-          not hidden. They do not exist.</p>
+          rename, and move are not in the file panel. They are not behind a permission level.
+          They do not exist.</p>
         </div>
 
         <div class="card">
@@ -1310,8 +1516,7 @@
           </div>
           <h3>One screen at a time</h3>
           <p>If your computer has more than one screen, your helper sees and controls only the
-          primary display. Multi-monitor support is not yet available. Switching between screens
-          is on the roadmap but has not been built.</p>
+          primary display. Multi-monitor support is not available.</p>
         </div>
 
       </div>
@@ -1321,13 +1526,10 @@
   <!-- ══════════════════════════════════════════════════════════════════════
        TECHNICAL SPECIFICATION — system requirements, file details
        ══════════════════════════════════════════════════════════════════════ -->
-  <section class="band band-paper">
+  <section class="band band-paper" id="specs">
     <div class="contained">
       <span class="kicker">Technical specification</span>
       <h2>What the file is and what it requires.</h2>
-      <p class="text-muted" style="margin-bottom: var(--sp-5); max-width: 38rem;">
-        Plain facts — no marketing copy.
-      </p>
 
       <table class="spec-table" style="max-width: 44rem;">
         <tbody>
@@ -1342,7 +1544,8 @@
           </tr>
           <tr>
             <th scope="row">Platform</th>
-            <td>Windows 10 x64 and Windows 11 x64. 32-bit Windows is not supported.</td>
+            <td>Windows 10 x64 and Windows 11 x64. Required on both machines. 32-bit Windows is not
+            supported. macOS, Linux, and mobile are not supported.</td>
           </tr>
           <tr>
             <th scope="row">.NET</th>
@@ -1355,6 +1558,16 @@
           <tr>
             <th scope="row">Network</th>
             <td>Outbound HTTPS on port 443. No inbound firewall rule needed. Works behind NAT.</td>
+          </tr>
+          <tr>
+            <th scope="row">Relay server</th>
+            <td>139.28.36.247 — outbound HTTPS (port 443). Add to firewall or proxy allowlist if
+            FlashDesk cannot connect in a managed corporate environment.</td>
+          </tr>
+          <tr>
+            <th scope="row">Encryption</th>
+            <td>TLS 1.3 end-to-end between both copies of FlashDesk. The relay forwards encrypted
+            packets it cannot decrypt.</td>
           </tr>
           <tr>
             <th scope="row">Persistence</th>
@@ -1395,7 +1608,7 @@
       <div class="faq-cta" style="margin-top: var(--sp-4);">
         <div class="faq-cta-text">
           <h3>Security warning from Windows</h3>
-          <p>Windows shows a SmartScreen warning the first time you open FlashDesk.exe. This is
+          <p>Windows shows a security warning the first time you open FlashDesk.exe. This is
           expected. We explain what it says and exactly what to click.</p>
         </div>
         <a class="btn btn-secondary" href="/security-warning/">
@@ -1422,7 +1635,6 @@
       </p>
       <div style="display: flex; flex-wrap: wrap; gap: var(--sp-3); justify-content: center; align-items: center;">
         <div style="text-align: center;">
-          <!-- btn-blue: design-system rule — decision CTAs are blue, not green -->
           <a class="btn btn-blue" href="/download/">
             <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
             Download FlashDesk — Free
@@ -1467,6 +1679,7 @@
       <a href="/" data-nav="home">Home</a>
       <a href="/how-it-works/" data-nav="how-it-works" aria-current="page">How it works</a>
       <a href="/download/" data-nav="download">Download</a>
+      <a href="/about/" data-nav="about">About</a>
       <a href="/changelog/" data-nav="changelog">Changelog</a>
     </nav>
 
@@ -1485,7 +1698,7 @@
   </div>
 
   <div class="footer-bottom">
-    <p class="footer-meta">&copy; 2026 FlashDesk. All rights reserved. Made in Kyiv by Conor Honor.</p>
+    <p class="footer-meta">&copy; 2026 FlashDesk. All rights reserved. Made in Kyiv by <a href="/about/" style="color: inherit; text-decoration: underline; text-underline-offset: 2px;">Conor Honor</a>.</p>
     <p class="footer-warning">FlashDesk will never telephone you. If someone calls claiming to be us, hang up.</p>
   </div>
 </footer>
@@ -1529,8 +1742,8 @@
   }
 
   /* Mobile nav drawer */
-  var toggle  = document.getElementById('nav-toggle');
-  var drawer  = document.getElementById('nav-drawer');
+  var toggle   = document.getElementById('nav-toggle');
+  var drawer   = document.getElementById('nav-drawer');
   var closeBtn = document.getElementById('nav-close');
 
   function openDrawer() {
@@ -1538,7 +1751,6 @@
     drawer.removeAttribute('aria-hidden');
     toggle.setAttribute('aria-expanded', 'true');
     document.body.style.overflow = 'hidden';
-    /* Move focus to the close button */
     if (closeBtn) { closeBtn.focus(); }
   }
 

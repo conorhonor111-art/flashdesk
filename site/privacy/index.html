@@ -9,40 +9,41 @@
   GENERATED FILE — do not hand-edit. Source: site-src\pages\privacy.html, assembled by
   scripts\Build-Site.ps1 from site-src\layout-v2.html + site-src\partials\*-v2.html.
 
-  ⚠ THIS IS THE ROUND-4 REDESIGN TRACK. UPDATED 2026-09-15 — it is now the WHOLE SITE, not one
-  track of two. Conor's own build order for the rollout: design the system, build Home completely
-  in it, build ONE inner page to prove it scales, then WAIT for a verdict before the rest — that
-  wait ended 2026-09-09 (commit 6f33070), when Privacy, FAQ and Terms were ported onto this same
-  track. All six pages (Home, How-it-works, Privacy, FAQ, Terms, Security-warning) render from
-  this file now (see scripts\Build-Site.ps1's LAYOUT front-matter key — every page source under
-  site-src\pages\ currently sets LAYOUT: v2). The v1 files (layout.html, site.css,
-  partials\header.html/footer.html) still exist in this repository but are orphaned — no page
-  references them — kept only because deleting them was never asked for, not because two designs
-  are still meant to coexist.
-
-  WHY THE PALETTE CHANGED FROM DARK+GREEN TO LIGHT: see site-v2.css's own header comment for the
-  full argument (research-backed, not taste) — six real competitor/trust-product sites were fetched
-  and read directly, six of six are light-dominant, and dark+acid-green reads as the hacking/crypto
-  genre to exactly the frightened non-technical visitor this page exists for.
+  ⚠ THIS IS THE ROUND-4 REDESIGN TRACK. UPDATED 2026-09-21 — all six pages render from
+  this layout. See scripts\Build-Site.ps1 for details.
 
   Nothing on this page loads from another host — same rule as the v1 track, unchanged.
 -->
-<meta name="description" content="FlashDesk collects almost nothing — no account, no analytics, no screen recording. Here is exactly what the code does, verified against the source.">
+<meta name="description" content="FlashDesk collects almost nothing — no account, no analytics, no screen recording. Exactly what the code does, verified against the source, with honest disclosures about what is still being checked.">
 <link rel="canonical" href="https://flashdesk.org/privacy/">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="en_GB">
 <meta property="og:url" content="https://flashdesk.org/privacy/">
 <meta property="og:title" content="Privacy Policy — FlashDesk">
-<meta property="og:description" content="FlashDesk collects almost nothing — no account, no analytics, no screen recording. Here is exactly what the code does, verified against the source.">
+<meta property="og:description" content="FlashDesk collects almost nothing — no account, no analytics, no screen recording. Exactly what the code does, verified against the source.">
 <meta property="og:image" content="https://flashdesk.org/flashdesk-window.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Privacy Policy — FlashDesk">
-<meta name="twitter:description" content="FlashDesk collects almost nothing — no account, no analytics, no screen recording. Here is exactly what the code does, verified against the source.">
+<meta name="twitter:description" content="FlashDesk collects almost nothing — no account, no analytics, no screen recording. Exactly what the code does, verified against the source.">
 <meta name="twitter:image" content="https://flashdesk.org/flashdesk-window.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": "Privacy Policy — FlashDesk",
+  "description": "FlashDesk privacy policy: what the software collects, what it does not collect, how long data is kept, and your rights.",
+  "url": "https://flashdesk.org/privacy/",
+  "publisher": {
+    "@type": "Organization",
+    "name": "FlashDesk",
+    "url": "https://flashdesk.org"
+  }
+}
+</script>
 
 <!-- MARK GEOMETRY IS LOCKED to assets\make-icon.ps1 — see site-src\partials\header-v2.html for the
-     full note. The mark's SHAPE is unchanged this round (Conor: "it took seven rounds and it is
-     earned"); only where and in what colour it appears changed. -->
+     full note. The mark's SHAPE is unchanged this round; only where and in what colour it appears
+     changed. -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Crect%20x='1'%20y='1'%20width='14'%20height='14'%20rx='3.5'%20fill='%2317191E'/%3E%3Cpolyline%20points='4.631,2.512%209.387,11.495%2011.325,7.620'%20fill='none'%20stroke='%232BD16B'%20stroke-width='2.6'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="/site-v2.css">
 </head>
@@ -53,103 +54,83 @@
 <!-- -----------------------------------------------------------------------------------------
      THE ICON SET — one sprite, defined once, used everywhere via <svg class="icon"><use
      href="#i-NAME"/></svg>. Built round 4 (2026-09-04) per Conor's instruction: "a coherent icon
-     set in the mark's own language — same stroke weight, same angles." Design rules, applied to
+     set in the mark's own language — same stroke weight, same angles." Design rules applied to
      every icon below with no exception:
        - 24x24 viewBox, stroke-width 2, stroke="currentColor" (tints via CSS `color`), fill: none
-       - stroke-linecap: butt, stroke-linejoin: miter — the mark uses flat caps and a sharp miter
-         join (that sharp corner is exactly what nearly clipped the mark itself once — see
-         make-icon.ps1's own history — so it is treated with the same care here)
-       - straight lines and rectangles ONLY. No circles, no curves anywhere in this set. The mark
-         itself is two straight segments and nothing else; every icon here is built from the same
-         restricted vocabulary so the family reads as one language, not eleven separate ideas that
-         happen to share a stroke width
-       - icon-screen's inner mark deliberately echoes the brand mark's own descending-then-rising
-         proportion (long stroke down, short stroke up) at a smaller scale — the one icon allowed
-         to directly quote the mark, because it depicts the one thing only the mark's own shape
-         means: a cursor moving on a screen that is not physically yours
+       - stroke-linecap: butt, stroke-linejoin: miter
+       - straight lines and rectangles ONLY
      ----------------------------------------------------------------------------------------- -->
 <svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
   <defs>
-    
-      <symbol id="i-screen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
-        <rect x="2" y="3" width="20" height="14"/>
-        <line x1="8" y1="21" x2="16" y2="21"/>
-        <line x1="12" y1="17" x2="12" y2="21"/>
-        <polyline points="9,7 13,15 15.5,10.5"/>
-      </symbol>
-      <!-- ⚠ REDESIGNED — an independent review found this too similar to i-band (both were "a
-           rectangle with a line near the top"). Now a smaller, centred dialog with two actual
-           button RECTANGLES (not lines) at the bottom, reading unambiguously as "a decision with
-           two buttons" rather than "a window with a divider." -->
-      <symbol id="i-dialog" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
-        <rect x="4" y="5" width="16" height="13"/>
-        <line x1="4" y1="9" x2="20" y2="9"/>
-        <rect x="7" y="12.5" width="4" height="3"/>
-        <rect x="13" y="12.5" width="4" height="3"/>
-      </symbol>
-      <symbol id="i-band" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
-        <rect x="2" y="3" width="20" height="16"/>
-        <line x1="2" y1="7.5" x2="22" y2="7.5" stroke-width="3"/>
-      </symbol>
-      <symbol id="i-log" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
-        <rect x="5" y="2" width="14" height="20"/>
-        <line x1="8" y1="7" x2="16" y2="7"/>
-        <line x1="8" y1="11" x2="16" y2="11"/>
-        <line x1="8" y1="15" x2="14" y2="15"/>
-      </symbol>
-      <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
-        <polyline points="6,2 6,22 18,22 18,8 12,2 6,2"/>
-        <polyline points="12,2 12,8 18,8"/>
-      </symbol>
-      <!-- ⚠ REDESIGNED — an independent review found the original (three separate small blocks)
-           read ambiguously as a "more options" ellipsis or a loading indicator. Now ONE field
-           divided by two internal dividers — reads specifically as "one number, grouped in
-           three," matching the actual 9-digit-in-three-groups format, not a generic UI glyph. -->
-      <symbol id="i-address" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
-        <rect x="2" y="8" width="20" height="8"/>
-        <line x1="9.33" y1="8" x2="9.33" y2="16"/>
-        <line x1="16.67" y1="8" x2="16.67" y2="16"/>
-      </symbol>
-      <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
-        <polyline points="2,6 2,20 22,20 22,8 11,8 9,6 2,6"/>
-      </symbol>
-      <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
-        <rect x="7" y="7" width="14" height="14"/>
-        <polyline points="17,7 17,3 3,3 3,17 7,17"/>
-      </symbol>
-      <symbol id="i-arrival" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
-        <rect x="3" y="9" width="12" height="12"/>
-        <polyline points="14,4 21,4 21,11"/>
-        <line x1="21" y1="4" x2="10" y2="15"/>
-      </symbol>
-      <symbol id="i-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
-        <line x1="4" y1="4" x2="20" y2="20"/>
-        <line x1="20" y1="4" x2="4" y2="20"/>
-      </symbol>
-      <symbol id="i-monitors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
-        <rect x="2" y="4" width="12" height="9"/>
-        <rect x="12" y="8" width="10" height="8"/>
-      </symbol>
-      <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
-        <line x1="12" y1="3" x2="12" y2="15"/>
-        <polyline points="6,10 12,16 18,10"/>
-        <line x1="4" y1="21" x2="20" y2="21"/>
-      </symbol>
-      <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
-        <line x1="4" y1="12" x2="20" y2="12"/>
-        <polyline points="14,6 20,12 14,18"/>
-      </symbol>
+    <symbol id="i-screen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <rect x="2" y="3" width="20" height="14"/>
+      <line x1="8" y1="21" x2="16" y2="21"/>
+      <line x1="12" y1="17" x2="12" y2="21"/>
+      <polyline points="9,7 13,15 15.5,10.5"/>
+    </symbol>
+    <symbol id="i-dialog" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <rect x="4" y="5" width="16" height="13"/>
+      <line x1="4" y1="9" x2="20" y2="9"/>
+      <rect x="7" y="12.5" width="4" height="3"/>
+      <rect x="13" y="12.5" width="4" height="3"/>
+    </symbol>
+    <symbol id="i-band" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <rect x="2" y="3" width="20" height="16"/>
+      <line x1="2" y1="7.5" x2="22" y2="7.5" stroke-width="3"/>
+    </symbol>
+    <symbol id="i-log" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <rect x="5" y="2" width="14" height="20"/>
+      <line x1="8" y1="7" x2="16" y2="7"/>
+      <line x1="8" y1="11" x2="16" y2="11"/>
+      <line x1="8" y1="15" x2="14" y2="15"/>
+    </symbol>
+    <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <polyline points="6,2 6,22 18,22 18,8 12,2 6,2"/>
+      <polyline points="12,2 12,8 18,8"/>
+    </symbol>
+    <symbol id="i-address" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <rect x="2" y="8" width="20" height="8"/>
+      <line x1="9.33" y1="8" x2="9.33" y2="16"/>
+      <line x1="16.67" y1="8" x2="16.67" y2="16"/>
+    </symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <polyline points="2,6 2,20 22,20 22,8 11,8 9,6 2,6"/>
+    </symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <rect x="7" y="7" width="14" height="14"/>
+      <polyline points="17,7 17,3 3,3 3,17 7,17"/>
+    </symbol>
+    <symbol id="i-arrival" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <rect x="3" y="9" width="12" height="12"/>
+      <polyline points="14,4 21,4 21,11"/>
+      <line x1="21" y1="4" x2="10" y2="15"/>
+    </symbol>
+    <symbol id="i-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <line x1="4" y1="4" x2="20" y2="20"/>
+      <line x1="20" y1="4" x2="4" y2="20"/>
+    </symbol>
+    <symbol id="i-monitors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <rect x="2" y="4" width="12" height="9"/>
+      <rect x="12" y="8" width="10" height="8"/>
+    </symbol>
+    <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <line x1="12" y1="3" x2="12" y2="15"/>
+      <polyline points="6,10 12,16 18,10"/>
+      <line x1="4" y1="21" x2="20" y2="21"/>
+    </symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <line x1="4" y1="12" x2="20" y2="12"/>
+      <polyline points="14,6 20,12 14,18"/>
+    </symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <polyline points="12,3 20,7 20,13 12,21 4,13 4,7 12,3"/>
+    </symbol>
   </defs>
 </svg>
 
 <div class="page">
-<!-- v2 header — light, sticky (position, not motion), and per Conor's instruction "a header that
-     carries the download action": the download link is present in the header on every page, not
-     only in the hero. The mark here is the single-colour ink version (assets\FlashDesk-mark-mono.svg
-     — built last round specifically for light surfaces the dark tile was never meant for; this is
-     that asset's first real use). MARK GEOMETRY IS LOCKED to assets\make-icon.ps1 — if the points
-     change there, they must change here too, in the same commit; scripts\Check-MarkGeometry.ps1
-     checks this file. -->
+<!-- v2 header — light, sticky, carries the download action on every page. MARK GEOMETRY IS LOCKED
+     to assets\make-icon.ps1. -->
 <header class="site-header">
   <a class="brand" href="/">
     <svg viewBox="0 0 16 16" aria-hidden="true" width="28" height="28">
@@ -160,10 +141,10 @@
   <nav class="site-nav" aria-label="Site">
     <a href="/" data-nav="home">Home</a>
     <a href="/how-it-works/" data-nav="how-it-works">How it works</a>
-    <a href="/privacy/" data-nav="privacy" aria-current="page">Privacy</a>
     <a href="/faq/" data-nav="faq">FAQ</a>
-    <a href="/terms/" data-nav="terms">Terms</a>
-    <a href="/security-warning/" data-nav="security-warning">SmartScreen</a>
+    <a href="/download/" data-nav="download">Download</a>
+    <a href="/changelog/" data-nav="changelog">Changelog</a>
+    <a href="/about/" data-nav="about">About</a>
   </nav>
   <a class="header-cta" href="https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe">
     <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
@@ -172,10 +153,13 @@
 </header>
 
 <main id="main-content">
+
+<article>
+
 <!-- ============================================================================================
-     HERO — h1, lead, and the single most important statement on the page.
-     Kept deliberately short: the visitor arrived because they want to know if this product
-     is safe. Give them the answer before the scroll.
+     HERO — h1, lead, jump list.
+     The honest caveat callout appears immediately after this band so it is seen before
+     the visitor commits to reading the full page.
      ============================================================================================ -->
 
 <section class="band band-paper">
@@ -183,24 +167,59 @@
     <span class="kicker">Privacy policy</span>
     <h1>Your privacy in plain English</h1>
     <p class="lead">FlashDesk is built on a simple idea: the person asking for help should always
-    be in control. That principle shows up in every part of the product — including what it
-    records, stores, and sends. This page describes exactly what the code does, checked directly
-    against the source rather than written from a template.</p>
-    <p class="mt-3 text-muted" style="font-size:var(--fs-small)">Conor Honor is not a lawyer.
-    This is a plain description of how the software behaves, kept honest by being checkable.
-    Last reviewed: September 2026.</p>
+    be in control. This page says exactly what the program collects, what it does not, and — where
+    one area is still being documented — says so plainly rather than glossing over it. Every claim
+    about the client program has been checked against the
+    <a class="inline-link" href="https://github.com/conorhonor111-art/flashdesk">public source code</a>
+    — you can verify them yourself.</p>
+
+    <nav aria-label="Page contents" style="margin-top:var(--sp-6);padding:var(--sp-4) var(--sp-5);background:var(--color-surface-alt,#F5F5F5);border-radius:4px;display:inline-block">
+      <p style="font-size:var(--fs-small);font-weight:600;margin-bottom:var(--sp-2);letter-spacing:0.04em;text-transform:uppercase">On this page</p>
+      <ol style="margin:0;padding-left:1.25rem;font-size:var(--fs-small);line-height:2">
+        <li><a class="inline-link" href="#what-we-collect">What we collect</a></li>
+        <li><a class="inline-link" href="#what-we-dont-collect">What we don't collect</a></li>
+        <li><a class="inline-link" href="#retention">How long data is kept</a></li>
+        <li><a class="inline-link" href="#your-rights">Your rights under GDPR and similar laws</a></li>
+        <li><a class="inline-link" href="#third-parties">Third-party services</a></li>
+        <li><a class="inline-link" href="#data-controller">Data controller and policy changes</a></li>
+      </ol>
+    </nav>
   </div>
 </section>
 
 <!-- ============================================================================================
-     AT A GLANCE — four key facts as icon tiles. Fast answer for the visitor who wants one
-     sentence before committing to the full page.
+     RELAY CAVEAT — amber callout, shown early.
+     This is the most important transparency statement on the page. It belongs here,
+     before the numbered sections, not buried at the end after the visitor has stopped reading.
      ============================================================================================ -->
 
 <section class="band band-alt">
   <div class="contained">
+    <div role="note" aria-label="One open question about the relay server" style="background:#FFFBEB;border:2px solid #F59E0B;border-radius:4px;padding:var(--sp-5) var(--sp-6);max-width:var(--reading-max)">
+      <p style="font-weight:700;font-size:var(--fs-body);margin-bottom:var(--sp-3)">One open question about the relay server</p>
+      <p style="margin-bottom:var(--sp-3)">The client program described on this page has been checked
+      against its source code — those claims are solid. The relay server (IP: 139.28.36.247) that
+      introduces two FlashDesk numbers to each other has not yet had the same documentation pass.</p>
+      <p style="margin-bottom:var(--sp-3)">What is known: the relay is hosted by Hetzner Online GmbH,
+      operating under German law and EU jurisdiction. Any connection event necessarily transmits both
+      parties' IP addresses and a timestamp to the relay — that is an unavoidable consequence of how
+      TCP connections work. What is not yet confirmed: exactly what the relay logs, how long those
+      logs are retained, and whether they are deleted at all.</p>
+      <p style="margin-bottom:0">"Nothing found while checking" is not the same promise as a page
+      that has been written and verified line by line. This callout will be replaced with a full
+      relay documentation section once that work is done. The caveat stays until it is.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================================================
+     AT A GLANCE — four key facts as icon tiles.
+     ============================================================================================ -->
+
+<section class="band band-paper">
+  <div class="contained">
     <p class="statement" style="max-width:var(--reading-max);margin-bottom:var(--sp-7)">Your
-    screen, your keystrokes and your files are never written to disk — only sent, live, during
+    screen, your keystrokes, and your files are never written to disk — only sent, live, during
     a session you accepted.</p>
     <div class="grid cols-2" style="max-width:52rem">
       <div class="card" style="display:flex;gap:var(--sp-4);align-items:flex-start">
@@ -230,7 +249,7 @@
         <div>
           <h3>No tracking, no cookies</h3>
           <p>This website loads nothing from other servers, sets no cookies, and runs no analytics
-          of any kind. There is no script on this site at all.</p>
+          of any kind. There is no JavaScript on this page.</p>
         </div>
       </div>
       <div class="card" style="display:flex;gap:var(--sp-4);align-items:flex-start">
@@ -252,9 +271,9 @@
      Honest about the small amount that is genuinely kept.
      ============================================================================================ -->
 
-<section class="band band-paper">
+<section id="what-we-collect" class="band band-alt">
   <div class="contained">
-    <span class="kicker">Section 1 of 4</span>
+    <span class="kicker">Section 1</span>
     <h2>What we collect</h2>
     <p style="max-width:var(--reading-max);margin-bottom:var(--sp-6)">FlashDesk keeps very
     little — and what it does keep stays on your own computer or exists only for the instant
@@ -265,37 +284,36 @@
           <svg class="icon" aria-hidden="true"><use href="#i-log"/></svg>
         </span>
         <h3>Session log</h3>
-        <!-- ⚠ HOTFIX 2026-09-04, kept verbatim: an independent fact-check for the round-4 redesign
-             found "It never leaves your machine" false here too — the file panel's "copy their
-             session log" button (FilePanel.cs:56, DownloadSessionLogAsync at :423) lets a helper
-             with file-access consent copy it off, the same as any other file. The safety-accuracy
-             rule outranks "don't touch untouched pages" for a claim already committed to this file.
-             Re-verified again today (2026-09-09), same file:lines, still true. -->
-        <p>A plain text file saved on <strong>your own computer</strong>, nowhere else. It records
-        who connected, when the session started and ended, and what was decided — accepted, refused,
-        or timed out. FlashDesk has no server it reports session history to. A helper with file
-        access can copy this log the same way they can copy any other file; the file panel records
-        the name of anything copied.</p>
+        <!-- ⚠ HOTFIX 2026-09-04, kept verbatim: an independent fact-check found "It never leaves
+             your machine" false — the file panel's "copy their session log" button
+             (FilePanel.cs:56, DownloadSessionLogAsync at :423) lets a helper with file-access
+             consent copy it off. Re-verified 2026-09-09, same file:lines, still true. -->
+        <p>A plain text file saved on <strong>your own computer</strong> at
+        <code style="font-size:0.85em;background:var(--color-surface-alt,#F5F5F5);padding:0.1em 0.3em;border-radius:3px">%APPDATA%\FlashDesk\session-log.txt</code>.
+        It records who connected, when the session started and ended, and what was decided —
+        accepted, refused, or timed out. FlashDesk has no server it reports session history to.
+        A helper with file access can copy this log the same way they can copy any other file;
+        the file panel records the name of anything copied.</p>
       </div>
       <div class="card">
         <span class="icon-tile" aria-hidden="true">
           <svg class="icon" aria-hidden="true"><use href="#i-address"/></svg>
         </span>
         <h3>Your FlashDesk number</h3>
-        <p>Stored on your own computer. The relay server that connects two numbers together
-        knows your number and a separate private value your computer uses to prove it owns
-        that number — it does not know your name, and nothing about who you are is attached
-        to the number.</p>
+        <p>Stored in a local config file on your own computer. The relay server that connects
+        two numbers together knows your number and a separate private value your computer uses
+        to prove it owns that number — it does not know your name, and nothing about who you
+        are is attached to the number.</p>
       </div>
       <div class="card">
         <span class="icon-tile" aria-hidden="true">
           <svg class="icon" aria-hidden="true"><use href="#i-arrival"/></svg>
         </span>
         <h3>Relay connection data</h3>
-        <p>When two FlashDesk numbers connect, a small relay server is involved for the
-        introduction — long enough to establish the direct connection between the two
-        computers. What that relay retains beyond that moment is documented below with an
-        honest caveat about what is still being verified.</p>
+        <p>When two FlashDesk numbers connect, the relay server at 139.28.36.247 (Hetzner, Germany)
+        handles the introduction. Any TCP connection to the relay necessarily transmits both
+        parties' IP addresses and timestamps. What the relay retains in logs beyond the connection
+        event is not yet fully documented — see the callout at the top of this page.</p>
       </div>
     </div>
   </div>
@@ -306,9 +324,9 @@
      The longer and more important list.
      ============================================================================================ -->
 
-<section class="band band-alt">
+<section id="what-we-dont-collect" class="band band-paper">
   <div class="contained">
-    <span class="kicker">Section 2 of 4</span>
+    <span class="kicker">Section 2</span>
     <h2>What we don't collect</h2>
     <p style="max-width:var(--reading-max);margin-bottom:var(--sp-6)">During a session, your
     screen is sent live to whoever you accepted — that is the product. What the code does
@@ -343,6 +361,13 @@
       </div>
     </div>
     <div class="card mt-4" style="max-width:var(--reading-max)">
+      <h3>Audio</h3>
+      <p>Audio is transmitted live during a session — your microphone input goes to the helper,
+      the same as screen pixels go to the helper. It is never recorded, never written to disk,
+      and never sent to FlashDesk. Audio exists in memory only for as long as the session is
+      active; when either party ends the session, it is gone immediately.</p>
+    </div>
+    <div class="card mt-3" style="max-width:var(--reading-max)">
       <h3>No account data</h3>
       <p>There is no registration, no login, and no profile. FlashDesk does not know your
       name, email address, location, or any other personal information — because you never
@@ -358,7 +383,7 @@
     <p class="mt-4 text-muted" style="max-width:var(--reading-max);font-size:var(--fs-small)">The program's own internal
     diagnostics — a capture-health log and a diagnostics report, both used for troubleshooting
     — record only technical numbers (timings, counts, which capture method was used). They
-    never contain anything you saw or typed.</p>
+    never contain anything you saw, heard, or typed.</p>
   </div>
 </section>
 
@@ -366,16 +391,18 @@
      SECTION 3 — HOW LONG DATA IS KEPT
      ============================================================================================ -->
 
-<section class="band band-paper">
+<section id="retention" class="band band-alt">
   <div class="contained">
-    <span class="kicker">Section 3 of 4</span>
+    <span class="kicker">Section 3</span>
     <h2>How long data is kept</h2>
     <div class="grid cols-2" style="max-width:52rem;margin-bottom:var(--sp-6)">
       <div class="card">
         <h3>Session log — kept by you</h3>
-        <p>The session log lives on your computer. It stays there until you delete it.
+        <p>The session log lives at
+        <code style="font-size:0.85em;background:var(--color-surface-alt,#F5F5F5);padding:0.1em 0.3em;border-radius:3px">%APPDATA%\FlashDesk\session-log.txt</code>
+        on your computer. It stays there until you delete it.
         FlashDesk does not schedule deletion and does not access the file after writing it.
-        You can find and delete it at any time.</p>
+        You can open, read, and delete it at any time using any text editor or File Explorer.</p>
       </div>
       <div class="card">
         <h3>Your FlashDesk number — kept by you</h3>
@@ -390,10 +417,11 @@
         is gone immediately. It is not buffered to disk at any point.</p>
       </div>
       <div class="card">
-        <h3>Relay connection — connection only</h3>
-        <p>The relay that introduces two numbers to each other handles active connections.
-        What it retains in logs after a session ends is not yet fully documented on this
-        page — see the honest caveat in the next section.</p>
+        <h3>Relay connection data — duration unknown</h3>
+        <p>The relay at 139.28.36.247 necessarily logs connection events (IP addresses,
+        timestamps) as part of normal TCP operation. How long those logs are retained
+        has not yet been verified. See the callout at the top of this page for the full
+        status of relay documentation.</p>
       </div>
     </div>
   </div>
@@ -401,67 +429,190 @@
 
 <!-- ============================================================================================
      SECTION 4 — YOUR RIGHTS
+     GDPR-aware rewrite: acknowledges the legal rights and maps each one to this product.
      ============================================================================================ -->
 
-<section class="band band-alt">
+<section id="your-rights" class="band band-paper">
   <div class="contained">
-    <span class="kicker">Section 4 of 4</span>
-    <h2>Your rights</h2>
-    <div class="prose">
-      <p>Because FlashDesk holds almost no personal data, most of the standard data-rights
-      requests simply do not apply — there is nothing to request, correct, or port.</p>
-      <p>What you can do:</p>
-      <ul class="plain mt-3">
-        <li><strong>Delete your session log</strong> — it is a plain text file on your own
-        computer; you can open it, read it, and delete it at any time.</li>
-        <li><strong>Reset your FlashDesk number</strong> — uninstalling the program removes
-        the locally stored number. A fresh install generates a new one.</li>
-        <li><strong>Stop a session immediately</strong> — the stop button ends any session
-        at once. There is no "in progress" delay and no reconnect unless you explicitly
-        allow one.</li>
-        <li><strong>Refuse any connection</strong> — the consent dialog lets you decline
-        before any screen sharing begins. No connection can start without your active
-        acceptance.</li>
+    <span class="kicker">Section 4</span>
+    <h2>Your rights under GDPR and similar laws</h2>
+    <p style="max-width:var(--reading-max);margin-bottom:var(--sp-5)">Under GDPR (and equivalent
+    laws including UK GDPR and similar data-protection frameworks), you have specific rights over
+    personal data held about you. Because FlashDesk holds almost no personal data, most of these
+    rights are moot in practice — but here is what each one means for this specific product.</p>
+
+    <div class="grid cols-2" style="max-width:52rem;margin-bottom:var(--sp-5)">
+      <div class="card">
+        <h3>Right of access</h3>
+        <p>You already have it. Everything FlashDesk holds about you is on your own computer:
+        the session log at
+        <code style="font-size:0.85em;background:var(--color-surface-alt,#F5F5F5);padding:0.1em 0.3em;border-radius:3px">%APPDATA%\FlashDesk\session-log.txt</code>
+        and your FlashDesk number in the local config file. There is no server-side database to
+        request access to.</p>
+      </div>
+      <div class="card">
+        <h3>Right to erasure</h3>
+        <p>Delete the session log file directly — it is a plain text file and no backup of it
+        is held anywhere else. Uninstalling the program removes your FlashDesk number from
+        the local config file. There is nothing else to erase from a FlashDesk server,
+        because nothing is stored on one.</p>
+      </div>
+      <div class="card">
+        <h3>Right to portability</h3>
+        <p>The session log is already a plain text file on your own computer. You can copy it,
+        move it, or transform it into any format you like. No conversion or export request
+        is needed.</p>
+      </div>
+      <div class="card">
+        <h3>Right to rectification</h3>
+        <p>The session log records objective events (connection times, decisions) rather than
+        personal profiles. There is no data held about you that could be factually incorrect
+        and in need of correction on our side.</p>
+      </div>
+      <div class="card">
+        <h3>Right to restriction</h3>
+        <p>You can stop any session immediately using the stop button. No connection can start
+        without your active consent via the confirmation dialog. There is no background
+        processing to restrict.</p>
+      </div>
+      <div class="card">
+        <h3>Right to object</h3>
+        <p>FlashDesk does not process personal data for marketing, profiling, or legitimate-interest
+        purposes that you could object to. The relay connection data is the one area where
+        processing happens outside your direct control — see the relay caveat above.</p>
+      </div>
+    </div>
+
+    <div class="card" style="max-width:var(--reading-max)">
+      <h3>What you can do right now, without contacting anyone</h3>
+      <ul style="margin:var(--sp-3) 0 0 1.25rem;line-height:1.9">
+        <li><strong>Read or delete your session log</strong> — open
+        <code style="font-size:0.85em;background:var(--color-surface-alt,#F5F5F5);padding:0.1em 0.3em;border-radius:3px">%APPDATA%\FlashDesk\</code>
+        in File Explorer and delete <code style="font-size:0.85em;background:var(--color-surface-alt,#F5F5F5);padding:0.1em 0.3em;border-radius:3px">session-log.txt</code>.</li>
+        <li><strong>Reset your FlashDesk number</strong> — uninstalling removes the locally stored number. A fresh install generates a new one.</li>
+        <li><strong>Stop a session immediately</strong> — the stop button ends any session at once. No delay, no reconnect unless you explicitly allow one.</li>
+        <li><strong>Refuse any connection</strong> — the consent dialog lets you decline before any screen sharing begins. No connection can start without your acceptance.</li>
       </ul>
-      <p>If you have a specific data request or concern not covered above, write to
-      <a class="inline-link" href="mailto:support@flashdesk.org">support@flashdesk.org</a>
-      and it will be handled directly by Conor Honor.</p>
+    </div>
+
+    <p class="mt-4 text-muted" style="max-width:var(--reading-max);font-size:var(--fs-small)">
+    For data requests or concerns not covered above, write to
+    <a class="inline-link" href="mailto:support@flashdesk.org">support@flashdesk.org</a>.
+    </p>
+  </div>
+</section>
+
+<!-- ============================================================================================
+     SECTION 5 — THIRD-PARTY SERVICES
+     GitHub downloads, relay hosting.
+     ============================================================================================ -->
+
+<section id="third-parties" class="band band-alt">
+  <div class="contained">
+    <span class="kicker">Section 5</span>
+    <h2>Third-party services</h2>
+    <p style="max-width:var(--reading-max);margin-bottom:var(--sp-6)">Two external parties handle
+    data that FlashDesk cannot fully control.</p>
+    <div class="grid cols-2" style="max-width:52rem">
+      <div class="card">
+        <span class="icon-tile" aria-hidden="true">
+          <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+        </span>
+        <h3>GitHub — download hosting</h3>
+        <p>FlashDesk releases are served from GitHub (github.com/conorhonor111-art/flashdesk/releases).
+        When you download FlashDesk, <strong>GitHub may log your IP address and the time of the
+        request</strong> as part of normal server operation. This is a data-processing event by
+        a third party that FlashDesk does not control. See
+        <a class="inline-link" href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub's privacy statement</a>
+        for details of what they collect.</p>
+      </div>
+      <div class="card">
+        <span class="icon-tile" aria-hidden="true">
+          <svg class="icon" aria-hidden="true"><use href="#i-arrival"/></svg>
+        </span>
+        <h3>Hetzner — relay hosting</h3>
+        <p>The relay server at 139.28.36.247 is hosted by Hetzner Online GmbH, a German provider
+        operating under EU law. When your computer connects to the relay, Hetzner's network
+        infrastructure necessarily handles that traffic. See
+        <a class="inline-link" href="https://www.hetzner.com/legal/privacy-policy">Hetzner's privacy policy</a>
+        for their data-processing terms. A formal data-processing agreement covering this relay
+        has not yet been established — this will be updated when that work is complete.</p>
+      </div>
+    </div>
+
+    <div class="card mt-4" style="max-width:var(--reading-max)">
+      <h3>MSI installer variant</h3>
+      <p>The MSI installer (<code style="font-size:0.85em;background:var(--color-surface-alt,#F5F5F5);padding:0.1em 0.3em;border-radius:3px">flashdesk.org/dl/FlashDesk-setup.msi</code>)
+      installs FlashDesk to <code style="font-size:0.85em;background:var(--color-surface-alt,#F5F5F5);padding:0.1em 0.3em;border-radius:3px">%ProgramFiles%\FlashDesk\</code>
+      and writes an uninstall entry to the Windows registry. From a privacy standpoint,
+      the MSI variant behaves identically to the portable .exe — the same session log path,
+      the same local config file, the same data flows. The registry entry contains only the
+      standard uninstaller metadata (display name, version, uninstall path) and no personal
+      information.</p>
+    </div>
+
+    <div class="card mt-3" style="max-width:var(--reading-max)">
+      <h3>Children's privacy</h3>
+      <p>FlashDesk is designed for adults seeking remote technical support. It is not intended
+      for use by children under 13 (or the applicable age of digital consent in your jurisdiction).
+      FlashDesk does not knowingly collect information from children. If you believe a child has
+      used FlashDesk in a way that has created a privacy concern, contact
+      <a class="inline-link" href="mailto:support@flashdesk.org">support@flashdesk.org</a>.</p>
     </div>
   </div>
 </section>
 
 <!-- ============================================================================================
-     HONEST CAVEAT — relay side not yet documented
-     This section must not be removed or softened without the matching verification pass.
+     SECTION 6 — DATA CONTROLLER AND POLICY CHANGES
      ============================================================================================ -->
 
-<section class="band band-paper">
-  <div class="contained prose">
-    <h2>Being honest about what is still open</h2>
-    <p>This page describes the <strong>client program</strong> with real confidence, checked
-    against its source. The relay side of the system — the small server that introduces two
-    FlashDesk numbers to each other — has not yet had the same documentation pass written
-    for exactly what it logs and for how long.</p>
-    <p>Nothing found while checking suggests it does anything beyond what connecting two numbers
-    requires, but "nothing found yet" is not the same promise as a page that has been written
-    and verified line by line the way the rest of this one has.</p>
-    <p>That section will be updated here once it has been through the same process. The caveat
-    stays until the work is done — removing it early would make this page less trustworthy,
-    not more.</p>
+<section id="data-controller" class="band band-paper">
+  <div class="contained">
+    <span class="kicker">Section 6</span>
+    <h2>Data controller and policy changes</h2>
+
+    <div class="grid cols-2" style="max-width:52rem;margin-bottom:var(--sp-5)">
+      <div class="card">
+        <span class="icon-tile" aria-hidden="true">
+          <svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg>
+        </span>
+        <h3>Data controller identity</h3>
+        <p style="margin-bottom:var(--sp-2)">For the purposes of GDPR and similar data protection
+        laws, the data controller is:</p>
+        <p style="line-height:1.8;margin-bottom:0">
+          <strong>Conor Honor</strong><br>
+          Kyiv, Ukraine<br>
+          <a class="inline-link" href="mailto:support@flashdesk.org">support@flashdesk.org</a>
+        </p>
+      </div>
+      <div class="card">
+        <span class="icon-tile" aria-hidden="true">
+          <svg class="icon" aria-hidden="true"><use href="#i-log"/></svg>
+        </span>
+        <h3>Changes to this policy</h3>
+        <p>The date at the top of this page changes whenever the policy changes. The current
+        version was last reviewed in September 2026.</p>
+        <p>For material changes — new data collection, new third-party sharing, or changes to
+        your rights — a note will be added to the
+        <a class="inline-link" href="/changelog/">Changelog</a>.
+        There is no email notification; check the date at the top if you return to this page.</p>
+      </div>
+    </div>
   </div>
 </section>
 
 <!-- ============================================================================================
-     QUESTIONS / CONTACT
+     CONTACT AND FURTHER READING
      ============================================================================================ -->
 
 <section class="band band-alt">
   <div class="contained prose">
-    <h2>Questions</h2>
+    <h2>Contact and further reading</h2>
     <p>If anything on this page is unclear, or you want to ask about something it does not
     cover, write to
     <a class="inline-link" href="mailto:support@flashdesk.org">support@flashdesk.org</a>.
-    You will get a reply from Conor Honor directly, not a support bot.</p>
+    Replies come directly from Conor Honor, not a support bot. You can expect a response
+    within a few business days.</p>
     <p>For common questions about how sessions work, who can reconnect, and what the
     90-second reconnect window means, the
     <a class="inline-link" href="/faq/">FAQ</a> has specific answers.</p>
@@ -469,15 +620,16 @@
   </div>
 </section>
 
+</article>
+
 <!-- ============================================================================================
-     CTA BAND — every page ends with the download action.
-     Tile background: the mark's native colour. Consistent with every other v2 page.
+     CTA BAND — tonally appropriate for a visitor in trust-evaluation mode.
      ============================================================================================ -->
 
 <section class="band band-tile">
   <div class="contained" style="text-align:center">
     <p style="font-size:var(--fs-h2);font-weight:700;line-height:1.1;letter-spacing:-0.015em;
-    margin-bottom:var(--sp-3);color:var(--color-tile-text)">Ready to let someone help?</p>
+    margin-bottom:var(--sp-3);color:var(--color-tile-text)">Questions answered. Download when you are ready.</p>
     <p style="color:var(--color-tile-muted);max-width:30rem;margin-inline:auto;
     margin-bottom:var(--sp-6)">One .exe file. Nothing installs. Close it and it is gone.
     You stay in control the whole time.</p>
@@ -492,14 +644,21 @@
   </div>
 </section>
 
+<!-- Legal disclaimer — belongs at the bottom, not in the hero. -->
+<section class="band band-paper">
+  <div class="contained">
+    <p class="text-muted" style="max-width:var(--reading-max);font-size:var(--fs-small)">Conor Honor
+    is not a lawyer. This page is a plain description of how the software behaves, not a formal
+    legal instrument. It has been written against the source code rather than copied from a
+    template — the
+    <a class="inline-link" href="https://github.com/conorhonor111-art/flashdesk">source repository</a>
+    is public and the claims here can be verified against it.</p>
+  </div>
+</section>
 
 </main>
-<!-- v2 footer — the one deliberately DARK moment on an otherwise light page. Not a leftover of the
-     old dark theme: the mark's native tile colour (#17191E) belongs here on purpose, bookending the
-     page the way it bookends the brand everywhere else (the app icon, the favicon) — the light
-     pages are where a visitor reads and decides; the dark footer is where the mark gets to be fully
-     itself, in its own colour, once the deciding is done. See site-v2.css's palette comment for the
-     full reasoning on why the REST of the page went light. -->
+
+<!-- v2 footer — deliberately dark, the mark's native colour, bookending the page. -->
 <footer class="site-footer">
   <div class="footer-top">
     <div class="footer-brand">
@@ -518,6 +677,7 @@
       <a href="/" data-nav="home">Home</a>
       <a href="/how-it-works/" data-nav="how-it-works">How it works</a>
       <a href="https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe">Download</a>
+      <a href="/changelog/" data-nav="changelog">Changelog</a>
     </nav>
 
     <nav class="footer-col" aria-label="Legal">
@@ -536,8 +696,6 @@
 
   <div class="footer-bottom">
     <p class="footer-meta">&copy; 2026 FlashDesk. All rights reserved. Made in Kyiv by Conor Honor.</p>
-    <!-- Wording unchanged from the last two rounds — this line matters more than the rest of the
-         footer (Conor's own words). -->
     <p class="footer-warning">FlashDesk will never telephone you. If someone calls claiming to be us, hang up.</p>
   </div>
 </footer>

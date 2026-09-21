@@ -58,6 +58,78 @@
      full note. The mark's SHAPE is unchanged this round (Conor: "it took seven rounds and it is
      earned"); only where and in what colour it appears changed. -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Crect%20x='1'%20y='1'%20width='14'%20height='14'%20rx='3.5'%20fill='%2317191E'/%3E%3Cpolyline%20points='4.631,2.512%209.387,11.495%2011.325,7.620'%20fill='none'%20stroke='%232BD16B'%20stroke-width='2.6'/%3E%3C/svg%3E">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is FlashDesk free?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes, completely free. There is no subscription, no payment at any point, and no feature locked behind a trial."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do I need to install anything?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. FlashDesk is a single .exe file — double-click it and it runs immediately. Nothing is added to Windows, no admin password is asked, and nothing stays behind after you close it."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do I need to create an account?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No account, no sign-in, no email address, no registration of any kind. You open the file and it gives you a 9-digit number. That number is what your helper connects to."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why does Windows say it might be unsafe?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Windows Defender SmartScreen warns about software it has not seen many people run before. It also warns about software from publishers who have not paid for an annual verified-publisher certificate. FlashDesk is a small, one-person project that has not bought one."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can my helper access my computer without my knowledge?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. They must have your 9-digit number, which is different every time you open FlashDesk. You must press Accept when they request a connection. You can disconnect any time by closing FlashDesk."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can my helper see my camera or microphone?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. FlashDesk shares your screen only. It does not access your camera, microphone, or any other input device."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does FlashDesk store my data?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "FlashDesk does not store session data, recordings, or personal information. The relay server handles the connection but does not record your screen or input."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I disconnect?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Close FlashDesk. The session ends immediately. Alternatively, click the Disconnect button in the session bar that appears while a session is active."
+      }
+    }
+  ]
+}
+</script>
 <link rel="stylesheet" href="/site-v2.css">
 
 <style>
@@ -759,7 +831,7 @@
 
     <!-- ── GROUP 1: Safety ─────────────────────────────────────────────── -->
     <div class="faq-section" id="faq-safety" aria-labelledby="faq-safety-label">
-      <span class="faq-section-label" id="faq-safety-label">Safety</span>
+      <h2 class="faq-section-label" id="faq-safety-label">Safety</h2>
       <div class="faq-list" role="list">
 
         <details class="faq-item" role="listitem">
@@ -777,9 +849,12 @@
             <p>No. FlashDesk is a single .exe file — double-click it and it runs immediately.
             Nothing is added to Windows, no admin password is asked, and nothing stays behind after
             you close it. The next time you need it, open the same file again.</p>
-            <p>There is no installer, no setup wizard, and no MSI package. It is one file because
-            one file is the fewest number of files a program can be. See also: <em>What is the
-            difference between the .exe and an installer?</em> in the Technical section below.</p>
+            <p>The recommended download is a single portable .exe — no setup wizard, no admin
+            password required, nothing stays behind after you close it. A Windows installer (.msi)
+            is also available on the <a href="/download/">download page</a> for organisations whose
+            IT policy requires installed software, but the portable .exe is what most people should
+            use. See also: <em>What is the difference between the .exe and an installer?</em> in
+            the Technical section below.</p>
           </div>
         </details>
 
@@ -924,7 +999,7 @@
 
     <!-- ── GROUP 2: Privacy ────────────────────────────────────────────── -->
     <div class="faq-section" id="faq-privacy" aria-labelledby="faq-privacy-label">
-      <span class="faq-section-label" id="faq-privacy-label">Privacy</span>
+      <h2 class="faq-section-label" id="faq-privacy-label">Privacy</h2>
       <div class="faq-list" role="list">
 
         <details class="faq-item" role="listitem">
@@ -1020,7 +1095,7 @@
 
     <!-- ── GROUP 3: Technical ──────────────────────────────────────────── -->
     <div class="faq-section" id="faq-technical" aria-labelledby="faq-technical-label">
-      <span class="faq-section-label" id="faq-technical-label">Technical</span>
+      <h2 class="faq-section-label" id="faq-technical-label">Technical</h2>
       <div class="faq-list" role="list">
 
         <details class="faq-item" role="listitem">
@@ -1164,7 +1239,7 @@
 
     <!-- ── GROUP 4: For the person helping ───────────────────────────── -->
     <div class="faq-section" id="faq-helpers" aria-labelledby="faq-helpers-label">
-      <span class="faq-section-label" id="faq-helpers-label">For the person helping</span>
+      <h2 class="faq-section-label" id="faq-helpers-label">For the person helping</h2>
       <div class="faq-list" role="list">
 
         <details class="faq-item" role="listitem">
