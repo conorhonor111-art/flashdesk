@@ -4,18 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>Changelog — FlashDesk v0.4.0-25</title>
-<meta name="description" content="Every FlashDesk release, listed plainly: what changed, what was fixed, and why. Current version: v0.4.0-25, released 21 September 2026. 25 releases since March 2026.">
+<title>Changelog — FlashDesk v0.4.0-28</title>
+<meta name="description" content="Every FlashDesk release, listed plainly: what changed, what was fixed, and why. Current version: v0.4.0-28, released 21 September 2026. 28 releases since March 2026.">
 <link rel="canonical" href="https://flashdesk.org/changelog/">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="en_GB">
 <meta property="og:url" content="https://flashdesk.org/changelog/">
-<meta property="og:title" content="Changelog — FlashDesk v0.4.0-25">
-<meta property="og:description" content="Every FlashDesk release, listed plainly: what changed, what was fixed, and why. Current version: v0.4.0-25.">
+<meta property="og:title" content="Changelog — FlashDesk v0.4.0-28">
+<meta property="og:description" content="Every FlashDesk release, listed plainly: what changed, what was fixed, and why. Current version: v0.4.0-28.">
 <meta property="og:image" content="https://flashdesk.org/flashdesk-window.png">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Changelog — FlashDesk v0.4.0-25">
-<meta name="twitter:description" content="Every FlashDesk release, listed plainly: what changed, what was fixed, and why. Current version: v0.4.0-25.">
+<meta name="twitter:title" content="Changelog — FlashDesk v0.4.0-28">
+<meta name="twitter:description" content="Every FlashDesk release, listed plainly: what changed, what was fixed, and why. Current version: v0.4.0-28.">
 <meta name="twitter:image" content="https://flashdesk.org/flashdesk-window.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Crect%20x='1'%20y='1'%20width='14'%20height='14'%20rx='3.5'%20fill='%2317191E'/%3E%3Cpolyline%20points='4.631,2.512%209.387,11.495%2011.325,7.620'%20fill='none'%20stroke='%232BD16B'%20stroke-width='2.6'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="/site-v2.css">
@@ -761,7 +761,7 @@
           <circle cx="13.5" cy="12.5" r="1.5" fill="white"/>
           <line x1="14" y1="17" x2="21" y2="17" stroke="white" stroke-width="1.5" opacity="0.6"/>
         </svg>
-        <span class="version-stat__num">25</span>
+        <span class="version-stat__num">26</span>
         <span class="version-stat__label">Releases</span>
       </div>
       <div class="version-stat">
@@ -780,7 +780,7 @@
           <circle cx="16" cy="16" r="9.5" fill="none" stroke="white" stroke-width="1.5" opacity="0.4"/>
           <polyline points="10,16 14,20.5 22,11" fill="none" stroke="white" stroke-width="2.5"/>
         </svg>
-        <span class="version-stat__num">v0.4.0&#8209;25</span>
+        <span class="version-stat__num">v0.4.0&#8209;26</span>
         <span class="version-stat__label">Current version</span>
       </div>
       <div class="version-stat">
@@ -841,10 +841,122 @@
     <ul class="release-list">
 
       <!-- ================================================================
-           v0.4.0-25 — LATEST
+           v0.4.0-28 — LATEST
            ================================================================ -->
-      <li class="release-item is-latest card--elevated" id="v0.4.0-25">
-        <div class="version-badge">v0.4.0&#8209;25 <span class="latest-pill">Latest</span></div>
+      <li class="release-item is-latest card--elevated" id="v0.4.0-28">
+        <div class="version-badge">v0.4.0&#8209;28 <span class="latest-pill">Latest</span></div>
+        <time class="release-date" datetime="2026-09-21">21 September 2026</time>
+        <ul class="change-list">
+          <li>
+            <span class="change-tag tag-fixed">Fixed</span>
+            Secondary hero download card button invisible on dark background &#8212; inline <code>&lt;style&gt;</code> rule had higher specificity ([0,3,0]) than the hero override in <code>site-v2.css</code> ([0,2,0]), leaving the button <code>background: transparent</code> with dark text. Fixed by raising the hero selector to [0,4,0].
+          </li>
+          <li>
+            <span class="change-tag tag-changed">Changed</span>
+            No app code changes &#8212; exe is functionally identical to v0.4.0&#8209;26. Site-only release.
+          </li>
+        </ul>
+        <div class="download-card" aria-label="Download current version">
+          <p class="download-card-title">Download v0.4.0&#8209;28 &#8212; current release</p>
+          <p class="download-card-meta">About 75&nbsp;MB &middot; Windows 10 and 11 &middot; Windows Installer &middot; Free</p>
+          <div class="download-card-actions">
+            <a class="btn btn-blue" href="/download/">
+              <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+              Download FlashDesk &#8212; free
+            </a>
+            <a class="github-link"
+               href="https://github.com/conorhonor111-art/flashdesk/releases/tag/v0.4.0-28"
+               target="_blank"
+               rel="noopener noreferrer">
+              <svg class="icon" aria-hidden="true"><use href="#i-github"/></svg>
+              Full release notes and source diffs on GitHub
+            </a>
+          </div>
+        </div>
+      </li>
+
+      <!-- ================================================================
+           v0.4.0-27
+           ================================================================ -->
+      <li class="release-item" id="v0.4.0-27">
+        <div class="version-badge">v0.4.0&#8209;27</div>
+        <time class="release-date" datetime="2026-09-21">21 September 2026</time>
+        <ul class="change-list">
+          <li>
+            <span class="change-tag tag-changed">Changed</span>
+            Home page hero section visual upgrade &#8212; deeper midnight gradient (#0D0F12 &#8594; #0F1A12), dot-grid texture overlay (28&nbsp;px pitch, 5.5&nbsp;% white dots), dual-radial glow (green spotlight 18&nbsp;% at top-right, blue hint 7&nbsp;% at bottom-left).
+          </li>
+          <li>
+            <span class="change-tag tag-changed">Changed</span>
+            Decorative circuit-node SVG added to hero right edge (hidden on mobile). &#8220;one file&#8221; in the h1 now renders in brand green (#2BD16B). Frosted-glass download cards and elevated screenshot shadow ring.
+          </li>
+          <li>
+            <span class="change-tag tag-changed">Changed</span>
+            CSS link cache-busted via <code>?v=0427</code> to bypass LiteSpeed&#8217;s 7-day <code>max-age</code>.
+          </li>
+          <li>
+            <span class="change-tag tag-changed">Changed</span>
+            No app code changes &#8212; exe is functionally identical to v0.4.0&#8209;26. Site-only release.
+          </li>
+        </ul>
+      </li>
+
+      <!-- ================================================================
+           v0.4.0-26
+           ================================================================ -->
+      <li class="release-item card--elevated" id="v0.4.0-26">
+        <div class="version-badge">v0.4.0&#8209;26</div>
+        <time class="release-date" datetime="2026-09-21">21 September 2026</time>
+        <ul class="change-list">
+          <li>
+            <span class="change-tag tag-changed">Changed</span>
+            All SVG icons across all 9 pages: switched from <code>stroke-linecap=butt</code> and <code>stroke-linejoin=miter</code> to <code>round/round</code> &#8212; matches every professional icon library (Heroicons, Lucide, Tabler). Single biggest visual quality improvement.
+          </li>
+          <li>
+            <span class="change-tag tag-changed">Changed</span>
+            Sprite symbol stroke-width refined from 2px to 1.75px &#8212; more polished, less crude.
+          </li>
+          <li>
+            <span class="change-tag tag-changed">Changed</span>
+            <strong>i-eye</strong>: replaced square iris rectangle with a circle; smoother eye outline geometry. <strong>i-user</strong>: replaced rectangular head with a circle; proper shoulder lines.
+          </li>
+          <li>
+            <span class="change-tag tag-changed">Changed</span>
+            <strong>i-shield</strong>: added checkmark polyline inside &#8212; now reads as secure/verified, not an empty polygon. <strong>i-lock</strong>: added filled circle keyhole detail.
+          </li>
+          <li>
+            <span class="change-tag tag-changed">Changed</span>
+            Feature cards on home page: 48&#215;48 illustrative eye and user icons upgraded with circle geometry. Nav chrome (hamburger, chevron, close &#215;) all use round linecaps.
+          </li>
+          <li>
+            <span class="change-tag tag-changed">Changed</span>
+            No app code changes &#8212; exe is functionally identical to v0.4.0&#8209;25. Site-only release.
+          </li>
+        </ul>
+        <div class="download-card" aria-label="Download current version">
+          <p class="download-card-title">Download v0.4.0&#8209;26</p>
+          <p class="download-card-meta">About 55&nbsp;MB &middot; Windows 10 and 11 &middot; Windows Installer &middot; Free</p>
+          <div class="download-card-actions">
+            <a class="btn btn-blue" href="/download/">
+              <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+              Download FlashDesk &#8212; free
+            </a>
+            <a class="github-link"
+               href="https://github.com/conorhonor111-art/flashdesk/releases"
+               target="_blank"
+               rel="noopener noreferrer">
+              <svg class="icon" aria-hidden="true"><use href="#i-github"/></svg>
+              Full release notes and source diffs on GitHub
+            </a>
+          </div>
+        </div>
+      </li>
+
+      <!-- ================================================================
+           v0.4.0-25
+           ================================================================ -->
+      <li class="release-item card--elevated" id="v0.4.0-25">
+        <div class="version-badge">v0.4.0&#8209;25</div>
         <time class="release-date" datetime="2026-09-21">21 September 2026</time>
         <ul class="change-list">
           <li>
@@ -864,23 +976,6 @@
             No app code changes &#8212; exe is functionally identical to v0.4.0&#8209;24. Site-only release.
           </li>
         </ul>
-        <div class="download-card" aria-label="Download current version">
-          <p class="download-card-title">Download v0.4.0&#8209;25 &#8212; current release</p>
-          <p class="download-card-meta">About 55&nbsp;MB &middot; Windows 10 and 11 &middot; Windows Installer &middot; Free</p>
-          <div class="download-card-actions">
-            <a class="btn btn-blue" href="/download/">
-              <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
-              Download FlashDesk &#8212; free
-            </a>
-            <a class="github-link"
-               href="https://github.com/conorhonor111-art/flashdesk/releases"
-               target="_blank"
-               rel="noopener noreferrer">
-              <svg class="icon" aria-hidden="true"><use href="#i-github"/></svg>
-              Full release notes and source diffs on GitHub
-            </a>
-          </div>
-        </div>
       </li>
 
       <!-- ================================================================
