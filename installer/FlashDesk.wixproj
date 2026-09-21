@@ -1,0 +1,10 @@
+<Project Sdk="WixToolset.Sdk">
+  <PropertyGroup>
+    <OutputName>FlashDesk-setup</OutputName>
+    <Platform>x64</Platform>
+    <InstallerPlatform>x64</InstallerPlatform>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="WixToolset.UI.wixext" />
+  </ItemGroup>
+</Project>
