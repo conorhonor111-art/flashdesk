@@ -3939,6 +3939,19 @@ AnyDesk and RustDesk. Build: 0 errors, 0 warnings. 9-agent ultracode workflow; 8
 - `changelog/index.html` — gradient hero, all 17 release entries elevated.
 - `security-warning/index.html`, `privacy/index.html`, `terms/index.html` — gradient heroes only.
 
+### v0.4.0-31 — 2026-09-21 — Site fix: changelog CTA version text
+
+Site-only change. No app code changed; exe is functionally identical to v0.4.0-30.
+
+`changelog/index.html` — "Running the latest version?" CTA section still read
+"v0.4.0‑29 is current" after the v0.4.0-30 bump; corrected to "v0.4.0‑30 is current"
+(`e288229`). Uploaded to cPanel and verified live.
+
+**Released as `v0.4.0-31`** — built from `e288229`, GitHub (`FlashDesk.exe` +
+`FlashDesk-setup.msi`) and cPanel (`public_html/dl/FlashDesk-setup.msi`, overwrite, 100%).
+
+---
+
 ### v0.4.0-30 — 2026-09-21 — Connection history with one-click reconnect
 
 Operator-side quality-of-life: the last 10 peer IDs connected to are remembered and offered as a
