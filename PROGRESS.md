@@ -3939,6 +3939,30 @@ AnyDesk and RustDesk. Build: 0 errors, 0 warnings. 9-agent ultracode workflow; 8
 - `changelog/index.html` — gradient hero, all 17 release entries elevated.
 - `security-warning/index.html`, `privacy/index.html`, `terms/index.html` — gradient heroes only.
 
+### v0.4.0-25 — 2026-09-21 — SVG/icon upgrade, single installer download, logo glow
+
+Site-only changes across all 9 pages. No app code changed; exe is functionally identical to
+v0.4.0-24. Build: 0 errors, 0 warnings.
+
+**Site changes (all 9 pages + site-v2.css):**
+- All pages: per-page SVG and icon upgrade pass (27-agent ultracode workflow, 207 tool uses).
+  Richer inline SVGs throughout: gradient-filled icons, illustrated diagrams, polished section
+  graphics, hero illustrations, data-flow diagrams, and connection diagrams with colored nodes.
+- All pages: header and drawer brand mark SVGs upgraded to full dark-tile-bg + green mark style
+  (previously the header mark had only the polyline on a transparent background; now matches the
+  footer logo consistently on every page).
+- `site-v2.css`: `.brand svg` now gets a `drop-shadow(0 0 6px rgba(43,209,107,.22))` glow on
+  every logo instance sitewide — no per-page changes needed.
+- `download/index.html`: replaced two-card (EXE + MSI) layout with a single MSI installer card.
+  Removed the EXE card, the portable-vs-installer comparison table, and the "Why GitHub" section.
+  Single download button now points to `flashdesk.org/dl/FlashDesk-setup.msi` directly.
+- All pages: every header CTA ("Download .exe — free") changed to "Download — free" pointing to
+  `flashdesk.org/dl/FlashDesk-setup.msi`. Mobile drawer CTAs updated where present.
+
+**Commits:** `d6d1819` (SVG/icon upgrades), `0571c54` (single installer + logo glow)
+
+---
+
 ### v0.4.0-24 — 2026-09-21 — per-page visual upgrade across all 9 site pages
 
 Deep visual upgrade to all 9 website pages. No app code changed; exe is functionally identical to
