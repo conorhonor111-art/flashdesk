@@ -3676,3 +3676,17 @@ Installer project files committed as `76c3bd4` (`installer/FlashDesk.wixproj`,
 **Check-LiveBuild result (v0.4.0-13):** READY — server serving `bf2f971`, exact HEAD match.
 Both download routes byte-identical (`7FE68725C2A0CBB9...`, 162,492,578 bytes). All 6 mark
 copies consistent. All 6 site pages match repo with all assets resolving.
+
+
+---
+
+### v0.4.0-14 — 2026-09-21 — documentation rebuild, exe brought to HEAD
+
+No source changes. Check-LiveBuild result appended to v0.4.0-13 entry (`5d801bd`), leaving
+the live exe one doc-only commit behind HEAD. Rebuilt and released from `5d801bd`. Uploaded
+to GitHub (`v0.4.0-14`, both `FlashDesk.exe` and `FlashDesk-setup.msi`) and to
+`public_html/dl/FlashDesk.exe` on cPanel (DELE + fresh upload, 155 MB, 100%).
+
+**Check-LiveBuild result (v0.4.0-14):** READY — server serving `5d801bd`, exact HEAD match.
+Both download routes byte-identical (`57292059E0E728B3...`, 162,492,578 bytes). All 6 mark
+copies consistent. All 6 site pages match repo with all assets resolving.
