@@ -783,12 +783,7 @@
 .connection-flow-svg { display: block; width: 100%; max-width: 36rem; margin-inline: auto; overflow: visible; }
 
 /* ── COLORED ICON TILES ────────────────────────────────────────────────────── */
-.icon-tile--blue   { background: #EBF3FD !important; color: #1A73E8 !important; border-color: #BBD4F7 !important; }
-.icon-tile--green  { background: #E6F9EE !important; color: #1A7040 !important; border-color: #B3EDCC !important; }
-.icon-tile--purple { background: #F3E8FF !important; color: #6D28D9 !important; border-color: #DDD6FE !important; }
-.icon-tile--amber  { background: #FEF3C7 !important; color: #B45309 !important; border-color: #FDE68A !important; }
-.icon-tile--teal   { background: #CCFBF1 !important; color: #0F766E !important; border-color: #99F6E4 !important; }
-.icon-tile--red    { background: #FEE2E2 !important; color: #991B1B !important; border-color: #FECACA !important; }
+/* Gradients and colors now come from site-v2.css .icon-tile--* rules — no !important overrides needed. */
 </style>
 </head>
 <body>
@@ -1436,7 +1431,7 @@
       <div class="grid cols-2 mt-4" style="max-width: 56rem;">
 
         <div class="card">
-          <div class="icon-tile">
+          <div class="icon-tile icon-tile--red">
             <svg class="icon-lg" aria-hidden="true"><use href="#i-close"/></svg>
           </div>
           <h3>Close FlashDesk or press Disconnect.</h3>
@@ -1447,7 +1442,7 @@
         </div>
 
         <div class="card">
-          <div class="icon-tile">
+          <div class="icon-tile icon-tile--blue">
             <svg class="icon-lg" aria-hidden="true"><use href="#i-lock"/></svg>
           </div>
           <h3>They cannot reconnect without you accepting again.</h3>
