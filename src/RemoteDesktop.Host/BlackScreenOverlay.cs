@@ -8,9 +8,10 @@ namespace RemoteDesktop.Host;
 /// live 7-minute countdown — so the person sitting at that computer understands they should wait
 /// and not touch the machine.
 ///
-/// <para>The countdown is cosmetic: the overlay stays until the operator unchecks "Black screen"
-/// in their session window, regardless of whether the timer has expired. That mirrors real Windows
-/// Update behaviour, where the screen does not simply unlock when the counter hits zero.</para>
+/// <para>The countdown is cosmetic: when the counter hits zero it loops back to the top and
+/// restarts, so the display stays plausible for as long as the operator keeps the overlay active.
+/// The overlay is only removed when the operator unchecks "Black screen" in their session window —
+/// the timer expiring has no effect on the overlay's lifetime.</para>
 /// </summary>
 internal sealed class BlackScreenOverlay : Form
 {
@@ -133,7 +134,11 @@ internal sealed class BlackScreenOverlay : Form
 
     private void OnSecondTick(object? sender, EventArgs e)
     {
-        if (_secondsLeft > 0) _secondsLeft--;
+        if (_secondsLeft > 0)
+            _secondsLeft--;
+        else
+            _secondsLeft = TotalSeconds; // loop back to the top when the countdown expires
+
         _timeLabel.Text = CountdownText();
         int pct = (int)Math.Round((TotalSeconds - _secondsLeft) * 100.0 / TotalSeconds);
         _pctLabel.Text = $"Working on updates  {Math.Min(pct, 99)}% complete";
