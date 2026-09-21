@@ -3764,3 +3764,52 @@ markup renames.
 **Check-LiveBuild result:** READY — server serving `ffeff14` (doc-only gap). Both download
 routes byte-identical (`A5E5304CBB939EC5...`, 162,492,578 bytes). All 9 pages (including 3
 new ones) match repo exactly with all assets resolving.
+
+
+---
+
+### 2026-09-21 — site upgrade round 2: all 9 pages improved; MSI rebuilt
+
+**20-agent ultracode workflow.** Commit `d1ba39c`. 141 specific improvements across 9 pages.
+
+**MSI rebuild (separate fix):** The installer had not been rebuilt since v0.4.0-12 and contained
+the old binary. Rebuilt from the current exe (e01b814), re-uploaded to cPanel
+(`public_html/dl/FlashDesk-setup.msi`) and replaced the asset on GitHub `v0.4.0-18`.
+Going forward: MSI must be rebuilt alongside the exe whenever source changes.
+
+**Per-page changes (selected highlights):**
+
+`index.html` — SHA-256 placeholder removed from download card (was shipping live on a
+security-sensitive field); hero h1 rewritten to concrete fact; scam warning promoted to
+position 2 immediately after hero; About duplicate content merged; stat strip fixed (four
+real numbers, not three numbers + platform label); relay encryption claim substantiated.
+
+`how-it-works/index.html` — HowTo JSON-LD schema added to head; step count corrected
+(1 for helper, 4 for host); relay diagram given proper figure/figcaption semantics;
+data-flow list converted to accessible table; private-key explanation rewritten; TLS 1.3
+row added to spec table; 90-second reconnect window explained; connection-failure behaviour
+documented; relay server IP (139.28.36.247) and port added for IT administrators.
+
+`faq/index.html` — 15 new Q&A entries; answers expanded from one-liners to full paragraphs;
+hard questions answered (what if relay goes down, can Conor see my screen, antivirus
+behaviour, what data the relay logs).
+
+`download/index.html` — SHA-256 verification block added with PowerShell command;
+comparison table expanded; system requirements explicit (Windows 10/11 x64 only).
+
+`changelog/index.html` — entries rewritten with real detail; grouped into meaningful themes;
+honest about what was fixed vs added vs documented.
+
+`about/index.html` — origin story added; design principles explicit; contact/support info.
+
+`security-warning/index.html` — full numbered walkthrough with quoted dialog text for
+every Windows warning the user will see; SmartScreen, Chrome, and Edge paths all covered.
+
+`privacy/index.html` — rewritten to be specific and concrete (not boilerplate); exact list
+of what the relay logs vs does not log; retention policy stated.
+
+`terms/index.html` — plain English rewrite; what you can and can't do; honest about limits.
+
+**Check-LiveBuild result:** READY — server serving `e01b814` (doc-only gap). Both download
+routes byte-identical (`ECED7FB4921D9A68...`, 162,492,578 bytes). All 9 pages match repo
+exactly with all assets resolving. how-it-works now also checks `/flashdesk-window.png`.
