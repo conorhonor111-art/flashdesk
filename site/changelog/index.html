@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Changelog — FlashDesk</title>
+<meta name="description" content="Every FlashDesk release, listed plainly: what changed, what was fixed, and why. 17 releases since March 2026.">
+<link rel="canonical" href="https://flashdesk.org/changelog/">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="en_GB">
+<meta property="og:url" content="https://flashdesk.org/changelog/">
+<meta property="og:title" content="Changelog — FlashDesk">
+<meta property="og:description" content="Every FlashDesk release, listed plainly: what changed, what was fixed, and why.">
+<meta property="og:image" content="https://flashdesk.org/flashdesk-window.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Changelog — FlashDesk">
+<meta name="twitter:description" content="Every FlashDesk release, listed plainly: what changed, what was fixed, and why.">
+<meta name="twitter:image" content="https://flashdesk.org/flashdesk-window.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Crect%20x='1'%20y='1'%20width='14'%20height='14'%20rx='3.5'%20fill='%2317191E'/%3E%3Cpolyline%20points='4.631,2.512%209.387,11.495%2011.325,7.620'%20fill='none'%20stroke='%232BD16B'%20stroke-width='2.6'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/site-v2.css">
+<style>
+/* ======================================================================
+   CHANGELOG PAGE — local styles
+   All colours reference design-system tokens where possible.
+   ====================================================================== */
+
+/* ── Nav: More dropdown ───────────────────────────────────────────────── */
+.nav-more { position: relative; }
+
+.nav-more-btn {
+  background:    none;
+  border:        none;
+  font-family:   var(--font-body);
+  font-size:     var(--fs-small);
+  font-weight:   600;
+  color:         var(--color-muted);
+  padding:       var(--sp-2) 0;
+  cursor:        pointer;
+  display:       inline-flex;
+  align-items:   center;
+  gap:           3px;
+  border-bottom: 2px solid transparent;
+  line-height:   1;
+}
+
+.nav-more-btn:hover,
+.nav-more-btn:focus-visible { color: var(--color-text); }
+
+.nav-more-btn .caret {
+  font-size:  0.65em;
+  display:    inline-block;
+  transition: transform 150ms ease;
+  margin-top: 1px;
+}
+
+.nav-more-btn[aria-expanded="true"] .caret { transform: rotate(180deg); }
+
+.nav-dropdown {
+  position:      absolute;
+  top:           calc(100% + 6px);
+  left:          -12px;
+  background:    var(--color-card);
+  border:        1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow:    0 4px 20px rgba(0,0,0,0.10);
+  min-width:     9rem;
+  padding:       6px 0;
+  z-index:       30;
+  display:       none;
+}
+
+.nav-dropdown.is-open { display: block; }
+
+.nav-dropdown a {
+  display:         block;
+  font-size:       var(--fs-small);
+  font-weight:     600;
+  color:           var(--color-muted);
+  padding:         10px 16px;
+  text-decoration: none;
+  white-space:     nowrap;
+}
+
+.nav-dropdown a:hover              { color: var(--color-text); background: var(--color-bg); }
+.nav-dropdown a[aria-current="page"] {
+  color:      var(--color-text);
+  background: var(--color-bg);
+  font-weight: 700;
+}
+
+/* ── Nav: hamburger toggle ────────────────────────────────────────────── */
+.nav-toggle {
+  display:         none;
+  background:      none;
+  border:          none;
+  cursor:          pointer;
+  padding:         var(--sp-2);
+  color:           var(--color-text);
+  align-items:     center;
+  justify-content: center;
+  border-radius:   var(--radius);
+  min-height:      36px;
+  min-width:       36px;
+}
+
+.nav-toggle:hover { background: var(--color-bg); }
+
+/* ── Nav: mobile drawer ───────────────────────────────────────────────── */
+.nav-overlay {
+  display:    none;
+  position:   fixed;
+  inset:      0;
+  z-index:    40;
+  background: rgba(0,0,0,0.38);
+  backdrop-filter: blur(1px);
+}
+
+.nav-overlay.is-open { display: block; }
+
+.nav-drawer {
+  position:       fixed;
+  top:            0;
+  right:          -100%;
+  bottom:         0;
+  width:          min(80vw, 17rem);
+  z-index:        50;
+  background:     var(--color-card);
+  border-left:    1px solid var(--color-border);
+  display:        flex;
+  flex-direction: column;
+  overflow-y:     auto;
+  transition:     right 220ms ease;
+}
+
+.nav-drawer.is-open { right: 0; }
+
+.nav-drawer-head {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  padding:         var(--sp-3) var(--sp-4);
+  border-bottom:   1px solid var(--color-border);
+  flex-shrink:     0;
+}
+
+.nav-drawer-close {
+  background:    none;
+  border:        none;
+  cursor:        pointer;
+  padding:       var(--sp-2);
+  color:         var(--color-text);
+  display:       flex;
+  align-items:   center;
+  border-radius: var(--radius);
+}
+
+.nav-drawer-close:hover { background: var(--color-bg); }
+
+.nav-drawer-body {
+  flex:           1;
+  display:        flex;
+  flex-direction: column;
+  padding:        var(--sp-2) 0;
+  overflow-y:     auto;
+}
+
+.nav-drawer-body a {
+  font-size:       1rem;
+  font-weight:     600;
+  color:           var(--color-muted);
+  padding:         13px var(--sp-5);
+  text-decoration: none;
+  border-left:     3px solid transparent;
+  display:         block;
+}
+
+.nav-drawer-body a:hover { color: var(--color-text); background: var(--color-bg); }
+
+.nav-drawer-body a[aria-current="page"] {
+  color:             var(--color-text);
+  border-left-color: var(--color-blue);
+}
+
+.nav-drawer-sep {
+  height:     1px;
+  background: var(--color-border);
+  margin:     var(--sp-2) var(--sp-5);
+}
+
+.nav-drawer-foot {
+  padding:      var(--sp-4);
+  border-top:   1px solid var(--color-border);
+  flex-shrink:  0;
+}
+
+/* ── Header CTA label switching ───────────────────────────────────────── */
+@media (max-width: 720px) {
+  .nav-toggle                 { display: flex; }
+  .site-nav                   { display: none !important; }
+  .hcta-full                  { display: none; }
+  .hcta-mobile                { display: inline; }
+}
+
+@media (min-width: 721px) {
+  .hcta-full                  { display: inline; }
+  .hcta-mobile                { display: none; }
+}
+
+/* ── Release timeline ─────────────────────────────────────────────────── */
+.release-list {
+  list-style: none;
+  position:   relative;
+  margin-top: var(--sp-3);
+}
+
+/* Vertical track */
+.release-list::before {
+  content:    '';
+  position:   absolute;
+  left:       0;
+  top:        0.6em;
+  bottom:     0;
+  width:      2px;
+  background: var(--color-border);
+}
+
+.release-item {
+  position:       relative;
+  padding-left:   var(--sp-7);
+  padding-bottom: var(--sp-7);
+}
+
+.release-item:last-child { padding-bottom: 0; }
+
+/* Track dot */
+.release-item::before {
+  content:       '';
+  position:      absolute;
+  left:          -4px;
+  top:           0.55em;
+  width:         10px;
+  height:        10px;
+  border-radius: 50%;
+  background:    var(--color-card);
+  border:        2px solid var(--color-border-strong);
+  box-sizing:    border-box;
+}
+
+/* Latest release highlight */
+.release-item.is-latest {
+  background:     #F0F7FF;
+  border-left:    3px solid var(--color-blue);
+  border-radius:  0 var(--radius) var(--radius) 0;
+  padding-top:    var(--sp-4);
+  padding-right:  var(--sp-4);
+  padding-bottom: var(--sp-6);
+  margin-left:    2px;
+  padding-left:   calc(var(--sp-7) - 5px);
+}
+
+.release-item.is-latest::before {
+  background:  var(--color-blue);
+  border-color: var(--color-blue);
+  width:       12px;
+  height:      12px;
+  left:        -8px;
+  top:         calc(0.55em + var(--sp-4));
+  box-shadow:  0 0 0 3px rgba(26,115,232,0.18);
+}
+
+/* Version badge */
+.version-badge {
+  display:        inline-flex;
+  align-items:    center;
+  gap:            var(--sp-2);
+  font-family:    ui-monospace, 'Cascadia Code', 'Consolas', monospace;
+  font-size:      var(--fs-small);
+  font-weight:    700;
+  background:     var(--color-bg);
+  border:         1px solid var(--color-border);
+  border-radius:  6px;
+  padding:        3px 10px;
+  color:          var(--color-text);
+  letter-spacing: 0.01em;
+}
+
+.release-item.is-latest .version-badge {
+  background:   var(--color-blue);
+  border-color: transparent;
+  color:        #ffffff;
+}
+
+.latest-pill {
+  display:        inline-block;
+  font-size:      0.6875rem;
+  font-weight:    700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color:          var(--color-blue);
+  border:         1px solid var(--color-blue);
+  border-radius:  4px;
+  padding:        1px 6px;
+  vertical-align: middle;
+  margin-left:    6px;
+}
+
+.release-item.is-latest .latest-pill {
+  color:        rgba(255,255,255,0.9);
+  border-color: rgba(255,255,255,0.5);
+}
+
+.release-date {
+  display:       block;
+  font-size:     var(--fs-small);
+  color:         var(--color-muted);
+  margin-top:    var(--sp-2);
+  margin-bottom: var(--sp-4);
+}
+
+/* Change entries */
+.change-list {
+  list-style:     none;
+  display:        flex;
+  flex-direction: column;
+  gap:            11px;
+}
+
+.change-list li {
+  display:     flex;
+  align-items: baseline;
+  gap:         var(--sp-3);
+  line-height: 1.55;
+  font-size:   var(--fs-body);
+  color:       var(--color-text);
+}
+
+.change-tag {
+  flex-shrink:    0;
+  display:        inline-block;
+  font-size:      0.6875rem;
+  font-weight:    700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding:        2px 8px;
+  border-radius:  4px;
+  min-width:      4.25rem;
+  text-align:     center;
+}
+
+.tag-added    { background: #D1FAE5; color: #065F46; }
+.tag-fixed    { background: #FEF3C7; color: #92400E; }
+.tag-changed  { background: #DBEAFE; color: #1E40AF; }
+.tag-removed  { background: #FEE2E2; color: #991B1B; }
+.tag-security { background: #F3E8FF; color: #6B21A8; }
+
+/* Download card after latest release */
+.download-card {
+  border:        1px solid var(--color-blue);
+  border-radius: var(--radius);
+  padding:       var(--sp-5);
+  background:    #EBF3FD;
+  margin-top:    var(--sp-5);
+}
+
+.download-card-title {
+  font-size:     var(--fs-h3);
+  font-weight:   600;
+  margin-bottom: var(--sp-2);
+  color:         var(--color-text);
+}
+
+.download-card-meta {
+  font-size:     var(--fs-small);
+  color:         var(--color-muted);
+  margin-bottom: var(--sp-4);
+}
+
+.download-card-actions {
+  display:     flex;
+  flex-wrap:   wrap;
+  gap:         var(--sp-3);
+  align-items: center;
+}
+
+.github-link {
+  display:                    inline-flex;
+  align-items:                center;
+  gap:                        6px;
+  font-size:                  var(--fs-small);
+  font-weight:                600;
+  color:                      var(--color-muted);
+  text-decoration:            underline;
+  text-underline-offset:      2px;
+  text-decoration-thickness:  1px;
+}
+
+.github-link:hover {
+  color:                     var(--color-text);
+  text-decoration-thickness: 2px;
+}
+
+.github-link .icon { width: 1rem; height: 1rem; }
+
+/* Year heading */
+.release-year {
+  display:        block;
+  font-size:      var(--fs-small);
+  font-weight:    700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color:          var(--color-muted);
+  padding-left:   var(--sp-7);
+  padding-bottom: var(--sp-4);
+  margin-top:     0;
+}
+
+/* Version numbering note */
+.version-note {
+  display:       flex;
+  gap:           var(--sp-3);
+  background:    var(--color-card);
+  border:        1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding:       var(--sp-4);
+  margin-top:    var(--sp-7);
+  font-size:     var(--fs-small);
+  color:         var(--color-muted);
+  line-height:   1.6;
+  align-items:   flex-start;
+}
+
+.version-note-glyph {
+  flex-shrink: 0;
+  width:       1.125rem;
+  height:      1.125rem;
+  margin-top:  1px;
+  color:       var(--color-muted);
+}
+
+/* Mobile adjustments */
+@media (max-width: 480px) {
+  .release-item           { padding-left: 40px; }
+  .release-item.is-latest { padding-left: 35px; }
+  .release-year           { padding-left: 40px; }
+
+  .change-list li { flex-direction: column; gap: var(--sp-2); }
+  .change-tag     { align-self: flex-start; }
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<!-- ── SVG ICON SPRITE — geometry locked; copy of homepage sprite ──────── -->
+<svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+  <defs>
+    <symbol id="i-screen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <rect x="2" y="3" width="20" height="14"/>
+      <line x1="8" y1="21" x2="16" y2="21"/>
+      <line x1="12" y1="17" x2="12" y2="21"/>
+      <polyline points="9,7 13,15 15.5,10.5"/>
+    </symbol>
+    <symbol id="i-dialog" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <rect x="4" y="5" width="16" height="13"/>
+      <line x1="4" y1="9" x2="20" y2="9"/>
+      <rect x="7" y="12.5" width="4" height="3"/>
+      <rect x="13" y="12.5" width="4" height="3"/>
+    </symbol>
+    <symbol id="i-band" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <rect x="2" y="3" width="20" height="16"/>
+      <line x1="2" y1="7.5" x2="22" y2="7.5" stroke-width="3"/>
+    </symbol>
+    <symbol id="i-log" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <rect x="5" y="2" width="14" height="20"/>
+      <line x1="8" y1="7" x2="16" y2="7"/>
+      <line x1="8" y1="11" x2="16" y2="11"/>
+      <line x1="8" y1="15" x2="14" y2="15"/>
+    </symbol>
+    <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <polyline points="6,2 6,22 18,22 18,8 12,2 6,2"/>
+      <polyline points="12,2 12,8 18,8"/>
+    </symbol>
+    <symbol id="i-address" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <rect x="2" y="8" width="20" height="8"/>
+      <line x1="9.33" y1="8" x2="9.33" y2="16"/>
+      <line x1="16.67" y1="8" x2="16.67" y2="16"/>
+    </symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <polyline points="2,6 2,20 22,20 22,8 11,8 9,6 2,6"/>
+    </symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <rect x="7" y="7" width="14" height="14"/>
+      <polyline points="17,7 17,3 3,3 3,17 7,17"/>
+    </symbol>
+    <symbol id="i-arrival" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <rect x="3" y="9" width="12" height="12"/>
+      <polyline points="14,4 21,4 21,11"/>
+      <line x1="21" y1="4" x2="10" y2="15"/>
+    </symbol>
+    <symbol id="i-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <line x1="4" y1="4" x2="20" y2="20"/>
+      <line x1="20" y1="4" x2="4" y2="20"/>
+    </symbol>
+    <symbol id="i-monitors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <rect x="2" y="4" width="12" height="9"/>
+      <rect x="12" y="8" width="10" height="8"/>
+    </symbol>
+    <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <line x1="12" y1="3" x2="12" y2="15"/>
+      <polyline points="6,10 12,16 18,10"/>
+      <line x1="4" y1="21" x2="20" y2="21"/>
+    </symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <line x1="4" y1="12" x2="20" y2="12"/>
+      <polyline points="14,6 20,12 14,18"/>
+    </symbol>
+    <!-- i-menu — hamburger; added for mobile nav toggle -->
+    <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <line x1="3" y1="6"  x2="21" y2="6"/>
+      <line x1="3" y1="12" x2="21" y2="12"/>
+      <line x1="3" y1="18" x2="21" y2="18"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="page">
+
+<!-- ── HEADER ─────────────────────────────────────────────────────────────
+     .site-header .contained provides the flex layout (see site-v2.css).
+     Nav updated: More dropdown contains Privacy / Terms / Changelog / About;
+     Download and Security warning promoted to primary nav level.
+     ─────────────────────────────────────────────────────────────────────── -->
+<header class="site-header">
+  <div class="contained" style="padding-block:var(--sp-3);display:flex;align-items:center;justify-content:space-between;gap:var(--sp-4);">
+
+    <a class="brand" href="/">
+      <svg viewBox="0 0 16 16" aria-hidden="true" width="28" height="28">
+        <polyline points="4.631,2.512 9.387,11.495 11.325,7.620" fill="none" stroke="#17191E" stroke-width="2.6"/>
+      </svg>
+      <span>FlashDesk</span>
+    </a>
+
+    <nav class="site-nav" aria-label="Site">
+      <a href="/" data-nav="home">Home</a>
+      <a href="/how-it-works/" data-nav="how-it-works">How it works</a>
+      <a href="/download/" data-nav="download">Download</a>
+      <a href="/faq/" data-nav="faq">FAQ</a>
+      <a href="/security-warning/" data-nav="security-warning">Security warning</a>
+      <div class="nav-more">
+        <button class="nav-more-btn"
+                id="nav-more-btn"
+                aria-expanded="false"
+                aria-haspopup="true"
+                aria-controls="nav-dropdown">
+          More <span class="caret" aria-hidden="true">&#9660;</span>
+        </button>
+        <div class="nav-dropdown" id="nav-dropdown" role="menu" aria-labelledby="nav-more-btn">
+          <a href="/privacy/"   data-nav="privacy"   role="menuitem">Privacy</a>
+          <a href="/terms/"     data-nav="terms"      role="menuitem">Terms</a>
+          <a href="/changelog/" data-nav="changelog"  role="menuitem" aria-current="page">Changelog</a>
+          <a href="/about/"     data-nav="about"       role="menuitem">About</a>
+        </div>
+      </div>
+    </nav>
+
+    <div style="display:flex;align-items:center;gap:var(--sp-3);flex-shrink:0;">
+      <button class="nav-toggle" aria-label="Open navigation menu" id="nav-toggle-btn">
+        <svg class="icon" aria-hidden="true"><use href="#i-menu"/></svg>
+      </button>
+      <a class="header-cta" href="https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe">
+        <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+        <span class="hcta-full">Download .exe &#8212; free</span>
+        <span class="hcta-mobile">Download</span>
+      </a>
+    </div>
+
+  </div>
+</header>
+
+<!-- ── MOBILE NAV ─────────────────────────────────────────────────────── -->
+<div class="nav-overlay" id="nav-overlay" aria-hidden="true"></div>
+<div class="nav-drawer" id="nav-drawer" role="dialog" aria-modal="true" aria-label="Navigation">
+  <div class="nav-drawer-head">
+    <a class="brand" href="/">
+      <svg viewBox="0 0 16 16" aria-hidden="true" width="24" height="24">
+        <polyline points="4.631,2.512 9.387,11.495 11.325,7.620" fill="none" stroke="#17191E" stroke-width="2.6"/>
+      </svg>
+      <span>FlashDesk</span>
+    </a>
+    <button class="nav-drawer-close" aria-label="Close navigation" id="nav-drawer-close">
+      <svg class="icon" aria-hidden="true"><use href="#i-close"/></svg>
+    </button>
+  </div>
+  <div class="nav-drawer-body">
+    <a href="/">Home</a>
+    <a href="/how-it-works/">How it works</a>
+    <a href="/download/">Download</a>
+    <a href="/faq/">FAQ</a>
+    <a href="/security-warning/">Security warning</a>
+    <div class="nav-drawer-sep" role="separator"></div>
+    <a href="/privacy/">Privacy</a>
+    <a href="/terms/">Terms</a>
+    <a href="/changelog/" aria-current="page">Changelog</a>
+    <a href="/about/">About</a>
+  </div>
+  <div class="nav-drawer-foot">
+    <a class="btn btn-blue" style="width:100%;justify-content:center;"
+       href="https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe">
+      <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+      Download FlashDesk &#8212; free
+    </a>
+  </div>
+</div>
+
+<main id="main-content">
+
+<!-- ── HERO ──────────────────────────────────────────────────────────────── -->
+<section class="band band-paper">
+  <div class="contained" style="padding-bottom:var(--sp-6);">
+    <span class="kicker">Release history</span>
+    <h1>What has changed</h1>
+    <p class="lead">FlashDesk is updated when something real changes &#8212; not on a schedule. Each entry below is a real change with a reason.</p>
+    <p class="meta" style="margin-top:var(--sp-4);">17 releases &middot; First release March 2026 &middot; Latest September 2026</p>
+  </div>
+</section>
+
+<!-- ── RELEASE TIMELINE ──────────────────────────────────────────────────── -->
+<section class="band band-alt">
+  <div class="contained">
+
+    <span class="release-year">2026</span>
+
+    <ul class="release-list">
+
+      <!-- ================================================================
+           v0.4.0-17 — LATEST
+           ================================================================ -->
+      <li class="release-item is-latest" id="v0.4.0-17">
+        <div class="version-badge">v0.4.0&#8209;17 <span class="latest-pill">Latest</span></div>
+        <time class="release-date" datetime="2026-09-20">20 September 2026</time>
+        <ul class="change-list">
+          <li>
+            <span class="change-tag tag-changed">Changed</span>
+            Site redesigned &#8212; round 5. New typography scale, improved spacing rhythm, dedicated Download page, and this Changelog page.
+          </li>
+          <li>
+            <span class="change-tag tag-added">Added</span>
+            Changelog page and About page. Both linked from the updated footer and from the new &#8220;More&#8221; navigation dropdown.
+          </li>
+          <li>
+            <span class="change-tag tag-added">Added</span>
+            Mobile navigation drawer. On screens below 720&nbsp;px a hamburger button opens a slide-in panel listing every page flat &#8212; no nested menus.
+          </li>
+          <li>
+            <span class="change-tag tag-changed">Changed</span>
+            Header download button now reads &#8220;Download .exe &#8212; free&#8221; on desktop and shortens to &#8220;Download&#8221; on mobile.
+          </li>
+          <li>
+            <span class="change-tag tag-changed">Changed</span>
+            &#8220;SmartScreen&#8221; renamed to &#8220;Security warning&#8221; across nav and footer. The old label was meaningless to users on other browsers and opaque to non-technical visitors.
+          </li>
+          <li>
+            <span class="change-tag tag-fixed">Fixed</span>
+            Footer navigation links corrected &#8212; several pointed to the raw GitHub release URL rather than to the relevant site pages.
+          </li>
+        </ul>
+
+        <!-- Download card — links to /download/, not GitHub directly -->
+        <div class="download-card" aria-label="Download current version">
+          <p class="download-card-title">Download v0.4.0&#8209;17 &#8212; current release</p>
+          <p class="download-card-meta">About 70&nbsp;MB &middot; Windows 10 and 11 &middot; No install required &middot; Free</p>
+          <div class="download-card-actions">
+            <a class="btn btn-blue" href="/download/">
+              <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+              Download FlashDesk &#8212; free
+            </a>
+            <a class="github-link"
+               href="https://github.com/conorhonor111-art/flashdesk/releases"
+               target="_blank"
+               rel="noopener noreferrer">
+              <svg class="icon" aria-hidden="true"><use href="#i-arrival"/></svg>
+              Full release notes and source diffs on GitHub
+            </a>
+          </div>
+        </div>
+      </li>
+
+      <!-- ================================================================
+           v0.4.0-16
+           ================================================================ -->
+      <li class="release-item" id="v0.4.0-16">
+        <div class="version-badge">v0.4.0&#8209;16</div>
+        <time class="release-date" datetime="2026-09-09">9 September 2026</time>
+        <ul class="change-list">
+          <li>
+            <span class="change-tag tag-changed">Changed</span>
+            Site redesigned &#8212; round 4. Switched from a dark+green theme to a light theme. Six competitor sites (TeamViewer, Splashtop, 1Password, Proton, Bitwarden, Mullvad) were fetched and read directly; all six are light-dominant. Dark+acid-green is the visual language of the hacking/crypto genre, which is exactly what the non-technical visitor FlashDesk exists for is already afraid of.
+          </li>
+          <li>
+            <span class="change-tag tag-added">Added</span>
+            Dedicated Security warning page (<code>/security-warning/</code>). The SmartScreen walkthrough had been embedded inline on the homepage, adding three screens of quoted dialog to a page that should have been a concise summary. Moved to its own page; the homepage now links to it.
+          </li>
+          <li>
+            <span class="change-tag tag-added">Added</span>
+            Privacy, FAQ, and Terms pages ported onto the round-4 design system. All six pages now render from a single layout template with a shared CSS file.
+          </li>
+          <li>
+            <span class="change-tag tag-added">Added</span>
+            Trust strip on the homepage: four specific, verifiable facts &#8212; &#8220;No account needed &middot; No install &middot; No data collected beyond the session &middot; Disconnect any time&#8221; &#8212; replacing generic &#8220;safe and secure&#8221; language.
+          </li>
+        </ul>
+      </li>
+
+      <!-- ================================================================
+           v0.4.0-15
+           ================================================================ -->
+      <li class="release-item" id="v0.4.0-15">
+        <div class="version-badge">v0.4.0&#8209;15</div>
+        <time class="release-date" datetime="2026-08-28">28 August 2026</time>
+        <ul class="change-list">
+          <li>
+            <span class="change-tag tag-added">Added</span>
+            Windows Installer package (.msi). Available at <code>flashdesk.org/dl/FlashDesk-setup.msi</code> for users or IT administrators who prefer a traditional installation. The standalone .exe remains the primary download.
+          </li>
+          <li>
+            <span class="change-tag tag-fixed">Fixed</span>
+            Session number displayed incorrectly on high-DPI screens &#8212; the last digit was clipped at 150% and 175% display scaling settings.
+          </li>
+          <li>
+            <span class="change-tag tag-fixed">Fixed</span>
+            Window could not be resized smaller than its default dimensions on certain Windows visual themes that reported non-standard minimum-size constraints.
+          </li>
+        </ul>
+      </li>
+
+      <!-- ================================================================
+           v0.4.0-14 — BlackScreen 8–9
+           ================================================================ -->
+      <li class="release-item" id="v0.4.0-14">
+        <div class="version-badge">v0.4.0&#8209;14</div>
+        <time class="release-date" datetime="2026-08-21">21 August 2026</time>
+        <ul class="change-list">
+          <li>
+            <span class="change-tag tag-fixed">Fixed</span>
+            BlackScreen fix 9 of 9: brief black flash when the helper switched their view to the client&#8217;s secondary monitor while both monitors ran at different refresh rates. The DXGI output was being re-acquired against the wrong display sink.
+          </li>
+          <li>
+            <span class="change-tag tag-fixed">Fixed</span>
+            BlackScreen fix 8 of 9: screen went entirely black on systems using AMD graphics with Windows HDR enabled. AMD&#8217;s DXGI implementation handles HDR output surfaces differently from Nvidia and Intel; the capture path now checks for HDR mode and selects the correct surface format.
+          </li>
+        </ul>
+      </li>
+
+      <!-- ================================================================
+           v0.4.0-13 — BlackScreen 6–7
+           ================================================================ -->
+      <li class="release-item" id="v0.4.0-13">
+        <div class="version-badge">v0.4.0&#8209;13</div>
+        <time class="release-date" datetime="2026-08-14">14 August 2026</time>
+        <ul class="change-list">
+          <li>
+            <span class="change-tag tag-fixed">Fixed</span>
+            BlackScreen fix 7 of 9: blank frames were sent when the client changed display scaling mid-session. The capture pipeline now listens for the <code>WM_DISPLAYCHANGE</code> message and re-initialises the output surface on any mode change.
+          </li>
+          <li>
+            <span class="change-tag tag-fixed">Fixed</span>
+            BlackScreen fix 6 of 9: capture failed silently when the client toggled Windows dark mode while a session was active. Dark mode triggers a composition restart; the capture surface handle became invalid without the application being notified.
+          </li>
+        </ul>
+      </li>
+
+      <!-- ================================================================
+           v0.4.0-12 — BlackScreen 4–5
+           ================================================================ -->
+      <li class="release-item" id="v0.4.0-12">
+        <div class="version-badge">v0.4.0&#8209;12</div>
+        <time class="release-date" datetime="2026-08-07">7 August 2026</time>
+        <ul class="change-list">
+          <li>
+            <span class="change-tag tag-fixed">Fixed</span>
+            BlackScreen fix 5 of 9: all-black output when running under a standard (non-administrator) user account on certain Windows 11 builds. DXGI Desktop Duplication requires the calling process to be in the same session as the desktop it is duplicating; elevated calls from a different session produce a black surface rather than an error.
+          </li>
+          <li>
+            <span class="change-tag tag-fixed">Fixed</span>
+            BlackScreen fix 4 of 9: capture thread stopped sending frames when the screensaver activated. Added screensaver-state detection via <code>SystemParametersInfo(SPI_GETSCREENSAVERRUNNING)</code>; the helper now sees a grey placeholder frame rather than the session freezing on the last real image.
+          </li>
+        </ul>
+      </li>
+
+      <!-- ================================================================
+           v0.4.0-11 — BlackScreen 2–3
+           ================================================================ -->
+      <li class="release-item" id="v0.4.0-11">
+        <div class="version-badge">v0.4.0&#8209;11</div>
+        <time class="release-date" datetime="2026-07-31">31 July 2026</time>
+        <ul class="change-list">
+          <li>
+            <span class="change-tag tag-fixed">Fixed</span>
+            BlackScreen fix 3 of 9: capture broke on machines with two monitors at different refresh rates. The DXGI output object was being created against the wrong adapter in some multi-GPU laptop configurations where the display and render adapter are different physical devices.
+          </li>
+          <li>
+            <span class="change-tag tag-fixed">Fixed</span>
+            BlackScreen fix 2 of 9: helper&#8217;s view went black on Windows 11 24H2 after the client machine woke from sleep. The DXGI capture surface must be re-acquired after a display power-state transition; the previous code held a stale handle.
+          </li>
+        </ul>
+      </li>
+
+      <!-- ================================================================
+           v0.4.0-10 — BlackScreen 1, DXGI switch
+           ================================================================ -->
+      <li class="release-item" id="v0.4.0-10">
+        <div class="version-badge">v0.4.0&#8209;10</div>
+        <time class="release-date" datetime="2026-07-24">24 July 2026</time>
+        <ul class="change-list">
+          <li>
+            <span class="change-tag tag-changed">Changed</span>
+            Screen capture switched from GDI BitBlt to DXGI Desktop Duplication API. DXGI is the correct capture path for modern Windows display drivers and works regardless of the display&#8217;s hardware composition mode. GDI remains as a fallback for the minority of systems where DXGI Desktop Duplication is unavailable (pre-Windows 8 or very old driver stacks).
+          </li>
+          <li>
+            <span class="change-tag tag-fixed">Fixed</span>
+            BlackScreen fix 1 of 9: helper&#8217;s view went entirely black on some Windows 11 systems. The root cause was GDI capture failing silently on displays that use a hardware composition path GDI cannot read. The DXGI switch in this release is the foundational fix; subsequent releases address edge cases the new path exposed.
+          </li>
+        </ul>
+      </li>
+
+      <!-- ================================================================
+           v0.4.0-9 — Relay architecture
+           ================================================================ -->
+      <li class="release-item" id="v0.4.0-9">
+        <div class="version-badge">v0.4.0&#8209;9</div>
+        <time class="release-date" datetime="2026-07-15">15 July 2026</time>
+        <ul class="change-list">
+          <li>
+            <span class="change-tag tag-added">Added</span>
+            Relay architecture. Traffic now routes through a relay server rather than requiring a direct peer-to-peer path. This resolves connection failures behind symmetric NAT and strict corporate or ISP-level firewalls, which previously made the tool completely unusable for a significant proportion of users who reported &#8220;stuck at connecting.&#8221;
+          </li>
+          <li>
+            <span class="change-tag tag-changed">Changed</span>
+            Connection setup time reduced significantly. The relay handles NAT traversal; the two-party handshake that previously took up to 12 seconds in the best case now typically completes in under 3 seconds.
+          </li>
+          <li>
+            <span class="change-tag tag-fixed">Fixed</span>
+            Connections failed completely when the client was behind a firewall that blocks all UDP. The relay communicates over TCP 443, which is open on virtually every network that allows web browsing at all.
+          </li>
+        </ul>
+      </li>
+
+      <!-- ================================================================
+           v0.4.0-8
+           ================================================================ -->
+      <li class="release-item" id="v0.4.0-8">
+        <div class="version-badge">v0.4.0&#8209;8</div>
+        <time class="release-date" datetime="2026-06-26">26 June 2026</time>
+        <ul class="change-list">
+          <li>
+            <span class="change-tag tag-fixed">Fixed</span>
+            Accept/Reject consent dialog occasionally appeared behind other open windows, making it look as though FlashDesk had stopped responding. The dialog is now forced to the foreground (<code>SetForegroundWindow</code>) and taskbar-flashed when it opens so the user knows action is needed.
+          </li>
+          <li>
+            <span class="change-tag tag-fixed">Fixed</span>
+            In rare edge cases involving a suspended process or paused debugger, a session could silently resume after the 90-second reconnect window had expired. The resume timer now runs in a separate thread that is not affected by process suspension.
+          </li>
+        </ul>
+      </li>
+
+      <!-- ================================================================
+           v0.4.0-7 — File transfer
+           ================================================================ -->
+      <li class="release-item" id="v0.4.0-7">
+        <div class="version-badge">v0.4.0&#8209;7</div>
+        <time class="release-date" datetime="2026-06-12">12 June 2026</time>
+        <ul class="change-list">
+          <li>
+            <span class="change-tag tag-added">Added</span>
+            File transfer panel. The helper can send individual files to the client machine during an active session; files arrive in the client&#8217;s Downloads folder with a desktop notification. Transfer is intentionally one-directional: the helper can push files to the client, but the client cannot send files to the helper. There is no mechanism for the helper to browse or pull files.
+          </li>
+          <li>
+            <span class="change-tag tag-fixed">Fixed</span>
+            Amber live-session band was not consistently visible when the helper had the FlashDesk window maximised on a secondary display. The band is now rendered in a separate always-on-top layer so it cannot be obscured by the helper&#8217;s own maximised window.
+          </li>
+        </ul>
+      </li>
+
+      <!-- ================================================================
+           v0.4.0-6
+           ================================================================ -->
+      <li class="release-item" id="v0.4.0-6">
+        <div class="version-badge">v0.4.0&#8209;6</div>
+        <time class="release-date" datetime="2026-05-29">29 May 2026</time>
+        <ul class="change-list">
+          <li>
+            <span class="change-tag tag-fixed">Fixed</span>
+            Application crashed on startup on machines with no active network adapter. FlashDesk does not require a network connection to start &#8212; the session number can be generated and the UI shown without one. The crash was an incorrect assertion during the adapter enumeration step.
+          </li>
+          <li>
+            <span class="change-tag tag-fixed">Fixed</span>
+            The 9-digit session ID occasionally displayed as an 8-digit number when the first generated digit was zero. The display now always zero-pads to exactly 9 digits.
+          </li>
+        </ul>
+      </li>
+
+      <!-- ================================================================
+           v0.4.0-5 — Multiple monitors
+           ================================================================ -->
+      <li class="release-item" id="v0.4.0-5">
+        <div class="version-badge">v0.4.0&#8209;5</div>
+        <time class="release-date" datetime="2026-05-08">8 May 2026</time>
+        <ul class="change-list">
+          <li>
+            <span class="change-tag tag-added">Added</span>
+            Multiple-monitor support. When the client has more than one display connected, the helper sees a monitor selector and can switch between them during the session. Only one display is shared at a time; the helper cannot view all monitors simultaneously.
+          </li>
+          <li>
+            <span class="change-tag tag-fixed">Fixed</span>
+            Stop-sharing button required a double-click to register on machines with pointer acceleration set above the Windows default value. The hit-test area was smaller than the rendered button bounds due to a rounding error in the layout calculation.
+          </li>
+        </ul>
+      </li>
+
+      <!-- ================================================================
+           v0.4.0-4
+           ================================================================ -->
+      <li class="release-item" id="v0.4.0-4">
+        <div class="version-badge">v0.4.0&#8209;4</div>
+        <time class="release-date" datetime="2026-04-24">24 April 2026</time>
+        <ul class="change-list">
+          <li>
+            <span class="change-tag tag-changed">Changed</span>
+            Replaced the fixed listening port (7890) with dynamic port selection. FlashDesk now picks an available port at startup rather than requiring port 7890 to be free. This resolved conflicts with other software that happened to bind the same port.
+          </li>
+          <li>
+            <span class="change-tag tag-fixed">Fixed</span>
+            Active session was dropped when the client machine entered a brief sleep state (e.g. lid-close on a laptop). The connection now waits up to 90 seconds for the client to resume before ending the session &#8212; the same window that applies to a dropped network connection.
+          </li>
+        </ul>
+      </li>
+
+      <!-- ================================================================
+           v0.4.0-3 — Session log
+           ================================================================ -->
+      <li class="release-item" id="v0.4.0-3">
+        <div class="version-badge">v0.4.0&#8209;3</div>
+        <time class="release-date" datetime="2026-04-10">10 April 2026</time>
+        <ul class="change-list">
+          <li>
+            <span class="change-tag tag-added">Added</span>
+            Session log. Each completed session appends one line to <code>%APPDATA%\FlashDesk\sessions.log</code>: date, start time, and duration only. No screen content, keystrokes, clipboard data, or file names are recorded. The log file is stored only on the client&#8217;s machine and is never transmitted anywhere.
+          </li>
+          <li>
+            <span class="change-tag tag-fixed">Fixed</span>
+            The Reject button in the Accept/Reject consent dialog was not reachable by keyboard navigation. Tab order now places focus on Reject first &#8212; the safer default &#8212; and then on Accept.
+          </li>
+        </ul>
+      </li>
+
+      <!-- ================================================================
+           v0.4.0-2
+           ================================================================ -->
+      <li class="release-item" id="v0.4.0-2">
+        <div class="version-badge">v0.4.0&#8209;2</div>
+        <time class="release-date" datetime="2026-03-27">27 March 2026</time>
+        <ul class="change-list">
+          <li>
+            <span class="change-tag tag-fixed">Fixed</span>
+            Closing FlashDesk left a Windows Firewall inbound exception entry behind. The rule is now removed on clean exit and on any unexpected shutdown FlashDesk can detect.
+          </li>
+          <li>
+            <span class="change-tag tag-fixed">Fixed</span>
+            Window position was not remembered between runs. FlashDesk now saves and restores its last screen position on startup.
+          </li>
+          <li>
+            <span class="change-tag tag-fixed">Fixed</span>
+            The Copy button occasionally copied the session number from the previous run rather than the current one when restarting FlashDesk quickly.
+          </li>
+        </ul>
+      </li>
+
+      <!-- ================================================================
+           v0.4.0-1 — Initial release
+           ================================================================ -->
+      <li class="release-item" id="v0.4.0-1">
+        <div class="version-badge">v0.4.0&#8209;1</div>
+        <time class="release-date" datetime="2026-03-14">14 March 2026</time>
+        <ul class="change-list">
+          <li>
+            <span class="change-tag tag-added">Added</span>
+            First public release. Core remote view and control: the helper sees the client&#8217;s screen and can move the mouse and type; the client watches everything and can end the session at any moment.
+          </li>
+          <li>
+            <span class="change-tag tag-added">Added</span>
+            9-digit session ID scheme. A new number is generated on each run; it is never reused between sessions.
+          </li>
+          <li>
+            <span class="change-tag tag-added">Added</span>
+            Accept / Reject consent dialog. The first connection from any helper always requires the client to press Accept before anything gets in. There is no way to bypass this; it is enforced in the server code, not the UI layer.
+          </li>
+          <li>
+            <span class="change-tag tag-added">Added</span>
+            Amber live-session band. A coloured band appears across the top of the FlashDesk window the moment a helper connects and disappears the moment they disconnect. It cannot be dismissed, minimised, or hidden by the helper.
+          </li>
+          <li>
+            <span class="change-tag tag-added">Added</span>
+            Stop-sharing button. One click ends the session immediately, regardless of what the helper is currently doing on screen.
+          </li>
+        </ul>
+      </li>
+
+    </ul><!-- /release-list -->
+
+    <!-- Version numbering explanation -->
+    <div class="version-note">
+      <svg class="version-note-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter" aria-hidden="true">
+        <rect x="3" y="3" width="18" height="18"/>
+        <line x1="12" y1="8" x2="12" y2="9"/>
+        <line x1="12" y1="11" x2="12" y2="16"/>
+      </svg>
+      <p style="margin:0;"><strong>Version numbering:</strong> versions are numbered <code>v0.4.0-N</code> where <em>N</em> is an incrementing build number. Build&nbsp;1 was the first public release; each higher number is a separate release shipped after it. The <code>v0.4.0</code> prefix will advance when the feature set changes substantially &#8212; a change in the first three numbers will always be noted here with an explanation.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── BOTTOM CTA BAND ─────────────────────────────────────────────────── -->
+<section class="band band-tile">
+  <div class="contained" style="text-align:center;">
+    <h2 style="color:var(--color-tile-text);margin-bottom:var(--sp-4);">Running the latest version?</h2>
+    <p class="lead" style="color:var(--color-tile-muted);margin-bottom:var(--sp-5);">v0.4.0&#8209;17 is current. Download it once &#8212; updates are a new .exe, not an installer patch.</p>
+    <a class="btn btn-blue" href="/download/">
+      <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+      Download FlashDesk &#8212; free
+    </a>
+    <p style="margin-top:var(--sp-4);font-size:var(--fs-small);color:var(--color-tile-muted);">
+      About 70&nbsp;MB &middot; Windows 10 and 11 &middot; Nothing installs
+    </p>
+    <p style="margin-top:var(--sp-2);font-size:var(--fs-small);color:var(--color-tile-muted);">
+      <a class="inline-link" style="color:var(--color-tile-muted);"
+         href="https://flashdesk.org/dl/FlashDesk-setup.msi">Prefer a Windows installer (.msi)?</a>
+    </p>
+  </div>
+</section>
+
+</main>
+
+<!-- ── FOOTER ─────────────────────────────────────────────────────────────── -->
+<footer class="site-footer">
+  <div class="footer-top">
+    <div class="footer-brand">
+      <a class="brand" href="/">
+        <svg viewBox="0 0 16 16" aria-hidden="true" width="28" height="28">
+          <rect x="1" y="1" width="14" height="14" rx="3.5" fill="#17191E"/>
+          <polyline points="4.631,2.512 9.387,11.495 11.325,7.620" fill="none" stroke="#2BD16B" stroke-width="2.6"/>
+        </svg>
+        <span>FlashDesk</span>
+      </a>
+      <p>Remote support for your computer. One file, nothing installs.</p>
+    </div>
+
+    <nav class="footer-col" aria-label="Product">
+      <h3>Product</h3>
+      <a href="/" data-nav="home">Home</a>
+      <a href="/how-it-works/" data-nav="how-it-works">How it works</a>
+      <a href="/download/" data-nav="download">Download</a>
+      <a href="/changelog/" data-nav="changelog" aria-current="page">Changelog</a>
+      <a href="/about/" data-nav="about">About</a>
+    </nav>
+
+    <nav class="footer-col" aria-label="Legal">
+      <h3>Legal</h3>
+      <a href="/privacy/" data-nav="privacy">Privacy</a>
+      <a href="/terms/" data-nav="terms">Terms</a>
+    </nav>
+
+    <nav class="footer-col" aria-label="Help">
+      <h3>Help</h3>
+      <a href="/faq/" data-nav="faq">FAQ</a>
+      <a href="/security-warning/" data-nav="security-warning">Security warning</a>
+      <a href="mailto:support@flashdesk.org">support@flashdesk.org</a>
+    </nav>
+  </div>
+
+  <div class="footer-bottom">
+    <p class="footer-meta">&copy; 2026 FlashDesk. All rights reserved. Made in Kyiv by Conor Honor.</p>
+    <p class="footer-warning">FlashDesk will never telephone you. If someone calls claiming to be us, hang up.</p>
+  </div>
+</footer>
+
+</div><!-- /.page -->
+
+<!-- ── SCRIPTS — no external dependencies; two self-contained IIFEs ──────── -->
+<script>
+/* ── More dropdown ──────────────────────────────────────────────────────── */
+(function () {
+  var btn      = document.getElementById('nav-more-btn');
+  var dropdown = document.getElementById('nav-dropdown');
+  if (!btn || !dropdown) return;
+
+  function open()  { btn.setAttribute('aria-expanded','true');  dropdown.classList.add('is-open'); }
+  function close() { btn.setAttribute('aria-expanded','false'); dropdown.classList.remove('is-open'); }
+
+  btn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    btn.getAttribute('aria-expanded') === 'true' ? close() : open();
+  });
+
+  document.addEventListener('click', close);
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && dropdown.classList.contains('is-open')) {
+      close();
+      btn.focus();
+    }
+  });
+})();
+
+/* ── Mobile drawer ──────────────────────────────────────────────────────── */
+(function () {
+  var toggleBtn = document.getElementById('nav-toggle-btn');
+  var closeBtn  = document.getElementById('nav-drawer-close');
+  var overlay   = document.getElementById('nav-overlay');
+  var drawer    = document.getElementById('nav-drawer');
+  if (!toggleBtn || !drawer) return;
+
+  function openDrawer() {
+    drawer.classList.add('is-open');
+    overlay.classList.add('is-open');
+    overlay.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+    if (closeBtn) closeBtn.focus();
+  }
+
+  function closeDrawer() {
+    drawer.classList.remove('is-open');
+    overlay.classList.remove('is-open');
+    overlay.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    toggleBtn.focus();
+  }
+
+  toggleBtn.addEventListener('click', openDrawer);
+  if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
+  if (overlay)  overlay.addEventListener('click', closeDrawer);
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && drawer.classList.contains('is-open')) closeDrawer();
+  });
+})();
+</script>
+</body>
+</html>

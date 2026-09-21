@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>About FlashDesk — why it exists and who built it</title>
+<!--
+  Nothing on this page loads from another host — same rule as every other page.
+-->
+<meta name="description" content="FlashDesk is a free remote support tool for Windows built by Conor Honor, an independent computer specialist in Kyiv. No account, no install, no persistent agent — the design decisions that make it trustworthy.">
+<link rel="canonical" href="https://flashdesk.org/about/">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="en_GB">
+<meta property="og:url" content="https://flashdesk.org/about/">
+<meta property="og:title" content="About FlashDesk — why it exists and who built it">
+<meta property="og:description" content="FlashDesk is a free remote support tool for Windows built by Conor Honor, an independent computer specialist in Kyiv. No account, no install, no persistent agent.">
+<meta property="og:image" content="https://flashdesk.org/flashdesk-window.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="About FlashDesk — why it exists and who built it">
+<meta name="twitter:description" content="FlashDesk is a free remote support tool for Windows built by Conor Honor, an independent computer specialist in Kyiv. No account, no install, no persistent agent.">
+<meta name="twitter:image" content="https://flashdesk.org/flashdesk-window.png">
+
+<!-- MARK GEOMETRY IS LOCKED to assets\make-icon.ps1 -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Crect%20x='1'%20y='1'%20width='14'%20height='14'%20rx='3.5'%20fill='%2317191E'/%3E%3Cpolyline%20points='4.631,2.512%209.387,11.495%2011.325,7.620'%20fill='none'%20stroke='%232BD16B'%20stroke-width='2.6'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/site-v2.css">
+
+<style>
+/* =============================================================================
+   ABOUT PAGE — component styles (supplement to site-v2.css)
+   These are page-scoped additions; nothing here overrides a global rule.
+   ============================================================================= */
+
+/* ── Header inner layout ─────────────────────────────────────────────────────
+   site-v2.css's .site-header .contained targets a wrapper div added by the
+   build script. Replicated inline here for this standalone page.
+   ──────────────────────────────────────────────────────────────────────────── */
+.site-header > .contained {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  gap:             var(--sp-4);
+  padding-block:   var(--sp-3);
+}
+
+/* ── Nav: More ▾ dropdown ─────────────────────────────────────────────────── */
+.nav-more {
+  position:    relative;
+  display:     flex;
+  align-items: center;
+}
+
+.nav-more-toggle {
+  background:    none;
+  border:        none;
+  padding:       var(--sp-2) 0;
+  font-family:   var(--font-body);
+  font-size:     var(--fs-small);
+  font-weight:   600;
+  color:         var(--color-muted);
+  cursor:        pointer;
+  display:       flex;
+  align-items:   center;
+  gap:           4px;
+  border-bottom: 2px solid transparent;
+  line-height:   1;
+  white-space:   nowrap;
+  transition:    color 150ms ease;
+}
+
+.nav-more-toggle:hover,
+.nav-more-toggle[aria-expanded="true"] {
+  color: var(--color-text);
+}
+
+.nav-more-toggle:focus-visible {
+  outline:        2px solid var(--color-blue-aa);
+  outline-offset: 3px;
+  border-radius:  2px;
+}
+
+.nav-more-chevron {
+  width:       12px;
+  height:      12px;
+  flex-shrink: 0;
+  transition:  transform 200ms ease;
+}
+
+.nav-more-toggle[aria-expanded="true"] .nav-more-chevron {
+  transform: rotate(180deg);
+}
+
+/* Dropdown panel */
+.nav-dropdown {
+  position:       absolute;
+  top:            calc(100% + 8px);
+  right:          0;
+  background:     var(--color-card);
+  border:         1px solid var(--color-border);
+  border-radius:  var(--radius);
+  box-shadow:     0 4px 20px rgba(0,0,0,0.10);
+  min-width:      10rem;
+  padding:        var(--sp-1) 0;
+  z-index:        50;
+  opacity:        0;
+  pointer-events: none;
+  transform:      translateY(-4px);
+  transition:     opacity 150ms ease, transform 150ms ease;
+}
+
+.nav-dropdown.is-open {
+  opacity:        1;
+  pointer-events: auto;
+  transform:      translateY(0);
+}
+
+.nav-dropdown a {
+  display:         block;
+  font-size:       var(--fs-small);
+  font-weight:     600;
+  color:           var(--color-muted);
+  padding:         var(--sp-2) var(--sp-4);
+  text-decoration: none;
+  white-space:     nowrap;
+}
+
+.nav-dropdown a:hover,
+.nav-dropdown a:focus-visible {
+  color:      var(--color-text);
+  background: var(--color-bg);
+}
+
+.nav-dropdown a[aria-current="page"] {
+  color:       var(--color-text);
+  font-weight: 650;
+  background:  var(--color-bg);
+}
+
+/* ── Nav: mobile hamburger button ─────────────────────────────────────────── */
+.nav-toggle {
+  display:         none;
+  align-items:     center;
+  justify-content: center;
+  width:           40px;
+  height:          40px;
+  background:      none;
+  border:          1px solid var(--color-border);
+  border-radius:   var(--radius);
+  cursor:          pointer;
+  color:           var(--color-text);
+  flex-shrink:     0;
+}
+
+.nav-toggle:focus-visible {
+  outline:        2px solid var(--color-blue-aa);
+  outline-offset: 3px;
+}
+
+/* ── Nav: mobile drawer ───────────────────────────────────────────────────── */
+.nav-drawer {
+  position: fixed;
+  inset:    0;
+  z-index:  100;
+  display:  none;
+}
+
+.nav-drawer.is-open {
+  display: block;
+}
+
+.nav-drawer-backdrop {
+  position:   absolute;
+  inset:      0;
+  background: rgba(27, 31, 36, 0.50);
+}
+
+.nav-drawer-panel {
+  position:       absolute;
+  top:            0;
+  right:          0;
+  bottom:         0;
+  width:          min(320px, 88vw);
+  background:     var(--color-card);
+  display:        flex;
+  flex-direction: column;
+  overflow-y:     auto;
+  box-shadow:     -4px 0 24px rgba(0,0,0,0.12);
+}
+
+.nav-drawer-header {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  padding:         var(--sp-3) var(--sp-4);
+  border-bottom:   1px solid var(--color-border);
+  flex-shrink:     0;
+}
+
+.nav-drawer-close {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  width:           36px;
+  height:          36px;
+  background:      none;
+  border:          1px solid var(--color-border);
+  border-radius:   var(--radius);
+  cursor:          pointer;
+  color:           var(--color-text);
+}
+
+.nav-drawer-close:focus-visible {
+  outline:        2px solid var(--color-blue-aa);
+  outline-offset: 3px;
+}
+
+.nav-drawer-links {
+  display:        flex;
+  flex-direction: column;
+  padding:        var(--sp-2) 0;
+  flex:           1;
+}
+
+.nav-drawer-links a {
+  display:         block;
+  font-size:       1rem;
+  font-weight:     600;
+  color:           var(--color-muted);
+  padding:         var(--sp-3) var(--sp-5);
+  text-decoration: none;
+  border-bottom:   1px solid var(--color-border);
+}
+
+.nav-drawer-links a:last-child {
+  border-bottom: none;
+}
+
+.nav-drawer-links a:hover,
+.nav-drawer-links a:focus-visible {
+  color:      var(--color-text);
+  background: var(--color-bg);
+}
+
+.nav-drawer-links a[aria-current="page"] {
+  color: var(--color-text);
+}
+
+.nav-drawer-links .drawer-sub {
+  font-size:   var(--fs-small);
+  font-weight: 500;
+}
+
+.nav-drawer-divider {
+  height:     1px;
+  background: var(--color-border);
+  margin:     var(--sp-2) var(--sp-5);
+}
+
+/* Download CTA label swaps */
+.cta-label-desktop { display: inline; }
+.cta-label-mobile  { display: none;   }
+
+/* ── Responsive nav rules ─────────────────────────────────────────────────── */
+@media (max-width: 720px) {
+  .site-nav   { display: none; }
+  .nav-toggle { display: flex; }
+  .cta-label-desktop { display: none;   }
+  .cta-label-mobile  { display: inline; }
+}
+
+/* ── Active nav state ─────────────────────────────────────────────────────── */
+.site-nav a[aria-current="page"] {
+  border-bottom-color: var(--color-text);
+}
+
+/* =============================================================================
+   ABOUT PAGE — layout and content components
+   ============================================================================= */
+
+/* ── Design-decision list ─────────────────────────────────────────────────── */
+.not-list {
+  list-style: none;
+  padding:    0;
+  display:    grid;
+  grid-template-columns: 1fr;
+  gap:        var(--sp-3);
+  margin-top: var(--sp-5);
+}
+
+@media (min-width: 640px) {
+  .not-list { grid-template-columns: 1fr 1fr; }
+}
+
+.not-list__item {
+  display:       flex;
+  gap:           var(--sp-3);
+  align-items:   flex-start;
+  background:    var(--color-card);
+  border:        1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding:       var(--sp-4);
+  transition:    border-color 0.15s, box-shadow 0.15s;
+}
+
+.not-list__item:hover {
+  border-color: var(--color-border-strong);
+  box-shadow:   0 2px 12px rgba(27, 31, 36, 0.05);
+}
+
+.not-list__item-icon {
+  display:         inline-flex;
+  align-items:     center;
+  justify-content: center;
+  width:           2.25rem;
+  height:          2.25rem;
+  border:          1px solid var(--color-border);
+  border-radius:   var(--radius-sm);
+  color:           var(--color-muted);
+  flex-shrink:     0;
+  margin-top:      2px;
+}
+
+.not-list__item-icon svg {
+  width:  1rem;
+  height: 1rem;
+}
+
+.not-list__item-body strong {
+  display:       block;
+  font-weight:   650;
+  margin-bottom: 4px;
+  color:         var(--color-text);
+}
+
+.not-list__item-body p {
+  font-size:   var(--fs-small);
+  color:       var(--color-muted);
+  margin:      0;
+  line-height: 1.5;
+}
+
+/* ── Open-source feature block ────────────────────────────────────────────── */
+.oss-block {
+  background:    var(--color-card);
+  border:        1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding:       var(--sp-6);
+  margin-top:    var(--sp-5);
+  display:       grid;
+  grid-template-columns: 1fr;
+  gap:           var(--sp-4);
+  align-items:   center;
+}
+
+@media (min-width: 720px) {
+  .oss-block {
+    grid-template-columns: 1fr auto;
+    gap:                   var(--sp-6);
+  }
+}
+
+.oss-block__badge {
+  display:        inline-flex;
+  align-items:    center;
+  gap:            var(--sp-2);
+  font-size:      var(--fs-kicker);
+  font-weight:    700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color:          #1A7040;
+  background:     #E6F9EE;
+  border-radius:  var(--radius-sm);
+  padding:        3px 10px;
+  margin-bottom:  var(--sp-3);
+}
+
+.oss-block__cta {
+  display:         inline-flex;
+  align-items:     center;
+  gap:             var(--sp-2);
+  font-size:       var(--fs-small);
+  font-weight:     650;
+  color:           var(--color-blue-aa);
+  background:      #E8F0FD;
+  border-radius:   var(--radius);
+  padding:         var(--sp-3) var(--sp-4);
+  text-decoration: none;
+  white-space:     nowrap;
+  transition:      background 150ms ease;
+}
+
+.oss-block__cta:hover {
+  background: #D2E3FC;
+}
+
+.oss-block__cta:focus-visible {
+  outline:        2px solid var(--color-blue-aa);
+  outline-offset: 2px;
+}
+
+.oss-block__cta svg {
+  width:  1.1rem;
+  height: 1.1rem;
+}
+
+/* ── Person / bio section ─────────────────────────────────────────────────── */
+.about-profile {
+  display:     grid;
+  grid-template-columns: 1fr;
+  gap:         var(--sp-5);
+  align-items: start;
+  margin-top:  var(--sp-5);
+}
+
+@media (min-width: 720px) {
+  .about-profile {
+    grid-template-columns: 10rem 1fr;
+    gap:                   var(--sp-6);
+  }
+}
+
+/* Avatar placeholder — shown only when no real photo is provided */
+.about-avatar {
+  width:           10rem;
+  height:          10rem;
+  background:      var(--color-bg);
+  border:          1px solid var(--color-border);
+  border-radius:   var(--radius);
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  color:           var(--color-border-strong);
+  flex-shrink:     0;
+}
+
+.about-avatar svg {
+  width:  3rem;
+  height: 3rem;
+}
+
+.about-bio-name {
+  font-size:      clamp(1.375rem, 1rem + 1.9vw, 1.875rem);
+  font-weight:    700;
+  line-height:    1.1;
+  letter-spacing: -0.015em;
+  margin-bottom:  var(--sp-1);
+  color:          var(--color-text);
+}
+
+.about-bio-title {
+  font-size:     var(--fs-small);
+  color:         var(--color-muted);
+  font-weight:   500;
+  margin-bottom: var(--sp-4);
+}
+
+.about-tag-row {
+  display:    flex;
+  flex-wrap:  wrap;
+  gap:        var(--sp-2);
+  margin-top: var(--sp-4);
+}
+
+/* ── Contact card ─────────────────────────────────────────────────────────── */
+.contact-card {
+  background:    var(--color-card);
+  border:        1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding:       var(--sp-5);
+  max-width:     36rem;
+  margin-top:    var(--sp-5);
+}
+
+.contact-card__email {
+  display:         inline-flex;
+  align-items:     center;
+  gap:             var(--sp-2);
+  font-size:       var(--fs-h3);
+  font-weight:     650;
+  color:           var(--color-blue-aa);
+  text-decoration: none;
+  margin-bottom:   var(--sp-3);
+}
+
+.contact-card__email:hover {
+  color: var(--color-text);
+}
+
+.contact-card__email:focus-visible {
+  outline:        2px solid var(--color-blue-aa);
+  outline-offset: 2px;
+  border-radius:  var(--radius-sm);
+}
+
+.contact-card ul {
+  list-style:  none;
+  padding:     0;
+  margin-top:  var(--sp-3);
+  display:     flex;
+  flex-direction: column;
+  gap:         var(--sp-3);
+}
+
+.contact-card li {
+  font-size:   var(--fs-small);
+  color:       var(--color-muted);
+  line-height: 1.5;
+}
+
+.contact-card li strong {
+  display:       block;
+  color:         var(--color-text);
+  font-weight:   650;
+  margin-bottom: 2px;
+}
+
+/* ── Status card row ──────────────────────────────────────────────────────── */
+.status-cards {
+  display:               grid;
+  grid-template-columns: 1fr;
+  gap:                   var(--sp-4);
+  margin-top:            var(--sp-5);
+}
+
+@media (min-width: 640px) {
+  .status-cards { grid-template-columns: 1fr 1fr 1fr; }
+}
+
+.status-card {
+  background:    var(--color-card);
+  border:        1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding:       var(--sp-5);
+}
+
+.status-card__icon {
+  display:         inline-flex;
+  align-items:     center;
+  justify-content: center;
+  width:           3rem;
+  height:          3rem;
+  border:          1px solid var(--color-border);
+  border-radius:   var(--radius);
+  color:           var(--color-text);
+  margin-bottom:   var(--sp-4);
+}
+
+.status-card__icon svg {
+  width:  1.5rem;
+  height: 1.5rem;
+}
+
+.status-card h3 {
+  font-size:     var(--fs-h3);
+  font-weight:   650;
+  margin-bottom: var(--sp-2);
+  color:         var(--color-text);
+}
+
+.status-card p {
+  font-size:   var(--fs-small);
+  color:       var(--color-muted);
+  line-height: 1.6;
+}
+
+/* ── Principle list ───────────────────────────────────────────────────────── */
+.principle-list {
+  list-style: none;
+  padding:    0;
+  display:    flex;
+  flex-direction: column;
+  gap:        0;
+  margin-top: var(--sp-5);
+  border:     1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow:   hidden;
+}
+
+.principle-list li {
+  display:       flex;
+  gap:           var(--sp-4);
+  align-items:   flex-start;
+  padding:       var(--sp-4) var(--sp-5);
+  border-bottom: 1px solid var(--color-border);
+  background:    var(--color-card);
+  transition:    background 0.12s;
+}
+
+.principle-list li:last-child {
+  border-bottom: none;
+}
+
+.principle-list li:hover {
+  background: var(--color-bg);
+}
+
+.principle-num {
+  font-size:      var(--fs-h3);
+  font-weight:    700;
+  color:          var(--color-muted);
+  flex-shrink:    0;
+  line-height:    1.4;
+  min-width:      1.5rem;
+}
+
+.principle-body strong {
+  display:       block;
+  font-weight:   650;
+  color:         var(--color-text);
+  margin-bottom: 4px;
+}
+
+.principle-body p {
+  font-size:   var(--fs-small);
+  color:       var(--color-muted);
+  line-height: 1.5;
+  margin:      0;
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<!-- ─────────────────────────────────────────────────────────────────────────
+     THE ICON SET — one sprite, defined once, used everywhere via
+     <svg class="icon"><use href="#i-NAME"/></svg>.
+     Design rules: 24×24 viewBox, stroke-width 2, stroke="currentColor",
+     fill: none, stroke-linecap: butt, stroke-linejoin: miter.
+     Straight lines and rectangles ONLY — no circles, no curves.
+     ───────────────────────────────────────────────────────────────────────── -->
+<svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+  <defs>
+    <symbol id="i-screen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <rect x="2" y="3" width="20" height="14"/>
+      <line x1="8" y1="21" x2="16" y2="21"/>
+      <line x1="12" y1="17" x2="12" y2="21"/>
+      <polyline points="9,7 13,15 15.5,10.5"/>
+    </symbol>
+    <symbol id="i-dialog" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <rect x="4" y="5" width="16" height="13"/>
+      <line x1="4" y1="9" x2="20" y2="9"/>
+      <rect x="7" y="12.5" width="4" height="3"/>
+      <rect x="13" y="12.5" width="4" height="3"/>
+    </symbol>
+    <symbol id="i-band" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <rect x="2" y="3" width="20" height="16"/>
+      <line x1="2" y1="7.5" x2="22" y2="7.5" stroke-width="3"/>
+    </symbol>
+    <symbol id="i-log" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <rect x="5" y="2" width="14" height="20"/>
+      <line x1="8" y1="7" x2="16" y2="7"/>
+      <line x1="8" y1="11" x2="16" y2="11"/>
+      <line x1="8" y1="15" x2="14" y2="15"/>
+    </symbol>
+    <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <polyline points="6,2 6,22 18,22 18,8 12,2 6,2"/>
+      <polyline points="12,2 12,8 18,8"/>
+    </symbol>
+    <symbol id="i-address" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <rect x="2" y="8" width="20" height="8"/>
+      <line x1="9.33" y1="8" x2="9.33" y2="16"/>
+      <line x1="16.67" y1="8" x2="16.67" y2="16"/>
+    </symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <polyline points="2,6 2,20 22,20 22,8 11,8 9,6 2,6"/>
+    </symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <rect x="7" y="7" width="14" height="14"/>
+      <polyline points="17,7 17,3 3,3 3,17 7,17"/>
+    </symbol>
+    <symbol id="i-arrival" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <rect x="3" y="9" width="12" height="12"/>
+      <polyline points="14,4 21,4 21,11"/>
+      <line x1="21" y1="4" x2="10" y2="15"/>
+    </symbol>
+    <symbol id="i-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <line x1="4" y1="4" x2="20" y2="20"/>
+      <line x1="20" y1="4" x2="4" y2="20"/>
+    </symbol>
+    <symbol id="i-monitors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <rect x="2" y="4" width="12" height="9"/>
+      <rect x="12" y="8" width="10" height="8"/>
+    </symbol>
+    <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <line x1="12" y1="3" x2="12" y2="15"/>
+      <polyline points="6,10 12,16 18,10"/>
+      <line x1="4" y1="21" x2="20" y2="21"/>
+    </symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <line x1="4" y1="12" x2="20" y2="12"/>
+      <polyline points="14,6 20,12 14,18"/>
+    </symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+      <line x1="3" y1="6"  x2="21" y2="6"/>
+      <line x1="3" y1="12" x2="21" y2="12"/>
+      <line x1="3" y1="18" x2="21" y2="18"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="page">
+
+<!-- ─────────────────────────────────────────────────────────────────────────
+     HEADER — sticky, light, download on every page.
+     ROUND 5 NAV CHANGES: SmartScreen → Security warning; Download added;
+     Privacy + Terms + Changelog + About in More ▾ dropdown; mobile drawer.
+     ───────────────────────────────────────────────────────────────────────── -->
+<header class="site-header">
+  <div class="contained">
+    <a class="brand" href="/">
+      <svg viewBox="0 0 16 16" aria-hidden="true" width="28" height="28">
+        <polyline points="4.631,2.512 9.387,11.495 11.325,7.620" fill="none" stroke="#17191E" stroke-width="2.6"/>
+      </svg>
+      <span>FlashDesk</span>
+    </a>
+
+    <!-- Desktop nav — hidden below 720px -->
+    <nav class="site-nav" aria-label="Site">
+      <a href="/" data-nav="home">Home</a>
+      <a href="/how-it-works/" data-nav="how-it-works">How it works</a>
+      <a href="/download/" data-nav="download">Download</a>
+      <a href="/faq/" data-nav="faq">FAQ</a>
+      <a href="/security-warning/" data-nav="security-warning">Security warning</a>
+      <!-- More dropdown: Privacy · Terms · Changelog · About -->
+      <div class="nav-more">
+        <button
+          class="nav-more-toggle"
+          aria-expanded="false"
+          aria-controls="nav-more-dropdown"
+          aria-haspopup="true"
+          type="button"
+        >
+          More
+          <svg class="nav-more-chevron" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter" aria-hidden="true">
+            <polyline points="2,4 6,8 10,4"/>
+          </svg>
+        </button>
+        <div
+          class="nav-dropdown"
+          id="nav-more-dropdown"
+          role="menu"
+        >
+          <a href="/privacy/" role="menuitem">Privacy</a>
+          <a href="/terms/" role="menuitem">Terms</a>
+          <a href="/changelog/" role="menuitem">Changelog</a>
+          <a href="/about/" role="menuitem" aria-current="page">About</a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Mobile hamburger — shown below 720px -->
+    <button
+      class="nav-toggle"
+      id="nav-toggle-btn"
+      aria-expanded="false"
+      aria-controls="nav-drawer"
+      aria-label="Open navigation menu"
+      type="button"
+    >
+      <svg class="icon" aria-hidden="true"><use href="#i-menu"/></svg>
+    </button>
+
+    <!-- Header CTA — label adapts at 720px breakpoint via CSS -->
+    <a class="header-cta" href="/download/" data-label-mobile="Download">
+      <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+      <span class="cta-label-desktop">Download .exe — free</span>
+      <span class="cta-label-mobile">Download</span>
+    </a>
+  </div>
+</header>
+
+<!-- Mobile nav drawer — outside the header so it can overlay the full viewport -->
+<div
+  class="nav-drawer"
+  id="nav-drawer"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Navigation"
+>
+  <div class="nav-drawer-backdrop" id="nav-drawer-backdrop"></div>
+  <div class="nav-drawer-panel">
+    <div class="nav-drawer-header">
+      <a class="brand" href="/">
+        <svg viewBox="0 0 16 16" aria-hidden="true" width="24" height="24">
+          <polyline points="4.631,2.512 9.387,11.495 11.325,7.620" fill="none" stroke="#17191E" stroke-width="2.6"/>
+        </svg>
+        <span>FlashDesk</span>
+      </a>
+      <button
+        class="nav-drawer-close"
+        id="nav-drawer-close"
+        aria-label="Close navigation menu"
+        type="button"
+      >
+        <svg class="icon" aria-hidden="true"><use href="#i-close"/></svg>
+      </button>
+    </div>
+    <nav class="nav-drawer-links" aria-label="Mobile site navigation">
+      <a href="/" data-nav="home">Home</a>
+      <a href="/how-it-works/" data-nav="how-it-works">How it works</a>
+      <a href="/download/" data-nav="download">Download</a>
+      <a href="/faq/" data-nav="faq">FAQ</a>
+      <a href="/security-warning/" data-nav="security-warning">Security warning</a>
+      <div class="nav-drawer-divider"></div>
+      <a href="/privacy/" class="drawer-sub" data-nav="privacy">Privacy</a>
+      <a href="/terms/" class="drawer-sub" data-nav="terms">Terms</a>
+      <a href="/changelog/" class="drawer-sub" data-nav="changelog">Changelog</a>
+      <a href="/about/" class="drawer-sub" data-nav="about" aria-current="page">About</a>
+    </nav>
+  </div>
+</div>
+
+<main id="main-content">
+
+<!-- ─────────────────────────────────────────────────────────────────────────
+     HERO — the question this page exists to answer
+     ───────────────────────────────────────────────────────────────────────── -->
+<section class="band band-paper">
+  <div class="contained">
+    <span class="kicker">The project</span>
+    <h1>Why FlashDesk exists</h1>
+    <p class="lead" style="max-width:44rem;">Every mainstream remote support tool requires the person asking for help to solve a harder problem before the help can begin. FlashDesk was built to remove that obstacle — and to do it without asking either person to give up control.</p>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────────────────────────────────────
+     ORIGIN STORY
+     ───────────────────────────────────────────────────────────────────────── -->
+<section class="band band-alt">
+  <div class="contained">
+    <span class="kicker">The origin</span>
+    <h2>A specific frustration with existing tools</h2>
+    <div style="max-width:44rem;">
+      <p>TeamViewer and AnyDesk are capable tools built for IT departments and managed devices. When you try to use them for individual support — a retired parent, a small business owner, a friend who does not know what a firewall is — you hit a mismatch immediately. They must download an installer, navigate a UAC prompt, create or share an account ID, and follow instructions that assume they know what a "module" or "remote session" means. The person calling for help is often calling because their computer has already stopped working as expected. Asking them to correctly execute a multi-step setup process before the help can start is asking them to succeed at the kind of task they called about failing at.</p>
+      <p>The design constraint that has shaped FlashDesk from the first version is straightforward: the person receiving help must stay in control at every moment. Not "mostly in control," not "in control unless they forget to check a setting." They see the connection request. They press Accept. They see a permanent indicator that cannot be dismissed while the session is active. They can end it with one click, any time, for any reason. These are not safety features bolted on afterwards — they are the architecture. The program was built around them, which is why they cannot be circumvented.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────────────────────────────────────
+     DESIGN PRINCIPLES — what the architecture enforces
+     ───────────────────────────────────────────────────────────────────────── -->
+<section class="band band-paper">
+  <div class="contained">
+    <span class="kicker">How it works in practice</span>
+    <h2>Control is the architecture, not the policy</h2>
+    <p style="max-width:44rem;color:var(--color-muted);">The following are not settings or toggles. They are properties of how the program is written.</p>
+    <ol class="principle-list">
+      <li>
+        <span class="principle-num">1</span>
+        <div class="principle-body">
+          <strong>The first connection always requires an explicit Accept</strong>
+          <p>A dialog appears before the session opens. There is no way to bypass it, and no way for the person helping to press it on your behalf. You accept or you reject.</p>
+        </div>
+      </li>
+      <li>
+        <span class="principle-num">2</span>
+        <div class="principle-body">
+          <strong>The session indicator cannot be hidden</strong>
+          <p>A band across the top of the FlashDesk window turns amber while anyone is connected. The person helping cannot remove, minimise or dismiss it. You always know the session is active.</p>
+        </div>
+      </li>
+      <li>
+        <span class="principle-num">3</span>
+        <div class="principle-body">
+          <strong>One click ends the session immediately</strong>
+          <p>The Stop sharing button works at any moment, with no confirmation step. There is no way to prevent you from pressing it.</p>
+        </div>
+      </li>
+      <li>
+        <span class="principle-num">4</span>
+        <div class="principle-body">
+          <strong>Closing the window ends the session completely</strong>
+          <p>FlashDesk does not run in the background after the window is closed. There is no tray icon, no persistent service, no way back in once the file is closed.</p>
+        </div>
+      </li>
+      <li>
+        <span class="principle-num">5</span>
+        <div class="principle-body">
+          <strong>Nothing is installed and nothing is left behind</strong>
+          <p>The program does not write to the registry or install services. Close it and the only trace is the file itself, which you downloaded and can delete.</p>
+        </div>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────────────────────────────────────
+     WHAT FLASHDESK IS NOT — design decisions, not limitations
+     ───────────────────────────────────────────────────────────────────────── -->
+<section class="band band-alt">
+  <div class="contained">
+    <span class="kicker">Design decisions, not limitations</span>
+    <h2>What FlashDesk is not</h2>
+    <p style="max-width:44rem;color:var(--color-muted);">Each item below is something FlashDesk could have been but was deliberately not built to be. The reason is the same in every case: removing it removes a reason not to trust the tool.</p>
+    <ul class="not-list">
+      <li class="not-list__item">
+        <div class="not-list__item-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter"><rect x="3" y="5" width="18" height="14"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </div>
+        <div class="not-list__item-body">
+          <strong>Not a subscription product</strong>
+          <p>Free to use with no trial period, no usage cap, and no paid tier. There is nothing to buy, no credit card to enter, and no expiry date on any feature.</p>
+        </div>
+      </li>
+      <li class="not-list__item">
+        <div class="not-list__item-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter"><rect x="5" y="2" width="14" height="20"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="14" y2="11"/><line x1="8" y1="15" x2="14" y2="15"/></svg>
+        </div>
+        <div class="not-list__item-body">
+          <strong>Not a persistent agent</strong>
+          <p>Nothing runs in the background when the window is closed. FlashDesk does not start on login, does not run as a service, and does not communicate with anything when you are not using it.</p>
+        </div>
+      </li>
+      <li class="not-list__item">
+        <div class="not-list__item-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter"><rect x="2" y="8" width="20" height="8"/><line x1="9.33" y1="8" x2="9.33" y2="16"/><line x1="16.67" y1="8" x2="16.67" y2="16"/></svg>
+        </div>
+        <div class="not-list__item-body">
+          <strong>No account required</strong>
+          <p>Neither person creates a login. There is no profile, no password, no email address to verify, nothing to remember and nothing that can be hacked to get access to your machine.</p>
+        </div>
+      </li>
+      <li class="not-list__item">
+        <div class="not-list__item-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter"><rect x="3" y="3" width="18" height="18"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+        </div>
+        <div class="not-list__item-body">
+          <strong>No corporate data collection</strong>
+          <p>Session content is never stored. The relay server connects the two sides and sees nothing of what passes through it. There is no analytics platform, no usage telemetry, no data sold to third parties.</p>
+        </div>
+      </li>
+      <li class="not-list__item">
+        <div class="not-list__item-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter"><rect x="2" y="3" width="20" height="14"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><polyline points="9,7 13,15 15.5,10.5"/></svg>
+        </div>
+        <div class="not-list__item-body">
+          <strong>Not a screen recorder</strong>
+          <p>FlashDesk does not record, save, or export the session in any form. What you share during a session is not retained — not on the relay server, not on the helper's machine, not anywhere.</p>
+        </div>
+      </li>
+      <li class="not-list__item">
+        <div class="not-list__item-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter"><rect x="2" y="4" width="12" height="9"/><rect x="12" y="8" width="10" height="8"/></svg>
+        </div>
+        <div class="not-list__item-body">
+          <strong>Windows only, by deliberate choice</strong>
+          <p>The people who call for individual computer support are almost always on Windows. Not attempting cross-platform support keeps the codebase smaller, the program simpler, and every claim on this site verifiable.</p>
+        </div>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────────────────────────────────────
+     OPEN SOURCE
+     ───────────────────────────────────────────────────────────────────────── -->
+<section class="band band-paper">
+  <div class="contained">
+    <span class="kicker">Transparency</span>
+    <h2>Open source</h2>
+    <p style="max-width:44rem;color:var(--color-muted);">Publishing the source code is the strongest trust signal available for a tool that has access to someone's screen. You do not have to take this site's word for what the program does — you can read it.</p>
+    <div class="oss-block">
+      <div>
+        <div class="oss-block__badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter" aria-hidden="true" width="13" height="13"><polyline points="6,2 6,22 18,22 18,8 12,2 6,2"/><polyline points="12,2 12,8 18,8"/></svg>
+          MIT License
+        </div>
+        <h3 style="font-size:var(--fs-h3);font-weight:650;margin-bottom:var(--sp-2);">github.com/conorhonor111-art/flashdesk</h3>
+        <p style="color:var(--color-muted);max-width:36rem;font-size:var(--fs-small);line-height:1.6;">The full source — desktop client, relay server, and build scripts — is public on GitHub under the MIT License. You can read exactly what the program does, verify any claim made on this site, fork it, or build on it. Issues and pull requests are open.</p>
+      </div>
+      <a class="oss-block__cta" href="https://github.com/conorhonor111-art/flashdesk" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter" aria-hidden="true" width="16" height="16"><rect x="3" y="9" width="12" height="12"/><polyline points="14,4 21,4 21,11"/><line x1="21" y1="4" x2="10" y2="15"/></svg>
+        View on GitHub
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────────────────────────────────────
+     WHO BUILT IT
+     ───────────────────────────────────────────────────────────────────────── -->
+<section class="band band-alt">
+  <div class="contained">
+    <span class="kicker">The person behind it</span>
+    <h2>Who built FlashDesk</h2>
+    <div class="about-profile">
+      <!-- Avatar placeholder — replaced when a professional photo is available -->
+      <div class="about-avatar" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="miter">
+          <rect x="7" y="3" width="10" height="9"/>
+          <polyline points="4,22 4,16 20,16 20,22"/>
+        </svg>
+      </div>
+      <div>
+        <p class="about-bio-name">Conor Honor</p>
+        <p class="about-bio-title">Independent computer specialist &mdash; Kyiv, Ukraine</p>
+        <p>Conor has worked in individual and small-business IT support since 2019. The work is almost entirely one-to-one: a laptop that will not start, software that has stopped making sense, a family member trying to understand something their bank sent them. Not managed IT, not a helpdesk — the kind of support where the person on the other end is trusting you personally, often because they have no one else to ask.</p>
+        <p style="margin-top:var(--sp-4);">FlashDesk was built for those clients. When remote access is part of the job, the tool you use either supports that trust or quietly undermines it. The tools that existed were designed for IT departments managing hundreds of devices. For a one-person practice working with non-technical individuals, they were always either too complex, too persistent, or too opaque. FlashDesk is the tool that should have already existed.</p>
+        <p style="margin-top:var(--sp-4);">Working from Kyiv means every version of FlashDesk has been used for real support sessions before it was released. That is not a differentiator being marketed — it is just how the development process works when the person who writes the code is also the person who uses it.</p>
+        <div class="about-tag-row">
+          <span class="badge badge-neutral">Kyiv, Ukraine</span>
+          <span class="badge badge-neutral">Support work since 2019</span>
+          <span class="badge badge-green">Uses FlashDesk in production</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────────────────────────────────────
+     CONTACT AND SUPPORT
+     ───────────────────────────────────────────────────────────────────────── -->
+<section class="band band-paper">
+  <div class="contained">
+    <span class="kicker">Get in touch</span>
+    <h2>Contact and support</h2>
+    <p style="max-width:44rem;color:var(--color-muted);">If you have a question this site does not answer — or if you want to verify that the person asking you to use FlashDesk is who they say they are — write.</p>
+    <div class="contact-card">
+      <a class="contact-card__email" href="mailto:support@flashdesk.org">
+        <svg class="icon" aria-hidden="true"><use href="#i-arrival"/></svg>
+        support@flashdesk.org
+      </a>
+      <p style="color:var(--color-muted);font-size:var(--fs-small);">Support questions are answered by Conor directly. There is no support team, no ticket system, no autoresponder. If you write, a person reads it and a person answers it.</p>
+      <ul>
+        <li>
+          <strong>Response time</strong>
+          Typically within 24 hours on weekdays. Occasionally longer during busy periods — you will get a reply.
+        </li>
+        <li>
+          <strong>What to ask</strong>
+          Questions about whether the tool is safe, whether it will work for your situation, whether a specific person asking you to use it is legitimate, or anything else this site did not cover.
+        </li>
+        <li>
+          <strong>Language</strong>
+          English or Ukrainian.
+        </li>
+      </ul>
+    </div>
+
+    <div class="warning-band mt-5" style="max-width:44rem;">
+      <div class="warning-band__icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter" aria-hidden="true"><polyline points="2,21 12,3 22,21 2,21"/><line x1="12" y1="9" x2="12" y2="14"/><line x1="12" y1="17" x2="12" y2="18.5"/></svg>
+      </div>
+      <div class="warning-band__body">
+        <strong>FlashDesk will never telephone you.</strong> If someone calls claiming to be us and asks you to download or run anything, hang up. Only use FlashDesk if you contacted us yourself.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────────────────────────────────────
+     FOUNDING AND STATUS
+     ───────────────────────────────────────────────────────────────────────── -->
+<section class="band band-alt">
+  <div class="contained">
+    <span class="kicker">Project status</span>
+    <h2>Founding and maintenance</h2>
+    <div class="status-cards">
+      <div class="status-card">
+        <div class="status-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter" aria-hidden="true"><rect x="5" y="2" width="14" height="20"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="14" y2="15"/></svg>
+        </div>
+        <h3>Started in 2024</h3>
+        <p>FlashDesk was first built in 2024 to solve a specific problem in real support work. The first public release was v0.4.0-1. Development has been continuous since.</p>
+      </div>
+      <div class="status-card">
+        <div class="status-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter" aria-hidden="true"><rect x="2" y="3" width="20" height="14"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><polyline points="9,7 13,15 15.5,10.5"/></svg>
+        </div>
+        <h3>Actively maintained</h3>
+        <p>Current release: <strong>v0.4.0-17</strong>, updated September 2026. Releases happen when there is something worth changing, not on a schedule. There have been 17 revisions since the first public release.</p>
+      </div>
+      <div class="status-card">
+        <div class="status-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter" aria-hidden="true"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="14,6 20,12 14,18"/></svg>
+        </div>
+        <h3>Long-term intent</h3>
+        <p>FlashDesk will remain free, open source, and honest. No investor funding, no plans for a paid tier, no acquisition path. The whole brief is a tool that works well and can be trusted.</p>
+      </div>
+    </div>
+    <p class="meta mt-4">
+      <a class="inline-link" href="/changelog/">Full version history in the changelog &rarr;</a>
+    </p>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────────────────────────────────────
+     BOTTOM CTA BAND — every page ends with a CTA
+     ───────────────────────────────────────────────────────────────────────── -->
+<section class="band band-tile">
+  <div class="contained" style="text-align:center;">
+    <h2 style="color:var(--color-tile-text);margin-bottom:var(--sp-4);">Ready to get help?</h2>
+    <p class="lead" style="color:var(--color-tile-muted);margin-bottom:var(--sp-5);">One file. Nothing installs. Works on Windows 10 and 11.</p>
+    <a class="btn btn-blue" href="https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe">
+      <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+      Download FlashDesk — free
+    </a>
+    <p style="margin-top:var(--sp-4);font-size:var(--fs-small);color:var(--color-tile-muted);">
+      About 70&nbsp;MB &middot; Free &middot;
+      <a class="inline-link" style="color:var(--color-tile-muted);" href="/security-warning/">Windows will warn you — here's what to expect</a>
+    </p>
+    <p style="margin-top:var(--sp-2);font-size:var(--fs-small);color:var(--color-tile-muted);">
+      <a class="inline-link" style="color:var(--color-tile-muted);" href="https://flashdesk.org/dl/FlashDesk-setup.msi">Prefer a Windows installer (.msi)?</a>
+    </p>
+  </div>
+</section>
+
+</main>
+
+<!-- ─────────────────────────────────────────────────────────────────────────
+     FOOTER — dark tile; deliberate, not a leftover.
+     ───────────────────────────────────────────────────────────────────────── -->
+<footer class="site-footer">
+  <div class="footer-top">
+    <div class="footer-brand">
+      <a class="brand" href="/">
+        <svg viewBox="0 0 16 16" aria-hidden="true" width="28" height="28">
+          <rect x="1" y="1" width="14" height="14" rx="3.5" fill="#17191E"/>
+          <polyline points="4.631,2.512 9.387,11.495 11.325,7.620" fill="none" stroke="#2BD16B" stroke-width="2.6"/>
+        </svg>
+        <span>FlashDesk</span>
+      </a>
+      <p>Remote support for your computer. One file, nothing installs.</p>
+    </div>
+
+    <nav class="footer-col" aria-label="Product">
+      <h3>Product</h3>
+      <a href="/" data-nav="home">Home</a>
+      <a href="/how-it-works/" data-nav="how-it-works">How it works</a>
+      <a href="/download/" data-nav="download">Download</a>
+      <a href="/changelog/" data-nav="changelog">Changelog</a>
+    </nav>
+
+    <nav class="footer-col" aria-label="Legal">
+      <h3>Legal</h3>
+      <a href="/privacy/" data-nav="privacy">Privacy</a>
+      <a href="/terms/" data-nav="terms">Terms</a>
+    </nav>
+
+    <nav class="footer-col" aria-label="Help">
+      <h3>Help</h3>
+      <a href="/faq/" data-nav="faq">FAQ</a>
+      <a href="/security-warning/" data-nav="security-warning">Security warning</a>
+      <a href="/about/" data-nav="about" aria-current="page">About</a>
+      <a href="mailto:support@flashdesk.org">support@flashdesk.org</a>
+    </nav>
+  </div>
+
+  <div class="footer-bottom">
+    <p class="footer-meta">&copy; 2026 FlashDesk. All rights reserved. Made in Kyiv by Conor Honor.</p>
+    <!--
+      Wording unchanged from the last two rounds — this line matters more than
+      the rest of the footer (Conor's own words). Canonical form.
+    -->
+    <p class="footer-warning">FlashDesk will never telephone you. If someone calls claiming to be us, hang up.</p>
+  </div>
+</footer>
+
+</div><!-- /.page -->
+
+<!-- ── Interactive scripts ────────────────────────────────────────────────────
+     Two behaviours:
+       1. More ▾ dropdown open/close
+       2. Mobile nav drawer open/close + focus management
+     Progressive enhancement: page is fully usable without JavaScript.
+     ──────────────────────────────────────────────────────────────────────── -->
+<script>
+(function () {
+  'use strict';
+
+  /* ── 1. More ▾ dropdown ──────────────────────────────────────────── */
+  var moreToggle   = document.querySelector('.nav-more-toggle');
+  var moreDropdown = document.getElementById('nav-more-dropdown');
+
+  function closeDropdown() {
+    if (!moreToggle || !moreDropdown) return;
+    moreDropdown.classList.remove('is-open');
+    moreToggle.setAttribute('aria-expanded', 'false');
+  }
+
+  if (moreToggle && moreDropdown) {
+    moreToggle.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var isOpen = moreDropdown.classList.contains('is-open');
+      if (isOpen) {
+        closeDropdown();
+      } else {
+        moreDropdown.classList.add('is-open');
+        moreToggle.setAttribute('aria-expanded', 'true');
+      }
+    });
+
+    /* Close on outside click */
+    document.addEventListener('click', function () { closeDropdown(); });
+    moreDropdown.addEventListener('click', function (e) { e.stopPropagation(); });
+
+    /* Close on Escape */
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeDropdown();
+    });
+  }
+
+  /* ── 2. Mobile nav drawer ────────────────────────────────────────── */
+  var toggleBtn   = document.getElementById('nav-toggle-btn');
+  var drawer      = document.getElementById('nav-drawer');
+  var drawerClose = document.getElementById('nav-drawer-close');
+  var backdrop    = document.getElementById('nav-drawer-backdrop');
+
+  function openDrawer() {
+    if (!drawer || !toggleBtn) return;
+    drawer.classList.add('is-open');
+    toggleBtn.setAttribute('aria-expanded', 'true');
+    document.body.style.overflow = 'hidden';
+    if (drawerClose) drawerClose.focus();
+  }
+
+  function closeDrawer() {
+    if (!drawer || !toggleBtn) return;
+    drawer.classList.remove('is-open');
+    toggleBtn.setAttribute('aria-expanded', 'false');
+    document.body.style.overflow = '';
+    toggleBtn.focus();
+  }
+
+  if (toggleBtn)   toggleBtn.addEventListener('click', openDrawer);
+  if (drawerClose) drawerClose.addEventListener('click', closeDrawer);
+  if (backdrop)    backdrop.addEventListener('click', closeDrawer);
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && drawer && drawer.classList.contains('is-open')) {
+      closeDrawer();
+    }
+  });
+}());
+</script>
+
+</body>
+</html>

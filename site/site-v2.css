@@ -1,5 +1,5 @@
 /*
-  FlashDesk — site-v2.css   (upgraded · round 5 · 2026-09-20)
+  FlashDesk — site-v2.css   (upgraded · round 6 · 2026-09-21)
 
   Full design-system upgrade incorporating:
     — All required CSS custom properties (--color-*, --sp-1…5, --radius, --font-body)
@@ -14,6 +14,23 @@
     — Mobile breakpoints at 480px and 720px / 768px
     — Amber LIVE-state token pair (--color-amber / --color-amber-text)
     — All existing component class names preserved
+
+  ROUND 6 ADDITIONS:
+    — Differentiated radius tokens (--radius-sm: 6px / --radius: 12px / --radius-lg: 20px)
+    — Mobile hamburger drawer (.nav-toggle, .site-nav.is-open, .nav-backdrop)
+    — Trust bar + trust pill components (.trust-bar, .trust-pill)
+    — Version badge (.version-badge)
+    — Download card / file-choice (.download-options, .download-card, .download-card__*)
+    — Warning band (.warning-band, .warning-band__icon) — distinct from .band-amber
+    — FAQ anchor nav (.faq-nav)
+    — Comparison table (.comparison-table)
+    — Hero kicker (.hero-kicker) — above h1, brand-coloured
+    — CTA label standardisation comment (.btn-blue, .header-cta white-space: nowrap)
+    — Changelog / version timeline (.release-list, .release-item, .release-item__*)
+    — Feature card enhancements (.feature-card, .feature-grid)
+    — Stats / social-proof bar (.stats-bar, .stat-item)
+    — Improved step indicators (.steps-visual, .step-dot)
+    — Badge and tag styles (.badge, .tag, .tag-*)
 
   COLOUR ARGUMENT (unchanged from round 4): six real competitor sites — TeamViewer, Splashtop,
   1Password, Proton, Bitwarden, Mullvad — were fetched directly on 2026-09-04. All six are
@@ -125,10 +142,16 @@
   --sp-8: 96px;    /*  96px */
   --sp-9: 128px;   /* 128px */
 
-  /* ── RADIUS — one value used everywhere ────────────────────────────────── */
-  --radius:    12px;
-  --radius-sm: 12px;   /* kept for existing references */
-  --radius-lg: 12px;   /* kept for existing references */
+  /* ── RADIUS — differentiated per element scale ─────────────────────────── */
+  /*
+    Round 6: three distinct radii replace the previous flat 12px.
+    --radius-sm: pill labels, badges, inline code, hash blocks, small chips
+    --radius:    cards, inputs, callout labels, most containers
+    --radius-lg: hero frame, modal sheets, CTA bands, large featured blocks
+  */
+  --radius-sm: 6px;    /* pill labels, badges, hash blocks       */
+  --radius:    12px;   /* cards, inputs, callout labels          */
+  --radius-lg: 20px;   /* hero frame, modal sheets, CTA bands    */
 
   /* ── TYPOGRAPHY ─────────────────────────────────────────────────────────── */
   --font-body: 'Inter', 'Inter Fallback', 'Segoe UI', sans-serif;
@@ -542,6 +565,73 @@ ul.plain li::before {
 }
 
 /* =============================================================================
+   FEATURE GRID / FEATURE CARDS — round 6 addition
+   Enhanced card variant for feature sections with icon, heading and body copy.
+   ============================================================================= */
+
+.feature-grid {
+  display:               grid;
+  grid-template-columns: 1fr;
+  gap:                   var(--sp-4);   /* 24px */
+}
+
+@media (min-width: 640px) {
+  .feature-grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (min-width: 960px) {
+  .feature-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+}
+
+.feature-card {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--sp-3);   /* 16px */
+  background:     var(--color-card);
+  border:         1px solid var(--color-border);
+  border-radius:  var(--radius);
+  padding:        var(--sp-5);   /* 32px */
+  transition:     border-color 0.15s, box-shadow 0.15s;
+}
+
+.feature-card:hover {
+  border-color: var(--color-border-strong);
+  box-shadow:   0 2px 12px rgba(27, 31, 36, 0.06);
+}
+
+.feature-card__icon {
+  display:         inline-flex;
+  align-items:     center;
+  justify-content: center;
+  width:           2.75rem;
+  height:          2.75rem;
+  background:      var(--color-bg);
+  border:          1px solid var(--color-border);
+  border-radius:   var(--radius);
+  color:           var(--color-brand);
+  flex-shrink:     0;
+}
+
+.feature-card__icon svg {
+  width:  1.25rem;
+  height: 1.25rem;
+}
+
+.feature-card__heading {
+  font-size:   var(--fs-h3);
+  font-weight: 650;
+  color:       var(--color-text);
+  line-height: 1.25;
+}
+
+.feature-card__body {
+  font-size:   var(--fs-body);
+  color:       var(--color-muted);
+  line-height: 1.6;
+  flex:        1;
+}
+
+/* =============================================================================
    BUTTONS — complete state coverage
    ============================================================================= */
 
@@ -610,9 +700,15 @@ ul.plain li::before {
 }
 
 /* Blue — decision actions requiring accessible blue */
+/*
+  CTA label standardisation — round 6. All pages: "Download FlashDesk — free".
+  No file size in button. No capital F on "free". No period.
+  See CLAUDE.md for the three-page audit that found three label variants.
+*/
 .btn-blue {
-  background: var(--color-blue-aa);
-  color:      #FFFFFF;
+  background:  var(--color-blue-aa);
+  color:       #FFFFFF;
+  white-space: nowrap;
 }
 .btn-blue:hover { background: #0F4A99; }
 
@@ -722,9 +818,94 @@ ul.plain li::before {
 
 .header-cta .icon { width: 1.1rem; height: 1.1rem; }
 
-/* Collapse nav at 720px — hamburger would need JS; nav is hidden for now */
-@media (max-width: 720px) {
-  .site-nav { display: none; }
+/* =============================================================================
+   MOBILE NAV DRAWER — round 6 addition
+   Replaces the previous "display: none at 720px with zero fallback" approach.
+   Requires a <button class="nav-toggle"> in the header and ~15 lines of vanilla
+   JS adding/removing .is-open on .site-nav and .nav-backdrop.
+   ============================================================================= */
+
+/* Toggle button: hidden on desktop, shown on mobile */
+.nav-toggle {
+  display:    none;
+  background: none;
+  border:     none;
+  cursor:     pointer;
+  padding:    var(--sp-2);
+  color:      var(--color-text);
+  min-height: 44px;
+  min-width:  44px;
+  align-items: center;
+  gap:         var(--sp-2);
+  font-size:   var(--fs-small);
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+}
+
+.nav-toggle:hover {
+  background: var(--color-bg);
+}
+
+.nav-toggle:focus-visible {
+  outline:        2px solid var(--color-blue-aa);
+  outline-offset: 2px;
+}
+
+/* Backdrop: dims the page content behind the open drawer */
+.nav-backdrop {
+  display:    none;
+  position:   fixed;
+  inset:      0;
+  background: rgba(27, 31, 36, 0.4);
+  z-index:    199;
+  /* No animation — respects prefers-reduced-motion via the global rule above */
+}
+
+.nav-backdrop.is-open {
+  display: block;
+}
+
+@media (max-width: 719px) {
+  /* Show the hamburger button */
+  .nav-toggle {
+    display: flex;
+  }
+
+  /* Slide-in drawer: covers the right 70% of the screen */
+  .site-nav {
+    display:        none;
+    position:       fixed;
+    inset:          0 0 0 30%;          /* drawer anchored to right edge        */
+    background:     var(--color-card);
+    flex-direction: column;
+    padding:        var(--sp-7) var(--sp-5);   /* 64px 32px — room for close button */
+    border-left:    1px solid var(--color-border);
+    z-index:        200;
+    gap:            var(--sp-4);        /* 24px between nav links               */
+    font-size:      1.125rem;
+    overflow-y:     auto;
+    /* Prevent momentum scrolling from bleeding to body on iOS */
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .site-nav.is-open {
+    display: flex;
+  }
+
+  /* Restore full-width tap targets in the drawer */
+  .site-nav a {
+    font-size:   1rem;
+    min-height:  44px;
+    display:     flex;
+    align-items: center;
+    padding:     var(--sp-2) 0;
+    border-bottom: 1px solid var(--color-border);
+    width: 100%;
+  }
+
+  .site-nav a:last-child {
+    border-bottom: none;
+  }
 }
 
 /* =============================================================================
@@ -900,7 +1081,7 @@ ul.plain li::before {
   width:         100%;
   height:        auto;
   border:        1px solid var(--color-border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);   /* round 6: hero frame gets --radius-lg */
 }
 
 .shot-frame .callouts {
@@ -930,6 +1111,319 @@ ul.plain li::before {
   text-align: center;
 }
 
+/* ── HERO KICKER — round 6 addition ─────────────────────────────────────── */
+/*
+  The hero is the one section that was missing a kicker. This goes above h1.
+  Brand colour (#2BD16B) at kicker scale — one accent per view, rules intact.
+*/
+.hero-kicker {
+  display:        inline-block;
+  font-size:      var(--fs-kicker);
+  font-weight:    700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color:          var(--color-brand);
+  margin-bottom:  var(--sp-3);   /* 16px */
+}
+
+/* =============================================================================
+   TRUST BAR & TRUST PILLS — round 6 addition
+   A horizontal strip of trust signals (FREE · NO INSTALL · NO ACCOUNT · etc.)
+   placed in the hero section below the main CTA buttons.
+   ============================================================================= */
+
+.trust-bar {
+  display:    flex;
+  flex-wrap:  wrap;
+  gap:        var(--sp-2);   /* 8px */
+  margin-top: var(--sp-4);   /* 24px */
+}
+
+.trust-pill {
+  display:        inline-flex;
+  align-items:    center;
+  gap:            6px;
+  font-size:      var(--fs-kicker);
+  font-weight:    600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color:          var(--color-muted);
+  background:     var(--color-bg);
+  border:         1px solid var(--color-border);
+  border-radius:  var(--radius-sm);   /* pill uses small radius */
+  padding:        4px 10px;
+  white-space:    nowrap;
+}
+
+.trust-pill svg {
+  width:  12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+/* =============================================================================
+   STATS / SOCIAL-PROOF BAR — round 6 addition
+   A row of key metrics (sessions, rating, countries, etc.) for the homepage.
+   ============================================================================= */
+
+.stats-bar {
+  display:               grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap:                   var(--sp-3) var(--sp-5);   /* 16px 32px */
+  padding:               var(--sp-5) 0;             /* 32px */
+  border-top:            1px solid var(--color-border);
+  border-bottom:         1px solid var(--color-border);
+  margin-block:          var(--sp-6);               /* 48px */
+}
+
+@media (min-width: 640px) {
+  .stats-bar {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.stat-item {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--sp-1);   /* 4px */
+}
+
+.stat-item__value {
+  font-size:      var(--fs-h2);
+  font-weight:    700;
+  letter-spacing: -0.02em;
+  color:          var(--color-text);
+  line-height:    1.1;
+}
+
+.stat-item__label {
+  font-size:  var(--fs-kicker);
+  color:      var(--color-muted);
+  font-weight: 500;
+}
+
+/* =============================================================================
+   VERSION BADGE — round 6 addition
+   Inline version chip linked to the changelog; shown near the hero CTA.
+   ============================================================================= */
+
+.version-badge {
+  display:         inline-flex;
+  align-items:     center;
+  gap:             var(--sp-2);       /* 8px */
+  font-size:       var(--fs-kicker);
+  font-weight:     600;
+  color:           var(--color-blue-aa);
+  background:      #E8F0FD;
+  border-radius:   var(--radius-sm);  /* small radius */
+  padding:         3px 10px;
+  text-decoration: none;
+  white-space:     nowrap;
+}
+
+.version-badge:hover {
+  background: #D2E3FC;
+}
+
+.version-badge:focus-visible {
+  outline:        2px solid var(--color-blue-aa);
+  outline-offset: 2px;
+}
+
+/* =============================================================================
+   BADGE & TAG — round 6 addition
+   Generic pill-shaped labelling components for status, categories, file types.
+   ============================================================================= */
+
+.badge {
+  display:        inline-flex;
+  align-items:    center;
+  gap:            4px;
+  font-size:      var(--fs-kicker);
+  font-weight:    600;
+  letter-spacing: 0.03em;
+  border-radius:  var(--radius-sm);
+  padding:        2px 8px;
+  white-space:    nowrap;
+  vertical-align: middle;
+}
+
+/* Badge colour variants */
+.badge-green  { background: #E6F9EE; color: #1A7040; }
+.badge-blue   { background: #E8F0FD; color: var(--color-blue-aa); }
+.badge-amber  { background: #FFF3CD; color: #805E00; }
+.badge-red    { background: #FDE8E8; color: #9B1C1C; }
+.badge-neutral { background: var(--color-bg); color: var(--color-muted); border: 1px solid var(--color-border); }
+
+/* Tag: slightly larger than badge, used for categories / file types */
+.tag {
+  display:        inline-flex;
+  align-items:    center;
+  gap:            5px;
+  font-size:      var(--fs-small);
+  font-weight:    500;
+  border-radius:  var(--radius-sm);
+  padding:        4px 12px;
+  white-space:    nowrap;
+  background:     var(--color-bg);
+  color:          var(--color-muted);
+  border:         1px solid var(--color-border);
+}
+
+.tag:hover {
+  border-color:   var(--color-border-strong);
+  color:          var(--color-text);
+}
+
+/* =============================================================================
+   DOWNLOAD CARD / FILE-CHOICE COMPONENT — round 6 addition
+   Replaces the old plain button + two meta lines. Supports EXE vs MSI
+   side-by-side on the Download page with primary/secondary visual weighting.
+   ============================================================================= */
+
+.download-options {
+  display:        grid;
+  grid-template-columns: 1fr;
+  gap:            var(--sp-3);   /* 16px */
+  margin-top:     var(--sp-4);   /* 24px */
+}
+
+@media (min-width: 640px) {
+  .download-options {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Base card */
+.download-card {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--sp-2);          /* 8px */
+  background:     var(--color-card);
+  border:         1.5px solid var(--color-border);
+  border-radius:  var(--radius);
+  padding:        var(--sp-4);          /* 24px */
+  text-decoration: none;
+  transition:     border-color 0.15s, box-shadow 0.15s;
+  cursor:         pointer;
+}
+
+.download-card:hover {
+  border-color: var(--color-blue);
+  box-shadow:   0 0 0 3px rgba(26, 115, 232, 0.12);
+}
+
+.download-card:focus-visible {
+  outline:        2px solid var(--color-blue-aa);
+  outline-offset: 2px;
+  border-radius:  var(--radius);
+}
+
+/* Primary variant — the recommended / direct EXE download */
+.download-card.is-primary {
+  border-color: var(--color-blue);
+  background:   #F0F6FF;
+}
+
+.download-card.is-primary:hover {
+  border-color: var(--color-blue-aa);
+  box-shadow:   0 0 0 3px rgba(26, 115, 232, 0.18);
+}
+
+/* Card sub-elements */
+.download-card__label {
+  font-size:      var(--fs-kicker);
+  font-weight:    700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color:          var(--color-blue-aa);
+}
+
+.download-card__name {
+  font-size:   1.125rem;
+  font-weight: 650;
+  color:       var(--color-text);
+  line-height: 1.3;
+}
+
+.download-card__meta {
+  font-size:   var(--fs-small);
+  color:       var(--color-muted);
+  line-height: 1.5;
+}
+
+/*
+  Hash block — monospace rendering of the SHA-256 / SHA-1 checksum.
+  Intentionally reads as a technical trust signal, not decorative.
+*/
+.download-card__hash {
+  font-family:  'Courier New', monospace;
+  font-size:    0.75rem;
+  color:        var(--color-muted);
+  background:   var(--color-bg);
+  padding:      3px 6px;
+  border-radius: 4px;
+  word-break:   break-all;
+  margin-top:   var(--sp-1);   /* 4px */
+  line-height:  1.5;
+  user-select:  all;           /* one click selects the whole hash */
+}
+
+/* Recommended badge inside a primary download card */
+.download-card__recommended {
+  display:        inline-flex;
+  align-items:    center;
+  gap:            4px;
+  font-size:      var(--fs-kicker);
+  font-weight:    700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color:          #1A7040;
+  background:     #E6F9EE;
+  border-radius:  var(--radius-sm);
+  padding:        2px 8px;
+  margin-bottom:  var(--sp-1);
+  width:          fit-content;
+}
+
+/* =============================================================================
+   WARNING BAND — round 6 addition
+   Red left-border callout for scam warnings, security notices, and cautions.
+   DISTINCT from .band-amber (which is reserved for LIVE-session state).
+   ============================================================================= */
+
+.warning-band {
+  display:       flex;
+  gap:           var(--sp-4);      /* 24px */
+  align-items:   flex-start;
+  border-left:   4px solid #C5221F;
+  background:    #FFF5F5;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding:       var(--sp-4) var(--sp-5);   /* 24px 32px */
+}
+
+.warning-band__icon {
+  color:       #C5221F;
+  flex-shrink: 0;
+  margin-top:  0.15em;   /* optical alignment with first line of text */
+}
+
+.warning-band__icon svg {
+  width:  1.25rem;
+  height: 1.25rem;
+}
+
+.warning-band__body {
+  flex:        1;
+  font-size:   var(--fs-body);
+  line-height: 1.6;
+  color:       var(--color-text);
+}
+
+.warning-band__body strong {
+  color: #9B1C1C;
+}
+
 /* =============================================================================
    STEPS — numbered process sequence
    ============================================================================= */
@@ -957,6 +1451,82 @@ ol.steps .num {
   font-weight: 700;
   color:       var(--color-muted);
   line-height: 1.4;
+}
+
+/* =============================================================================
+   IMPROVED STEP INDICATORS (VISUAL) — round 6 addition
+   Visual timeline-style steps with connecting line, used on "How it works".
+   ============================================================================= */
+
+.steps-visual {
+  list-style:     none;
+  display:        flex;
+  flex-direction: column;
+  gap:            0;
+}
+
+.steps-visual__item {
+  display: grid;
+  grid-template-columns: 2rem 1fr;
+  gap:     var(--sp-4);   /* 24px */
+  position: relative;
+}
+
+/* Connecting vertical line between dots */
+.steps-visual__item:not(:last-child)::before {
+  content:    '';
+  position:   absolute;
+  left:       calc(1rem - 1px);   /* centre under the dot */
+  top:        2rem;
+  bottom:     0;
+  width:      2px;
+  background: var(--color-border);
+}
+
+.step-dot {
+  position:    relative;
+  z-index:     1;
+  width:       2rem;
+  height:      2rem;
+  border:      2px solid var(--color-border);
+  border-radius: 50%;
+  background:  var(--color-card);
+  display:     flex;
+  align-items: center;
+  justify-content: center;
+  font-size:   var(--fs-kicker);
+  font-weight: 700;
+  color:       var(--color-muted);
+  flex-shrink: 0;
+}
+
+/* Active step: brand fill, white numeral */
+.step-dot.is-active {
+  background:   var(--color-brand);
+  border-color: var(--color-brand);
+  color:        #FFFFFF;
+}
+
+/* Completed step: check mark, muted fill */
+.step-dot.is-done {
+  background:   var(--color-bg);
+  border-color: var(--color-border-strong);
+  color:        var(--color-muted);
+}
+
+.steps-visual__content {
+  padding-bottom: var(--sp-5);   /* 32px spacing between steps */
+}
+
+.steps-visual__content h3 {
+  font-size:   var(--fs-h3);
+  font-weight: 650;
+  margin-bottom: var(--sp-2);
+}
+
+.steps-visual__content p {
+  font-size: var(--fs-body);
+  color:     var(--color-muted);
 }
 
 /* =============================================================================
@@ -996,7 +1566,7 @@ ol.steps .num {
   font-size:     0.95rem;
   margin-top:    var(--sp-2);   /* 8px */
   white-space:   nowrap;
-  border-radius: var(--radius);
+  border-radius: var(--radius-sm);   /* round 6: small radius on these pill buttons */
 }
 .btn-dark { background: #1A73E8; color: #FFFFFF; }
 .btn-pale {
@@ -1009,6 +1579,218 @@ ol.steps .num {
 .link-look {
   color:           var(--color-muted);
   text-decoration: underline;
+}
+
+/* =============================================================================
+   FAQ ANCHOR NAV — round 6 addition
+   Jump-to-section links at the top of the FAQ / Help page.
+   ============================================================================= */
+
+.faq-nav {
+  display:       flex;
+  gap:           var(--sp-3);    /* 16px */
+  flex-wrap:     wrap;
+  margin-bottom: var(--sp-6);   /* 48px */
+}
+
+.faq-nav a {
+  font-size:       var(--fs-small);
+  font-weight:     600;
+  color:           var(--color-blue-aa);
+  text-decoration: none;
+  border-bottom:   2px solid transparent;
+  padding-bottom:  2px;
+  transition:      border-color 0.12s;
+}
+
+.faq-nav a:hover,
+.faq-nav a:focus-visible {
+  border-bottom-color: var(--color-blue-aa);
+}
+
+.faq-nav a:focus-visible {
+  outline:        2px solid var(--color-blue-aa);
+  outline-offset: 2px;
+}
+
+/* =============================================================================
+   COMPARISON TABLE — round 6 addition
+   Used on the homepage or Download page for FlashDesk vs alternatives.
+   ============================================================================= */
+
+.comparison-table {
+  width:           100%;
+  border-collapse: collapse;
+  font-size:       var(--fs-small);
+}
+
+.comparison-table th,
+.comparison-table td {
+  padding:      var(--sp-3) var(--sp-4);   /* 16px 24px */
+  border-bottom: 1px solid var(--color-border);
+  text-align:   left;
+  vertical-align: middle;
+}
+
+.comparison-table th {
+  font-weight: 650;
+  color:       var(--color-text);
+  font-size:   var(--fs-kicker);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background:  var(--color-bg);
+}
+
+.comparison-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* FlashDesk column receives a tinted highlight */
+.comparison-table .col-flashdesk {
+  background:  #F0F6FF;
+  font-weight: 600;
+}
+
+/* Check mark cells */
+.comparison-table .check {
+  color:       var(--color-brand);
+  font-weight: 700;
+  font-size:   1.1rem;
+}
+
+/* Cross / not-available cells */
+.comparison-table .cross {
+  color:       var(--color-muted);
+  font-size:   1.1rem;
+}
+
+/* Responsive: allow horizontal scroll on narrow screens */
+.comparison-table-wrap {
+  overflow-x:          auto;
+  -webkit-overflow-scrolling: touch;
+  border:              1px solid var(--color-border);
+  border-radius:       var(--radius);
+  margin-block:        var(--sp-4);
+}
+
+.comparison-table-wrap .comparison-table th:first-child,
+.comparison-table-wrap .comparison-table td:first-child {
+  min-width: 12rem;
+}
+
+/* =============================================================================
+   CHANGELOG / VERSION TIMELINE — round 6 addition
+   Used on the Changelog page. A left-bordered timeline with version dots.
+   ============================================================================= */
+
+.release-list {
+  list-style: none;
+  padding:    0;
+}
+
+.release-item {
+  display:    grid;
+  grid-template-columns: 7rem 1fr;
+  gap:        var(--sp-4);        /* 24px */
+  border-left: 2px solid var(--color-border);
+  padding:    0 0 var(--sp-6) var(--sp-5);   /* bottom 48px, left 32px */
+  position:   relative;
+}
+
+/* Timeline dot */
+.release-item::before {
+  content:    '';
+  position:   absolute;
+  left:       -5px;
+  top:        6px;
+  width:      8px;
+  height:     8px;
+  background: var(--color-blue);
+  border:     2px solid var(--color-card);
+  border-radius: 50%;
+}
+
+/* Latest release: brand-coloured dot */
+.release-item.is-latest::before {
+  background: var(--color-brand);
+  width:      10px;
+  height:     10px;
+  left:       -6px;
+  top:        5px;
+}
+
+.release-item:last-child {
+  border-left-color: transparent;
+  padding-bottom:    0;
+}
+
+.release-item__date {
+  font-size:   var(--fs-small);
+  color:       var(--color-muted);
+  font-weight: 600;
+  padding-top: 2px;
+  line-height: 1.4;
+}
+
+.release-item__body {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--sp-2);   /* 8px */
+}
+
+.release-item__version {
+  display:        inline-flex;
+  align-items:    center;
+  font-size:      var(--fs-kicker);
+  font-weight:    700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color:          var(--color-blue-aa);
+  margin-bottom:  var(--sp-2);   /* 8px */
+}
+
+.release-item__title {
+  font-size:   var(--fs-h3);
+  font-weight: 650;
+  color:       var(--color-text);
+  line-height: 1.3;
+}
+
+.release-item__notes {
+  font-size:   var(--fs-body);
+  color:       var(--color-muted);
+  line-height: 1.6;
+}
+
+/* Changelog change-type tags: NEW / FIX / IMPROVED / SECURITY */
+.release-item__tag {
+  display:        inline-flex;
+  align-items:    center;
+  font-size:      0.6875rem;   /* 11px */
+  font-weight:    700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius:  var(--radius-sm);
+  padding:        1px 6px;
+  white-space:    nowrap;
+  vertical-align: middle;
+  margin-right:   4px;
+}
+
+.release-item__tag--new      { background: #E6F9EE; color: #1A7040; }
+.release-item__tag--fix      { background: #FDE8E8; color: #9B1C1C; }
+.release-item__tag--improved { background: #E8F0FD; color: var(--color-blue-aa); }
+.release-item__tag--security { background: #FFF3CD; color: #805E00; }
+
+/* Mobile: stack date above body on narrow screens */
+@media (max-width: 540px) {
+  .release-item {
+    grid-template-columns: 1fr;
+  }
+
+  .release-item__date {
+    padding-top: 0;
+  }
 }
 
 /* =============================================================================

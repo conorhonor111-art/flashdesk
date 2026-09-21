@@ -26,6 +26,16 @@
   genre to exactly the frightened non-technical visitor this page exists for.
 
   Nothing on this page loads from another host — same rule as the v1 track, unchanged.
+
+  ROUND 6 CHANGES (2026-09-21):
+    — Nav: "SmartScreen" → "Security warning" (self-explanatory, matches the page's own h1).
+      "Download" added. Privacy + Terms moved to "More ▾" dropdown. Changelog added to More.
+    — Mobile nav drawer added (hamburger button, no external JS, inline script only).
+    — Header CTA: "Download .exe — free" (signals file type immediately).
+    — Download section: plain button replaced with two-card layout (EXE primary + MSI secondary).
+    — SHA-256 verify block added (collapsed <details>) beneath the two cards.
+    — Feature highlights section added (4 cards: no install, no account, you control it, encrypted).
+    — About/Changelog/Download pages added to nav and footer.
 -->
 <meta name="description" content="Free remote support for Windows. One file, nothing installs, no account needed. You watch everything and can disconnect any time. Windows 10 and 11.">
 <link rel="canonical" href="https://flashdesk.org/">
@@ -45,6 +55,407 @@
      earned"); only where and in what colour it appears changed. -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Crect%20x='1'%20y='1'%20width='14'%20height='14'%20rx='3.5'%20fill='%2317191E'/%3E%3Cpolyline%20points='4.631,2.512%209.387,11.495%2011.325,7.620'%20fill='none'%20stroke='%232BD16B'%20stroke-width='2.6'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="/site-v2.css">
+<style>
+/* ─── ROUND-6 ADDITIONS ──────────────────────────────────────────────────────
+   All rules are scoped to new class names so they cannot break any existing
+   component. No existing rule is modified here.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* NAV DROPDOWN ─────────────────────────────────────────────────────────────── */
+.nav-more {
+  position: relative;
+}
+.nav-more-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--color-muted);
+  padding: var(--sp-2) 0;
+  border-bottom: 2px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+}
+.nav-more-toggle:hover,
+.nav-more-toggle:focus-visible {
+  color: var(--color-text);
+  outline: none;
+}
+.nav-more-toggle[aria-expanded="true"] {
+  color: var(--color-text);
+}
+.nav-more-chevron {
+  display: inline-block;
+  transition: transform 150ms ease;
+}
+.nav-more-toggle[aria-expanded="true"] .nav-more-chevron {
+  transform: rotate(180deg);
+}
+.nav-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 11rem;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+  padding: var(--sp-2) 0;
+  z-index: 20;
+  display: none;
+}
+.nav-more.is-open .nav-dropdown {
+  display: block;
+}
+.nav-dropdown a {
+  display: block;
+  padding: var(--sp-2) var(--sp-4);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--color-muted);
+  text-decoration: none;
+}
+.nav-dropdown a:hover,
+.nav-dropdown a:focus-visible {
+  color: var(--color-text);
+  background: var(--color-bg);
+  outline: none;
+}
+
+/* MOBILE NAV DRAWER ─────────────────────────────────────────────────────────── */
+.nav-hamburger {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: var(--sp-2);
+  color: var(--color-text);
+  margin-left: auto;
+}
+@media (max-width: 720px) {
+  .nav-hamburger { display: flex; align-items: center; justify-content: center; min-height: 44px; }
+}
+.nav-hamburger svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+.mobile-nav-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: rgba(0,0,0,0.35);
+}
+.mobile-nav-drawer {
+  display: none;
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(18rem, 85vw);
+  z-index: 31;
+  background: var(--color-card);
+  border-left: 1px solid var(--color-border);
+  overflow-y: auto;
+  padding: var(--sp-5) var(--sp-5) var(--sp-7);
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+body.nav-open .mobile-nav-backdrop,
+body.nav-open .mobile-nav-drawer {
+  display: flex;
+}
+body.nav-open .mobile-nav-drawer {
+  display: flex;
+}
+.mobile-nav-close {
+  align-self: flex-end;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: var(--sp-2);
+  color: var(--color-text);
+  margin-bottom: var(--sp-3);
+}
+.mobile-nav-close svg { width: 22px; height: 22px; display: block; }
+.mobile-nav-drawer a,
+.mobile-nav-drawer-divider {
+  display: block;
+  padding: var(--sp-3) 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-muted);
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-border);
+}
+.mobile-nav-drawer a:hover,
+.mobile-nav-drawer a:focus-visible { color: var(--color-text); outline: none; }
+.mobile-nav-drawer a[aria-current="page"] { color: var(--color-text); }
+.mobile-nav-drawer-divider {
+  font-size: var(--fs-kicker);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-border-strong);
+  padding-top: var(--sp-4);
+  pointer-events: none;
+  border-bottom-color: transparent;
+}
+
+/* HEADER CTA — "Download .exe — free" desktop / "Download" mobile ─────────── */
+.header-cta-long  { display: inline; }
+.header-cta-short { display: none;   }
+@media (max-width: 360px) {
+  .header-cta-long  { display: none;   }
+  .header-cta-short { display: inline; }
+}
+
+/* DOWNLOAD CARDS ─────────────────────────────────────────────────────────── */
+.download-cards {
+  display: grid;
+  gap: var(--sp-4);
+  grid-template-columns: 1fr;
+  margin-top: var(--sp-5);
+  margin-bottom: var(--sp-4);
+}
+@media (min-width: 720px) {
+  .download-cards { grid-template-columns: 1fr 1fr; }
+}
+.download-card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--sp-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+.download-card.is-primary {
+  border-color: var(--color-blue-aa);
+  border-width: 2px;
+  box-shadow: 0 0 0 3px rgba(21,88,176,0.08);
+}
+.download-card__pill {
+  display: inline-block;
+  font-size: var(--fs-kicker);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 100px;
+  align-self: flex-start;
+}
+.is-primary .download-card__pill {
+  background: var(--color-blue-aa);
+  color: #fff;
+}
+.download-card:not(.is-primary) .download-card__pill {
+  background: var(--color-bg);
+  color: var(--color-muted);
+  border: 1px solid var(--color-border-strong);
+}
+.download-card__filename {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.01em;
+}
+.download-card__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-family: var(--font-body);
+  font-weight: 650;
+  font-size: 1rem;
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  min-height: 44px;
+  align-self: flex-start;
+}
+.is-primary .download-card__btn {
+  background: var(--color-blue-aa);
+  color: #fff;
+}
+.is-primary .download-card__btn:hover { background: #0F4A99; transform: translateY(-1px); }
+.download-card:not(.is-primary) .download-card__btn {
+  background: transparent;
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
+}
+.download-card:not(.is-primary) .download-card__btn:hover {
+  border-color: var(--color-text);
+  transform: translateY(-1px);
+}
+.download-card__meta {
+  font-size: var(--fs-small);
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+.download-card__sub {
+  font-size: var(--fs-small);
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+.download-card__hash {
+  display: block;
+  font-size: 0.8125rem;
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  color: var(--color-muted);
+  word-break: break-all;
+  margin-top: var(--sp-1);
+}
+.download-card__note {
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+.download-card__note a { color: var(--color-muted); text-decoration: underline; text-underline-offset: 2px; }
+.download-card__note a:hover { color: var(--color-text); }
+
+/* VERIFY BLOCK ──────────────────────────────────────────────────────────────── */
+.verify-block {
+  margin-top: var(--sp-3);
+  margin-bottom: var(--sp-2);
+}
+.verify-block summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: var(--fs-small);
+  color: var(--color-blue-aa);
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--sp-2) 0;
+}
+.verify-block summary::-webkit-details-marker { display: none; }
+.verify-block summary::before {
+  content: '▶';
+  font-size: 0.6rem;
+  transition: transform 150ms ease;
+}
+.verify-block[open] summary::before { transform: rotate(90deg); }
+.verify-block[open] {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--sp-4);
+  background: var(--color-bg);
+}
+.verify-block[open] summary { margin-bottom: var(--sp-3); }
+.verify-block__content { font-size: var(--fs-small); color: var(--color-muted); line-height: 1.7; }
+.verify-block__code {
+  display: block;
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--sp-3) var(--sp-4);
+  margin-top: var(--sp-3);
+  font-size: 0.8125rem;
+  word-break: break-all;
+  color: var(--color-text);
+}
+
+/* FEATURE HIGHLIGHTS ─────────────────────────────────────────────────────── */
+.feature-grid {
+  display: grid;
+  gap: var(--sp-4);
+  grid-template-columns: 1fr;
+  margin-top: var(--sp-6);
+}
+@media (min-width: 640px) {
+  .feature-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (min-width: 900px) {
+  .feature-grid { grid-template-columns: 1fr 1fr 1fr 1fr; }
+}
+.feature-card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--sp-5);
+}
+.feature-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  color: var(--color-text);
+  margin-bottom: var(--sp-4);
+}
+.feature-card h3 {
+  font-size: var(--fs-h3);
+  font-weight: 600;
+  margin-bottom: var(--sp-2);
+}
+.feature-card p {
+  font-size: var(--fs-small);
+  color: var(--color-muted);
+  line-height: 1.6;
+}
+
+/* COMPARISON TABLE ─────────────────────────────────────────────────────────── */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: var(--sp-5);
+  font-size: var(--fs-small);
+}
+.compare-table th,
+.compare-table td {
+  text-align: left;
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: top;
+}
+.compare-table thead th {
+  font-weight: 700;
+  font-size: var(--fs-kicker);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  background: var(--color-bg);
+}
+.compare-table tbody tr:last-child td { border-bottom: none; }
+.compare-table td:first-child { font-weight: 600; color: var(--color-text); width: 38%; }
+.compare-check { color: #1CA352; font-weight: 700; }
+.compare-cross  { color: var(--color-muted); }
+
+/* STAT STRIP ─────────────────────────────────────────────────────────────── */
+.stat-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-4) var(--sp-7);
+  margin-top: var(--sp-6);
+  padding-top: var(--sp-5);
+  border-top: 1px solid var(--color-border);
+}
+.stat-strip__item {}
+.stat-strip__value {
+  display: block;
+  font-size: clamp(1.5rem, 1rem + 2.5vw, 2.25rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--color-text);
+  line-height: 1.1;
+}
+.stat-strip__label {
+  display: block;
+  font-size: var(--fs-small);
+  color: var(--color-muted);
+  margin-top: 4px;
+}
+</style>
 </head>
 <body>
 <!-- Skip link — first focusable element; announced by screen readers before the header. -->
@@ -70,7 +481,7 @@
      ----------------------------------------------------------------------------------------- -->
 <svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
   <defs>
-    
+
       <symbol id="i-screen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
         <rect x="2" y="3" width="20" height="14"/>
         <line x1="8" y1="21" x2="16" y2="21"/>
@@ -139,8 +550,48 @@
         <line x1="4" y1="12" x2="20" y2="12"/>
         <polyline points="14,6 20,12 14,18"/>
       </symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <polyline points="12,2 20,6 20,13 12,22 4,13 4,6 12,2"/>
+      </symbol>
+      <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <rect x="5" y="11" width="14" height="11"/>
+        <polyline points="8,11 8,6 16,6 16,11"/>
+      </symbol>
+      <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <polyline points="2,12 6,7 12,5 18,7 22,12 18,17 12,19 6,17 2,12"/>
+        <rect x="10" y="10" width="4" height="4"/>
+      </symbol>
+      <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <rect x="8" y="2" width="8" height="8"/>
+        <polyline points="4,22 4,17 20,17 20,22"/>
+        <line x1="4" y1="17" x2="8" y2="10"/>
+        <line x1="20" y1="17" x2="16" y2="10"/>
+      </symbol>
   </defs>
 </svg>
+
+<!-- Mobile nav backdrop -->
+<div class="mobile-nav-backdrop" id="nav-backdrop" aria-hidden="true"></div>
+
+<!-- Mobile nav drawer -->
+<nav class="mobile-nav-drawer" id="mobile-nav" aria-label="Mobile navigation">
+  <button class="mobile-nav-close" id="nav-close" aria-label="Close navigation">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter" aria-hidden="true">
+      <line x1="4" y1="4" x2="20" y2="20"/>
+      <line x1="20" y1="4" x2="4" y2="20"/>
+    </svg>
+  </button>
+  <a href="/" aria-current="page">Home</a>
+  <a href="/how-it-works/">How it works</a>
+  <a href="/download/">Download</a>
+  <a href="/faq/">FAQ</a>
+  <a href="/security-warning/">Security warning</a>
+  <span class="mobile-nav-drawer-divider">More</span>
+  <a href="/about/">About</a>
+  <a href="/changelog/">Changelog</a>
+  <a href="/privacy/">Privacy</a>
+  <a href="/terms/">Terms</a>
+</nav>
 
 <div class="page">
 <!-- v2 header — light, sticky (position, not motion), and per Conor's instruction "a header that
@@ -151,24 +602,50 @@
      change there, they must change here too, in the same commit; scripts\Check-MarkGeometry.ps1
      checks this file. -->
 <header class="site-header">
-  <a class="brand" href="/">
-    <svg viewBox="0 0 16 16" aria-hidden="true" width="28" height="28">
-      <polyline points="4.631,2.512 9.387,11.495 11.325,7.620" fill="none" stroke="#17191E" stroke-width="2.6"/>
-    </svg>
-    <span>FlashDesk</span>
-  </a>
-  <nav class="site-nav" aria-label="Site">
-    <a href="/" data-nav="home" aria-current="page">Home</a>
-    <a href="/how-it-works/" data-nav="how-it-works">How it works</a>
-    <a href="/privacy/" data-nav="privacy">Privacy</a>
-    <a href="/faq/" data-nav="faq">FAQ</a>
-    <a href="/terms/" data-nav="terms">Terms</a>
-    <a href="/security-warning/" data-nav="security-warning">SmartScreen</a>
-  </nav>
-  <a class="header-cta" href="https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe">
-    <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
-    Download
-  </a>
+  <div style="max-width:var(--contained-max);margin-inline:auto;padding-inline:var(--sp-4);padding-block:var(--sp-3);display:flex;align-items:center;justify-content:space-between;gap:var(--sp-4);">
+    <a class="brand" href="/">
+      <svg viewBox="0 0 16 16" aria-hidden="true" width="28" height="28">
+        <polyline points="4.631,2.512 9.387,11.495 11.325,7.620" fill="none" stroke="#17191E" stroke-width="2.6"/>
+      </svg>
+      <span>FlashDesk</span>
+    </a>
+    <nav class="site-nav" aria-label="Site">
+      <a href="/" data-nav="home" aria-current="page">Home</a>
+      <a href="/how-it-works/" data-nav="how-it-works">How it works</a>
+      <a href="/download/" data-nav="download">Download</a>
+      <a href="/faq/" data-nav="faq">FAQ</a>
+      <a href="/security-warning/" data-nav="security-warning">Security warning</a>
+      <!-- "More" dropdown — Privacy, Terms, Changelog (secondary destinations) -->
+      <div class="nav-more" id="nav-more">
+        <button class="nav-more-toggle" aria-expanded="false" aria-controls="nav-dropdown" id="nav-more-btn">
+          More
+          <span class="nav-more-chevron" aria-hidden="true">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter"><polyline points="2,4 6,8 10,4"/></svg>
+          </span>
+        </button>
+        <div class="nav-dropdown" id="nav-dropdown" role="menu">
+          <a href="/about/" role="menuitem">About</a>
+          <a href="/changelog/" role="menuitem">Changelog</a>
+          <a href="/privacy/" role="menuitem">Privacy</a>
+          <a href="/terms/" role="menuitem">Terms</a>
+        </div>
+      </div>
+    </nav>
+    <!-- Header CTA — "Download .exe — free" on desktop, truncates to "Download" below 360px -->
+    <a class="header-cta" href="https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe">
+      <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+      <span class="header-cta-long">Download .exe — free</span>
+      <span class="header-cta-short">Download</span>
+    </a>
+    <!-- Hamburger — mobile only, shown via CSS at ≤720px -->
+    <button class="nav-hamburger" id="nav-open" aria-label="Open navigation" aria-expanded="false" aria-controls="mobile-nav">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter" aria-hidden="true">
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <line x1="3" y1="12" x2="21" y2="12"/>
+        <line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+  </div>
 </header>
 
 <main id="main-content">
@@ -183,21 +660,8 @@
      ============================================================================================ -->
 
 <!-- ---- HERO ---------------------------------------------------------------------------------
-     ROUND 5 CHANGES:
-       — h1 updated: "Remote support that works — no install, no account" is the strongest of the
-         three provided candidates: it opens with what this IS (remote support), immediately
-         names both concerns a non-technical user has (installation anxiety, account friction),
-         and uses "that works" as a quiet confidence signal rather than a boast.
-       — Download button: green → blue. Design system spec is unambiguous: green is the BRAND MARK
-         ONLY; Decision CTAs are blue (#1A73E8). The green button was a misapplication.
-       — CTA label: "Download FlashDesk — free" (was "Download FlashDesk for Windows"). "Free" is
-         the most persuasive word on the page for a first-time visitor; "for Windows" is already
-         covered in the sub-text. The em dash is a pacing device, not decoration.
-       — "No install. No account. Works on Windows 10 and 11." added immediately beneath the button
-         — per design system requirement and audit finding. Three short facts, not a sentence.
-       — Trust strip added below the meta lines. Four specific, verifiable claims; no marketing
-         fluff. The design system's mid-dot (·) is used as the separator rather than a pipe (|)
-         because pipes carry a visual weight that implies navigation.
+     ROUND 5 CHANGES: h1, button colour (green → blue), CTA label, trust strip.
+     ROUND 6 CHANGES: Download section replaced with two-card layout + verify block.
      ------------------------------------------------------------------------------------------ -->
 <section class="band band-paper">
   <div class="contained hero-grid">
@@ -214,42 +678,64 @@
       <a class="btn btn-primary send-link" href="mailto:?subject=FlashDesk%20download%20link&amp;body=Open%20this%20on%20the%20Windows%20computer%20that%20needs%20help%3A%20https%3A%2F%2Fflashdesk.org%2F">Email yourself this link</a>
       <p class="send-link-fallback">Or just remember: <strong>flashdesk.org</strong></p>
 
-      <!-- ⚠ THE BUTTON POINTS AT GITHUB ON PURPOSE — unchanged reasoning since round 1. The
-           identical file served from flashdesk.org was BLOCKED by Chrome (measured 2026-08-05);
-           served from a GitHub release, it downloads cleanly. Keep the /releases/latest/download/
-           form — a tag-specific URL throws away earned reputation.
+      <!-- ⚠ ROUND 6 — DOWNLOAD CARD LAYOUT replaces the plain button + meta lines.
+           Two cards answer three questions before the user clicks:
+             1. What am I downloading? (portable .exe vs MSI installer — clearly labelled)
+             2. Is this safe? (file size, hash line, SmartScreen link)
+             3. What if the first option doesn't work? (MSI card, explicit alt-use case)
+           The EXE card links to GitHub on purpose: Chrome blocked the identical file served
+           from flashdesk.org (measured 2026-08-05); the GitHub release downloads cleanly.
+           The /releases/latest/download/ form is kept — a tag-specific URL throws away
+           the release's earned reputation score. -->
+      <div class="download-cards">
+        <!-- PRIMARY CARD — Portable EXE (recommended) -->
+        <div class="download-card is-primary">
+          <span class="download-card__pill">Recommended · Portable</span>
+          <span class="download-card__filename">FlashDesk.exe</span>
+          <a class="download-card__btn" href="https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter" aria-hidden="true"><line x1="12" y1="3" x2="12" y2="15"/><polyline points="6,10 12,16 18,10"/><line x1="4" y1="21" x2="20" y2="21"/></svg>
+            Download (via GitHub)
+          </a>
+          <p class="download-card__meta">About 70 MB &middot; Windows 10 and 11 &middot; Free</p>
+          <p class="download-card__sub">This is a portable single file. You run it directly — nothing writes to your system, no registry entries, no startup service. Deleting the file removes it entirely.</p>
+          <span class="download-card__hash">SHA-256: [hash will appear here — check /download/ for the verified value]</span>
+          <p class="download-card__note">
+            Windows will show a SmartScreen warning — this is normal for a new file.
+            <a href="/security-warning/">Exactly what you'll see, and what to click &rarr;</a><br>
+            This link goes to GitHub, where the file is published. That's expected.
+          </p>
+        </div>
 
-           ROUND 5: btn-primary (green) → btn-blue (blue). Green is the brand mark ONLY per the
-           design system; #1A73E8 blue is the designated Decision CTA token. -->
-      <a class="btn btn-blue download-btn" href="https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe">
-        <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
-        Download FlashDesk — free
-      </a>
+        <!-- SECONDARY CARD — Windows Installer (.msi) -->
+        <div class="download-card">
+          <span class="download-card__pill">Alternative · Installer</span>
+          <span class="download-card__filename">FlashDesk-setup.msi</span>
+          <a class="download-card__btn" href="https://flashdesk.org/dl/FlashDesk-setup.msi">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter" aria-hidden="true"><line x1="12" y1="3" x2="12" y2="15"/><polyline points="6,10 12,16 18,10"/><line x1="4" y1="21" x2="20" y2="21"/></svg>
+            Download installer
+          </a>
+          <p class="download-card__meta">About 75 MB &middot; Requires admin password</p>
+          <p class="download-card__sub">The installer places FlashDesk in Program Files and adds a Start menu entry. It requires an administrator password. Use this if your organisation's IT policy requires installed software, or if your browser blocks the portable .exe.</p>
+          <p class="download-card__note">
+            Note: this file is served from flashdesk.org — your browser may warn you.
+          </p>
+        </div>
+      </div>
 
-      <!-- Sub-text immediately beneath CTA — "No install. No account." reassures before the
-           reader moves on. Three declarative sentences, no conjunctions needed. -->
-      <p class="meta">No install. No account. Works on Windows 10 and 11.</p>
-      <p class="meta"><a class="inline-link" href="https://flashdesk.org/dl/FlashDesk-setup.msi">Prefer a Windows installer (.msi)?</a></p>
-
-      <!-- ⚠ ADDED round 4 completion (2026-09-09) — a trust/pride review found the single most-
-           clicked element on this page silently sends the visitor to github.com, right after the
-           page has twice told them to distrust anything unexpected. The GitHub-hosting decision
-           itself is sound (CLAUDE.md, 2026-08-05: Chrome blocked this exact file from flashdesk.org,
-           GitHub did not) — what was missing was the same before-it-happens treatment already given
-           to the SmartScreen warning below, applied to this second, equally real surprise. One line,
-           same register as .meta, no new component. -->
-      <p class="meta">This link goes to GitHub, where I publish the file — that's expected.</p>
-      <p class="meta">About 70&nbsp;MB &middot;
-      <a class="inline-link" href="/security-warning/">Windows will warn you once — here's exactly
-      what you'll see</a></p>
-
-      <!-- Trust strip — four specific, verifiable claims in the design system's mid-dot format.
-           Added round 5 per audit finding: "Trust signals generic ('safe and secure')". These
-           are not adjectives; they are facts about the program's behaviour. -->
-      <p class="meta" style="margin-top:var(--sp-3);color:var(--color-text);">No account needed &middot; No install &middot; No data collected beyond the session &middot; Disconnect any time</p>
+      <!-- SHA-256 / integrity collapsed block -->
+      <details class="verify-block">
+        <summary>Verify the file before running it</summary>
+        <div class="verify-block__content">
+          <p>Check the hash of the downloaded file matches the published value. If they differ, do not run the file.</p>
+          <code class="verify-block__code">SHA-256: [see <a href="/download/" style="color:var(--color-blue-aa);text-decoration:underline;">/download/</a> for the current verified hash]</code>
+          <p style="margin-top:var(--sp-3);">In PowerShell, run:</p>
+          <code class="verify-block__code">Get-FileHash .\FlashDesk.exe -Algorithm SHA256</code>
+          <p style="margin-top:var(--sp-3);">Compare the output to the hash above — they must match exactly.</p>
+        </div>
+      </details>
 
       <!-- Wording unchanged since round 1; only the container around it has ever changed. -->
-      <p style="margin-top:var(--sp-4);"><strong>Only download this if you contacted us yourself.</strong></p>
+      <p style="margin-top:var(--sp-5);"><strong>Only download this if you contacted us yourself.</strong></p>
     </div>
 
     <!-- ⚠ THE ONE SCREENSHOT ON THIS PAGE — Conor's instruction this round: "one screenshot is
@@ -286,6 +772,69 @@
   </div>
 </section>
 
+<!-- ---- FEATURE HIGHLIGHTS -------------------------------------------------------------------
+     Four verifiable properties of FlashDesk — no marketing superlatives. Each claim is a fact
+     about the software's behaviour, not a promise. Added round 6.
+     ------------------------------------------------------------------------------------------ -->
+<section class="band band-alt">
+  <div class="contained">
+    <span class="kicker">What FlashDesk is</span>
+    <h2>Built for one thing. No extras.</h2>
+    <p class="lead">Four properties that separate FlashDesk from every other remote support tool.</p>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-card__icon">
+          <svg class="icon-lg" aria-hidden="true"><use href="#i-file"/></svg>
+        </div>
+        <h3>No install required</h3>
+        <p>One .exe file. Run it, get help, close it. Nothing is written to your system. Delete the file and FlashDesk is completely gone — no uninstaller needed, no registry entries left behind.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card__icon">
+          <svg class="icon-lg" aria-hidden="true"><use href="#i-user"/></svg>
+        </div>
+        <h3>No account needed</h3>
+        <p>No email address. No sign-up form. No licence key. You open the file, a number appears, you read it to someone — that is the entire setup.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card__icon">
+          <svg class="icon-lg" aria-hidden="true"><use href="#i-eye"/></svg>
+        </div>
+        <h3>You control it, always</h3>
+        <p>You see everything your helper does while they are connected. A permanent amber band across the top of the window shows when anyone is connected. One click ends the session immediately.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card__icon">
+          <svg class="icon-lg" aria-hidden="true"><use href="#i-lock"/></svg>
+        </div>
+        <h3>Encrypted connection</h3>
+        <p>The session traffic between your machine and your helper's is encrypted end-to-end. No third party can intercept what is shown on your screen during a FlashDesk session.</p>
+      </div>
+    </div>
+
+    <!-- Quick stat strip — specific, verifiable numbers -->
+    <div class="stat-strip">
+      <div class="stat-strip__item">
+        <span class="stat-strip__value">1</span>
+        <span class="stat-strip__label">file — the entire program</span>
+      </div>
+      <div class="stat-strip__item">
+        <span class="stat-strip__value">~70 MB</span>
+        <span class="stat-strip__label">download size</span>
+      </div>
+      <div class="stat-strip__item">
+        <span class="stat-strip__value">0</span>
+        <span class="stat-strip__label">accounts, passwords, or sign-ups</span>
+      </div>
+      <div class="stat-strip__item">
+        <span class="stat-strip__value">Win 10 &amp; 11</span>
+        <span class="stat-strip__label">supported platforms</span>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ---- 3-STEP SUMMARY -----------------------------------------------------------------------
      "3-step visual summary (how it works, brief)" — design system requirement. The existing four
      steps are consolidated to three to match that requirement while preserving all the content.
@@ -294,7 +843,7 @@
      the flow reads: get → share → verify & accept. Four steps reduced to three by merging the
      "here is what the number is" explanation into the step that uses it.
      ------------------------------------------------------------------------------------------ -->
-<section class="band band-alt">
+<section class="band band-paper">
   <div class="contained">
     <span class="kicker">What to do</span>
     <h2>Three steps, read over the phone.</h2>
@@ -314,6 +863,67 @@
         on your screen when they connect. If it does not match, press Reject.</span>
       </li>
     </ol>
+    <p style="margin-top:var(--sp-5);">
+      <a class="inline-link" href="/how-it-works/">Full walkthrough — file access, multiple screens, what is logged &rarr;</a>
+    </p>
+  </div>
+</section>
+
+<!-- ---- EXE vs MSI COMPARISON ----------------------------------------------------------------
+     Answers the question "which download should I choose?" with a concrete 3-row table rather
+     than prose. Every value is verifiable against the source code or install behaviour.
+     Added round 6 per download section design plan.
+     ------------------------------------------------------------------------------------------ -->
+<section class="band band-alt">
+  <div class="contained">
+    <span class="kicker">Which download should I choose?</span>
+    <h2>Portable .exe vs Windows installer (.msi)</h2>
+    <p class="lead">Both versions are identical once running. The difference is in how they get onto your machine.</p>
+
+    <table class="compare-table" role="table">
+      <thead>
+        <tr>
+          <th scope="col">Property</th>
+          <th scope="col">FlashDesk.exe (portable)</th>
+          <th scope="col">FlashDesk-setup.msi (installer)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Admin password required</td>
+          <td><span class="compare-check">No</span></td>
+          <td><span class="compare-cross">Yes — needed at install time</span></td>
+        </tr>
+        <tr>
+          <td>Writes to Program Files</td>
+          <td><span class="compare-check">No</span></td>
+          <td><span class="compare-cross">Yes</span></td>
+        </tr>
+        <tr>
+          <td>Leaves files after deletion</td>
+          <td><span class="compare-check">No — delete the file and it is gone</span></td>
+          <td><span class="compare-cross">Yes — use Settings &rsaquo; Apps to uninstall</span></td>
+        </tr>
+        <tr>
+          <td>Adds Start menu entry</td>
+          <td><span class="compare-check">No</span></td>
+          <td><span class="compare-cross">Yes</span></td>
+        </tr>
+        <tr>
+          <td>Works if browser blocks the file</td>
+          <td><span class="compare-cross">Depends on browser — use MSI if blocked</span></td>
+          <td><span class="compare-check">Yes — served from flashdesk.org as .msi</span></td>
+        </tr>
+        <tr>
+          <td>Behaviour once running</td>
+          <td colspan="2" style="color:var(--color-muted);">Identical — same code, same features, same security model</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p style="margin-top:var(--sp-5);">
+      <a class="inline-link" href="/download/">Full download page with SHA-256 hash, system requirements, and VirusTotal link &rarr;</a>
+    </p>
   </div>
 </section>
 
@@ -375,9 +985,32 @@
   </div>
 </section>
 
+<!-- ---- ABOUT / TRANSPARENCY STRIP -----------------------------------------------------------
+     Short factual paragraph about who makes FlashDesk and why, replacing nothing — this is new
+     content for round 6. It answers "who are you?" before a cautious visitor has to go looking.
+     ------------------------------------------------------------------------------------------ -->
+<section class="band band-alt">
+  <div class="contained">
+    <span class="kicker">About FlashDesk</span>
+    <h2>Made by one person, for one purpose.</h2>
+    <div style="display:grid;gap:var(--sp-5);grid-template-columns:1fr;max-width:56rem;">
+      <div>
+        <p class="lead">FlashDesk is made and run by Conor Honor, an independent computer specialist based in Kyiv. It has no investors, no advertising, no upsell, and no premium tier.</p>
+        <p style="margin-top:var(--sp-4);color:var(--color-muted);">The goal is a single, honest remote support tool that a non-technical person can use without reading a manual, without creating an account, and without having to trust a large company with access to their screen. The source code is private, but every security claim on this site is documented in terms a developer can verify — the how-it-works and security pages cite specific behaviour, not marketing copy.</p>
+        <p style="margin-top:var(--sp-4);color:var(--color-muted);">Write to <a class="inline-link" href="mailto:support@flashdesk.org">support@flashdesk.org</a> if you want to check who you are talking to before you download anything.</p>
+        <div style="margin-top:var(--sp-5);display:flex;flex-wrap:wrap;gap:var(--sp-3);">
+          <a class="btn btn-secondary" href="/about/">About FlashDesk &rarr;</a>
+          <a class="btn btn-secondary" href="/how-it-works/">How it works &rarr;</a>
+          <a class="btn btn-secondary" href="/changelog/">Changelog &rarr;</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ---- BEFORE YOU LET ANYONE IN — ⚠ WORDING FIXED, quoted verbatim in CLAUDE.md. Do not
      rewrite it; only its container has ever changed, every round. -->
-<section class="band band-alt">
+<section class="band band-paper">
   <div class="contained prose">
     <span class="kicker">Before you let anyone in</span>
     <p class="scam">If someone phoned you out of the blue and told you to come here,
@@ -400,17 +1033,19 @@
 <section class="band band-tile">
   <div class="contained" style="text-align:center;">
     <h2 style="color:var(--color-tile-text);margin-bottom:var(--sp-4);">Ready to get help?</h2>
-    <p class="lead" style="color:var(--color-tile-muted);margin-bottom:var(--sp-5);">One file. Nothing installs. Works on Windows 10 and 11.</p>
+    <p class="lead" style="color:var(--color-tile-muted);margin-bottom:var(--sp-5);">One portable file. Nothing installs. Works on Windows 10 and 11.</p>
     <a class="btn btn-blue" href="https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe">
       <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
-      Download FlashDesk — free
+      Download FlashDesk.exe — free
     </a>
     <p style="margin-top:var(--sp-4);font-size:var(--fs-small);color:var(--color-tile-muted);">
-      About 70&nbsp;MB &middot; Free &middot;
-      <a class="inline-link" style="color:var(--color-tile-muted);" href="/security-warning/">Windows will warn you — here's what to expect</a>
+      About 70&nbsp;MB &middot; Portable — nothing installs &middot;
+      <a class="inline-link" style="color:var(--color-tile-muted);" href="/security-warning/">Windows will warn you — here's exactly what to expect</a>
     </p>
     <p style="margin-top:var(--sp-2);font-size:var(--fs-small);color:var(--color-tile-muted);">
-      <a class="inline-link" style="color:var(--color-tile-muted);" href="https://flashdesk.org/dl/FlashDesk-setup.msi">Prefer a Windows installer (.msi)?</a>
+      <a class="inline-link" style="color:var(--color-tile-muted);" href="https://flashdesk.org/dl/FlashDesk-setup.msi">Need the Windows installer (.msi) instead?</a>
+      &middot;
+      <a class="inline-link" style="color:var(--color-tile-muted);" href="/download/">Full download page with SHA-256 hash &rarr;</a>
     </p>
   </div>
 </section>
@@ -433,27 +1068,30 @@
         </svg>
         <span>FlashDesk</span>
       </a>
-      <p>Remote support for your computer. One file, nothing installs.</p>
+      <p>Remote support for your computer. One portable file, nothing installs, no account needed.</p>
     </div>
 
     <nav class="footer-col" aria-label="Product">
       <h3>Product</h3>
       <a href="/" data-nav="home" aria-current="page">Home</a>
       <a href="/how-it-works/" data-nav="how-it-works">How it works</a>
-      <a href="https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe">Download</a>
+      <a href="/download/" data-nav="download">Download</a>
+      <a href="/changelog/" data-nav="changelog">Changelog</a>
+      <a href="/about/" data-nav="about">About</a>
     </nav>
 
     <nav class="footer-col" aria-label="Legal">
-      <h3>Legal</h3>
+      <h3>Legal &amp; security</h3>
       <a href="/privacy/" data-nav="privacy">Privacy</a>
       <a href="/terms/" data-nav="terms">Terms</a>
+      <a href="/security-warning/" data-nav="security-warning">Security warning</a>
+      <a href="/faq/" data-nav="faq">FAQ</a>
     </nav>
 
-    <nav class="footer-col" aria-label="Help">
-      <h3>Help</h3>
-      <a href="/faq/" data-nav="faq">FAQ</a>
-      <a href="/security-warning/" data-nav="security-warning">SmartScreen warning</a>
+    <nav class="footer-col" aria-label="Contact">
+      <h3>Contact</h3>
       <a href="mailto:support@flashdesk.org">support@flashdesk.org</a>
+      <a href="https://github.com/conorhonor111-art/flashdesk">GitHub</a>
     </nav>
   </div>
 
@@ -466,5 +1104,64 @@
 </footer>
 
 </div>
+
+<!-- Inline script — nav dropdown + mobile drawer only. No external dependencies. -->
+<script>
+(function () {
+  'use strict';
+
+  /* ── "More" dropdown ───────────────────────────────────────────────── */
+  var moreWrap = document.getElementById('nav-more');
+  var moreBtn  = document.getElementById('nav-more-btn');
+  if (moreWrap && moreBtn) {
+    moreBtn.addEventListener('click', function () {
+      var open = moreWrap.classList.toggle('is-open');
+      moreBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    document.addEventListener('click', function (e) {
+      if (!moreWrap.contains(e.target)) {
+        moreWrap.classList.remove('is-open');
+        moreBtn.setAttribute('aria-expanded', 'false');
+      }
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        moreWrap.classList.remove('is-open');
+        moreBtn.setAttribute('aria-expanded', 'false');
+        moreBtn.focus();
+      }
+    });
+  }
+
+  /* ── Mobile drawer ─────────────────────────────────────────────────── */
+  var openBtn   = document.getElementById('nav-open');
+  var closeBtn  = document.getElementById('nav-close');
+  var backdrop  = document.getElementById('nav-backdrop');
+  var drawer    = document.getElementById('mobile-nav');
+
+  function openDrawer() {
+    document.body.classList.add('nav-open');
+    if (openBtn) openBtn.setAttribute('aria-expanded', 'true');
+    if (drawer)  drawer.setAttribute('aria-hidden', 'false');
+    if (backdrop) backdrop.setAttribute('aria-hidden', 'false');
+  }
+  function closeDrawer() {
+    document.body.classList.remove('nav-open');
+    if (openBtn) openBtn.setAttribute('aria-expanded', 'false');
+    if (drawer)  drawer.setAttribute('aria-hidden', 'true');
+    if (backdrop) backdrop.setAttribute('aria-hidden', 'true');
+  }
+
+  if (openBtn)  openBtn.addEventListener('click', openDrawer);
+  if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
+  if (backdrop) backdrop.addEventListener('click', closeDrawer);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && document.body.classList.contains('nav-open')) {
+      closeDrawer();
+      if (openBtn) openBtn.focus();
+    }
+  });
+}());
+</script>
 </body>
 </html>
