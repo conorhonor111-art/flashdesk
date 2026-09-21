@@ -1963,6 +1963,17 @@ ol.steps .num {
 .hero-gradient-wrap .download-card__btn:hover        { background: rgba(255,255,255,0.15); transform: translateY(-1px); }
 .hero-gradient-wrap .is-primary .download-card__btn  { background: #1558B0; color: #FFFFFF; border-color: transparent; }
 .hero-gradient-wrap .is-primary .download-card__btn:hover { background: #0F4A99; }
+/* Secondary (non-primary) button — beats inline <style> [0,3,0] with [0,4,0] specificity */
+.hero-gradient-wrap .download-card:not(.is-primary) .download-card__btn {
+  background:   rgba(255,255,255,0.10);
+  color:        #ECEFF3;
+  border-color: rgba(255,255,255,0.28);
+}
+.hero-gradient-wrap .download-card:not(.is-primary) .download-card__btn:hover {
+  background:   rgba(255,255,255,0.18);
+  border-color: rgba(255,255,255,0.45);
+  transform:    translateY(-1px);
+}
 .hero-gradient-wrap .download-card__meta,
 .hero-gradient-wrap .download-card__sub,
 .hero-gradient-wrap .download-card__note,
