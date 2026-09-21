@@ -36,7 +36,7 @@
                     Name="FlashDesk"
                     Directory="ProgramMenuFolder"
                     WorkingDirectory="INSTALLFOLDER"
-                    Advertise="yes" />
+                    Advertise="no" />
         </File>
       </Component>
     </ComponentGroup>
