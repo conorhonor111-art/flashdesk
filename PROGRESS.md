@@ -3939,6 +3939,18 @@ AnyDesk and RustDesk. Build: 0 errors, 0 warnings. 9-agent ultracode workflow; 8
 - `changelog/index.html` — gradient hero, all 17 release entries elevated.
 - `security-warning/index.html`, `privacy/index.html`, `terms/index.html` — gradient heroes only.
 
+### v0.4.0-26 — 2026-09-21 — Icon visual quality overhaul: round linecaps, redesigned icon set
+
+Site-only changes across all 9 pages. No app code changed; exe is functionally identical to v0.4.0-25.
+- All pages: replaced stroke-linecap butt/miter with round/round throughout all SVG sprites and inline icons
+- All pages: sprite symbol stroke-width refined from 2 to 1.75 (matches Heroicons/Lucide professional standard)
+- i-eye: redesigned — replaced rectangular iris with circle; smoother eye outline polygon
+- i-user: redesigned — replaced rectangular head with circle; proper shoulder geometry
+- i-shield: upgraded — added checkmark polyline inside shield (reads as "verified/secure" not empty polygon)
+- i-lock: upgraded — added filled circle keyhole detail
+- Home page: 48x48 feature card illustrative SVGs upgraded — eye and user icons now use circles
+- All nav SVGs: hamburger, chevron, close X all now use round linecaps (crisper, more refined)
+
 ### v0.4.0-25 — 2026-09-21 — SVG/icon upgrade, single installer download, logo glow
 
 Site-only changes across all 9 pages. No app code changed; exe is functionally identical to
