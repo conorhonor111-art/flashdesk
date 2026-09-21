@@ -3671,3 +3671,8 @@ Program Files location, proper uninstaller, and version metadata in Programs and
 
 Installer project files committed as `76c3bd4` (`installer/FlashDesk.wixproj`,
 `installer/Package.wxs`, `installer/License.rtf`).
+
+
+**Check-LiveBuild result (v0.4.0-13):** READY — server serving `bf2f971`, exact HEAD match.
+Both download routes byte-identical (`7FE68725C2A0CBB9...`, 162,492,578 bytes). All 6 mark
+copies consistent. All 6 site pages match repo with all assets resolving.
