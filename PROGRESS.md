@@ -3938,3 +3938,27 @@ AnyDesk and RustDesk. Build: 0 errors, 0 warnings. 9-agent ultracode workflow; 8
 - `about/index.html` — gradient hero; info cards, status cards, contact card, oss-block elevated.
 - `changelog/index.html` — gradient hero, all 17 release entries elevated.
 - `security-warning/index.html`, `privacy/index.html`, `terms/index.html` — gradient heroes only.
+
+### v0.4.0-24 — 2026-09-21 — per-page visual upgrade across all 9 site pages
+
+Deep visual upgrade to all 9 website pages. No app code changed; exe is functionally identical to
+v0.4.0-23. Build: 0 errors, 0 warnings.
+
+**Site changes (7 files):**
+- `how-it-works/index.html` — colored step-number circles (blue/green/purple/amber/green per step),
+  connection-flow SVG diagram between steps 3–4, relay nodes colorized (Your PC = blue, Helper = teal),
+  colored icon tiles on "What it can do" and "Hard limits" grids.
+- `faq/index.html` — dark gradient statement box with green-highlighted "Accept"; four category
+  section badges with SVG icons: Safety (green + shield), Privacy (blue + lock), Technical (purple +
+  gear), Helpers (amber + person); question-count badges per section.
+- `about/index.html` — red left borders on "What FlashDesk is NOT" cards; dark tile OSS panel with
+  green GitHub badge and CTA; blue circular avatar placeholder; blue-gradient contact card; colored
+  status icons per founding-timeline card.
+- `changelog/index.html` — version stats strip in hero (17 releases · v0.4.0-17 · date range);
+  green CURRENT pill on latest release; color-coded type badges (green/blue/amber); dark download
+  card for current release with white CTA button.
+- `security-warning/index.html` — colored step progress circles (blue/purple/green); red-bordered
+  phone-scam callouts with warning icon; green "SAFE TO PROCEED" CTA block.
+- `privacy/index.html` — green-checkmark "at a glance" summary cards (2-column); colored SVG icons
+  before each of 6 policy section headings.
+- `terms/index.html` — glance cards with green/blue/red top borders; colored section icons throughout.
