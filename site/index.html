@@ -230,10 +230,10 @@ body.nav-open .mobile-nav-drawer {
   border-bottom-color: transparent;
 }
 
-/* HEADER CTA — "Download .exe — free" desktop / "Download" mobile ─────────── */
+/* HEADER CTA — "Download — free" desktop / "Download" mobile ────────────── */
 .header-cta-long  { display: inline; }
 .header-cta-short { display: none;   }
-@media (max-width: 360px) {
+@media (max-width: 719px) {
   .header-cta-long  { display: none;   }
   .header-cta-short { display: inline; }
 }
@@ -1094,7 +1094,8 @@ body.nav-open .mobile-nav-drawer {
     <h2>Portable .exe vs Windows installer (.msi)</h2>
     <p class="lead">Both versions are identical once running. The difference is in how they get onto your machine.</p>
 
-    <table class="compare-table" role="table">
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:var(--sp-5);">
+    <table class="compare-table" style="margin-top:0;" role="table">
       <thead>
         <tr>
           <th scope="col">Property</th>
@@ -1134,6 +1135,7 @@ body.nav-open .mobile-nav-drawer {
         </tr>
       </tbody>
     </table>
+    </div>
 
     <p style="margin-top:var(--sp-5);">
       <a class="inline-link" href="/download/">Full download page with SHA-256 hash, system requirements, and VirusTotal link &rarr;</a>
