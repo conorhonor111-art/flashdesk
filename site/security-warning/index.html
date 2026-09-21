@@ -303,6 +303,16 @@
         <line x1="4" y1="12" x2="20" y2="12"/>
         <polyline points="14,6 20,12 14,18"/>
       </symbol>
+      <!-- Warning triangle — used by phone-scam callout blocks; straight triangle + two line segments -->
+      <symbol id="i-warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <polyline points="12,3 22,21 2,21 12,3"/>
+        <line x1="12" y1="9" x2="12" y2="15"/>
+        <line x1="12" y1="17.5" x2="12" y2="18.5"/>
+      </symbol>
+      <!-- Checkmark — used by safe-proceed badge -->
+      <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <polyline points="4,12 9,17 20,6"/>
+      </symbol>
   </defs>
 </svg>
 
@@ -376,6 +386,110 @@
         <span class="step-progress-label">Run anyway</span>
       </div>
     </div>
+
+    <!-- ── Hero flow diagram: three connected steps ───────────────────────── -->
+    <figure style="margin-top:var(--sp-6);margin-bottom:0;" aria-label="Three-step process: browser download warning, SmartScreen dialog, then click Run anyway" role="img">
+    <svg viewBox="0 0 560 128" width="100%" style="max-width:560px;display:block;" aria-hidden="true">
+      <defs>
+        <linearGradient id="hfd-blue" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#3385FF"/>
+          <stop offset="100%" stop-color="#1A5FCA"/>
+        </linearGradient>
+        <linearGradient id="hfd-purple" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#9B5CF7"/>
+          <stop offset="100%" stop-color="#7C3AED"/>
+        </linearGradient>
+        <linearGradient id="hfd-green" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#2BD16B"/>
+          <stop offset="100%" stop-color="#16A34A"/>
+        </linearGradient>
+        <filter id="hfd-sh" x="-10%" y="-10%" width="120%" height="130%">
+          <feDropShadow dx="0" dy="2" stdDeviation="5" flood-color="rgba(0,0,0,0.16)"/>
+        </filter>
+      </defs>
+
+      <!-- Step 1: Browser warning card -->
+      <rect x="8" y="8" width="148" height="86" fill="url(#hfd-blue)" filter="url(#hfd-sh)"/>
+      <rect x="8" y="8" width="148" height="18" fill="#1456B0"/>
+      <rect x="16" y="12" width="46" height="10" fill="#1A73E8"/>
+      <rect x="16" y="30" width="108" height="5" fill="rgba(255,255,255,0.18)"/>
+      <!-- Shield outline (pentagonal) -->
+      <polyline points="82,46 71,46 71,60 82,67 93,60 93,46 82,46" fill="rgba(255,255,255,0.12)" stroke="white" stroke-width="1.5"/>
+      <!-- Warning exclamation inside shield -->
+      <line x1="82" y1="50" x2="82" y2="58" stroke="#F4B400" stroke-width="2"/>
+      <line x1="82" y1="61" x2="82" y2="62.5" stroke="#F4B400" stroke-width="2"/>
+      <!-- Step badge -->
+      <rect x="14" y="14" width="12" height="11" fill="#1A73E8"/>
+      <text x="20" y="23" text-anchor="middle" font-family="system-ui,sans-serif" font-size="8" font-weight="800" fill="white">1</text>
+      <text x="82" y="84" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9.5" font-weight="700" fill="white">Browser</text>
+      <text x="82" y="97" text-anchor="middle" font-family="system-ui,sans-serif" font-size="8" fill="rgba(255,255,255,0.75)">Download warning</text>
+
+      <!-- Arrow 1 -->
+      <line x1="160" y1="51" x2="192" y2="51" stroke="#CED4DA" stroke-width="2"/>
+      <polyline points="188,46 194,51 188,56" fill="none" stroke="#CED4DA" stroke-width="2"/>
+
+      <!-- Step 2: SmartScreen first screen card -->
+      <rect x="196" y="8" width="168" height="86" fill="white" stroke="#D0D7DE" stroke-width="1" filter="url(#hfd-sh)"/>
+      <rect x="196" y="8" width="168" height="20" fill="url(#hfd-purple)"/>
+      <!-- Window chrome squares -->
+      <rect x="346" y="12" width="8" height="8" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="1"/>
+      <rect x="357" y="12" width="8" height="8" fill="#C42B1C"/>
+      <line x1="359" y1="14" x2="363" y2="18" stroke="white" stroke-width="1"/>
+      <line x1="363" y1="14" x2="359" y2="18" stroke="white" stroke-width="1"/>
+      <!-- Shield in title bar -->
+      <polyline points="209,11 204,11 204,18 209,22 214,18 214,11 209,11" fill="none" stroke="white" stroke-width="1.5"/>
+      <polyline points="206,16 208,18 212,14" fill="none" stroke="white" stroke-width="1.5"/>
+      <rect x="220" y="14" width="90" height="5" fill="rgba(255,255,255,0.7)"/>
+      <!-- Body -->
+      <rect x="196" y="28" width="168" height="66" fill="#F3F3F3"/>
+      <!-- Shield in body -->
+      <polyline points="222,38 215,38 215,50 222,55 229,50 229,38 222,38" fill="rgba(0,83,214,0.07)" stroke="#0053D6" stroke-width="1.5"/>
+      <line x1="222" y1="42" x2="222" y2="49" stroke="#0053D6" stroke-width="1.5"/>
+      <line x1="222" y1="51.5" x2="222" y2="52.5" stroke="#0053D6" stroke-width="1.5"/>
+      <!-- Body text placeholder lines -->
+      <rect x="236" y="39" width="118" height="5" fill="#CED4DA"/>
+      <rect x="236" y="48" width="104" height="5" fill="#CED4DA"/>
+      <rect x="236" y="57" width="82" height="5" fill="#E9ECEF"/>
+      <!-- More info link bar -->
+      <rect x="236" y="67" width="38" height="5" fill="#1A73E8" opacity="0.55"/>
+      <!-- Don't run button -->
+      <rect x="236" y="76" width="66" height="12" fill="#0053D6"/>
+      <rect x="239" y="79" width="60" height="6" fill="rgba(255,255,255,0.15)"/>
+      <!-- Step badge -->
+      <rect x="204" y="14" width="11" height="9" fill="#7C3AED"/>
+      <text x="210" y="21.5" text-anchor="middle" font-family="system-ui,sans-serif" font-size="7" font-weight="800" fill="white">2</text>
+      <text x="280" y="110" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9.5" font-weight="700" fill="#495057">SmartScreen</text>
+      <text x="280" y="123" text-anchor="middle" font-family="system-ui,sans-serif" font-size="8" fill="#868E96">Click "More info"</text>
+
+      <!-- Arrow 2 -->
+      <line x1="368" y1="51" x2="400" y2="51" stroke="#CED4DA" stroke-width="2"/>
+      <polyline points="396,46 402,51 396,56" fill="none" stroke="#CED4DA" stroke-width="2"/>
+
+      <!-- Step 3: Run anyway card -->
+      <rect x="404" y="8" width="148" height="86" fill="url(#hfd-green)" filter="url(#hfd-sh)"/>
+      <rect x="404" y="8" width="148" height="20" fill="#14532D"/>
+      <!-- Window chrome squares -->
+      <rect x="528" y="12" width="8" height="8" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1"/>
+      <rect x="539" y="12" width="8" height="8" fill="#C42B1C"/>
+      <line x1="541" y1="14" x2="545" y2="18" stroke="white" stroke-width="1"/>
+      <line x1="545" y1="14" x2="541" y2="18" stroke="white" stroke-width="1"/>
+      <!-- Run anyway button (pale outlined) -->
+      <rect x="424" y="34" width="74" height="22" fill="rgba(255,255,255,0.22)" stroke="rgba(255,255,255,0.8)" stroke-width="1.5"/>
+      <!-- Checkmark in button -->
+      <polyline points="434,45 440,51 454,38" fill="none" stroke="white" stroke-width="2"/>
+      <!-- Don't run button (dark) -->
+      <rect x="424" y="60" width="74" height="16" fill="rgba(0,0,0,0.22)" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+      <!-- Button text sim lines -->
+      <rect x="428" y="39" width="22" height="5" fill="rgba(255,255,255,0.85)"/>
+      <rect x="456" y="39" width="24" height="5" fill="rgba(255,255,255,0.55)"/>
+      <!-- Step badge -->
+      <rect x="412" y="14" width="11" height="9" fill="#16A34A"/>
+      <text x="418" y="21.5" text-anchor="middle" font-family="system-ui,sans-serif" font-size="7" font-weight="800" fill="white">3</text>
+      <text x="478" y="110" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9.5" font-weight="700" fill="#495057">Run Anyway</text>
+      <text x="478" y="123" text-anchor="middle" font-family="system-ui,sans-serif" font-size="8" fill="#868E96">Click the pale button</text>
+    </svg>
+    </figure>
+
   </div>
 </section>
 
@@ -396,31 +510,71 @@
     </div>
     <p>Most browsers let the file through without any warning. If yours flags it, you will see something like this in the downloads area at the top of the browser window:</p>
 
-    <!-- Chrome/Edge download warning mockup — system font per CLAUDE.md rule -->
-    <div style="overflow:hidden; border-radius:var(--radius); border:1px solid #9AA3AE; margin-block:var(--sp-4); color-scheme:light;" role="img" aria-label="Screenshot of a browser download warning reading: FlashDesk.exe — Suspicious download blocked">
-      <div style="background:#F0F0F0; color:#202124; padding:var(--sp-2) var(--sp-3); font-family:system-ui,'Segoe UI',Arial,sans-serif; font-size:0.9rem; border-bottom:1px solid #9AA3AE;">
-        <strong>FlashDesk.exe</strong><br>
-        <span style="color:#C5221F; font-weight:600;">Suspicious download blocked</span>
-        &nbsp;<span style="color:#444; font-size:0.85rem;">&rsaquo;</span>
-      </div>
-    </div>
+    <!-- Chrome/Edge download warning mockup — SVG version -->
+    <figure style="margin-block:var(--sp-4);max-width:520px;" role="img" aria-label="Browser download warning: FlashDesk.exe — Suspicious download blocked, with an expand arrow on the right">
+    <svg viewBox="0 0 520 62" width="100%" style="display:block;" aria-hidden="true">
+      <defs>
+        <filter id="bdw1-sh" x="-2%" y="-5%" width="104%" height="120%">
+          <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="rgba(0,0,0,0.10)"/>
+        </filter>
+      </defs>
+      <!-- Background bar -->
+      <rect x="0" y="0" width="520" height="62" fill="#F0F0F0" stroke="#9AA3AE" stroke-width="1" filter="url(#bdw1-sh)"/>
+      <!-- Download file icon -->
+      <polyline points="18,12 18,50 34,50 34,22 28,12 18,12" fill="none" stroke="#5F6368" stroke-width="1.5"/>
+      <polyline points="28,12 28,22 34,22" fill="none" stroke="#5F6368" stroke-width="1.5"/>
+      <!-- Down arrow on file icon -->
+      <line x1="26" y1="29" x2="26" y2="40" stroke="#5F6368" stroke-width="1.5"/>
+      <polyline points="22,36 26,41 30,36" fill="none" stroke="#5F6368" stroke-width="1.5"/>
+      <!-- File name text -->
+      <text x="46" y="25" font-family="system-ui,'Segoe UI',Arial,sans-serif" font-size="13" font-weight="700" fill="#202124">FlashDesk.exe</text>
+      <!-- Warning text -->
+      <text x="46" y="46" font-family="system-ui,'Segoe UI',Arial,sans-serif" font-size="12" font-weight="600" fill="#C5221F">Suspicious download blocked</text>
+      <!-- Expand arrow button -->
+      <rect x="484" y="18" width="24" height="26" fill="rgba(0,0,0,0.06)"/>
+      <polyline points="490,28 496,34 502,28" fill="none" stroke="#5F6368" stroke-width="2"/>
+    </svg>
+    </figure>
 
     <p>Click the small <strong>&rsaquo;</strong> arrow at the right end of that line. A second box opens:</p>
 
-    <!-- Chrome download warning detail mockup — system font per CLAUDE.md rule -->
-    <div style="overflow:hidden; border-radius:var(--radius); border:1px solid #9AA3AE; margin-block:var(--sp-4); color-scheme:light;" role="img" aria-label="Screenshot of Chrome download warning with option to keep the file">
-      <div style="background:#F8F9FA; padding:var(--sp-3) var(--sp-4); font-family:system-ui,'Segoe UI',Arial,sans-serif; line-height:1.6;">
-        <strong>This file isn&rsquo;t commonly downloaded and it may be dangerous</strong><br>
-        <span style="color:#70757A; font-size:0.9rem;">Learn why Chrome blocks some downloads</span><br><br>
-        <span class="btn-dark">Delete from history</span>&nbsp;<span class="btn-pale">Download suspicious file</span>
-      </div>
-    </div>
+    <!-- Chrome download warning detail mockup — SVG version -->
+    <figure style="margin-block:var(--sp-4);max-width:520px;" role="img" aria-label="Browser download warning expanded: This file isn't commonly downloaded and it may be dangerous. Delete from history button (dark) and Download suspicious file button (pale).">
+    <svg viewBox="0 0 520 112" width="100%" style="display:block;" aria-hidden="true">
+      <defs>
+        <linearGradient id="bdw2-btn" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#1A78E8"/>
+          <stop offset="100%" stop-color="#1565C0"/>
+        </linearGradient>
+        <filter id="bdw2-sh" x="-2%" y="-5%" width="104%" height="120%">
+          <feDropShadow dx="0" dy="1" stdDeviation="3" flood-color="rgba(0,0,0,0.12)"/>
+        </filter>
+      </defs>
+      <!-- Background -->
+      <rect x="0" y="0" width="520" height="112" fill="#F8F9FA" stroke="#9AA3AE" stroke-width="1" filter="url(#bdw2-sh)"/>
+      <!-- Warning triangle icon -->
+      <polyline points="26,16 14,38 38,38 26,16" fill="none" stroke="#C5221F" stroke-width="2"/>
+      <line x1="26" y1="22" x2="26" y2="31" stroke="#C5221F" stroke-width="2"/>
+      <line x1="26" y1="34" x2="26" y2="35.5" stroke="#C5221F" stroke-width="2"/>
+      <!-- Warning title -->
+      <text x="52" y="24" font-family="system-ui,'Segoe UI',Arial,sans-serif" font-size="13" font-weight="700" fill="#202124">This file isn&#x27;t commonly downloaded</text>
+      <text x="52" y="41" font-family="system-ui,'Segoe UI',Arial,sans-serif" font-size="13" font-weight="700" fill="#202124">and it may be dangerous</text>
+      <!-- Subtitle -->
+      <text x="52" y="60" font-family="system-ui,'Segoe UI',Arial,sans-serif" font-size="12" fill="#70757A">Learn why Chrome blocks some downloads</text>
+      <!-- Delete from history button (dark/primary — solid blue fill) -->
+      <rect x="52" y="76" width="162" height="28" fill="url(#bdw2-btn)"/>
+      <text x="133" y="95" text-anchor="middle" font-family="system-ui,'Segoe UI',Arial,sans-serif" font-size="12" fill="white" font-weight="600">Delete from history</text>
+      <!-- Download suspicious file button (pale/secondary — outlined) -->
+      <rect x="224" y="76" width="188" height="28" fill="white" stroke="#9AA3AE" stroke-width="1.5"/>
+      <text x="318" y="95" text-anchor="middle" font-family="system-ui,'Segoe UI',Arial,sans-serif" font-size="12" fill="#1A73E8">Download suspicious file</text>
+    </svg>
+    </figure>
 
     <p>Press <strong>Download suspicious file</strong> — the pale button on the <strong>right</strong>. The solid dark blue button says <strong>Delete from history</strong> and removes the file.</p>
 
     <div class="phone-callout" role="alert">
       <div class="phone-callout-icon" aria-hidden="true">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="2,14 8,2 14,14 2,14"/><line x1="8" y1="6" x2="8" y2="10"/><line x1="8" y1="12" x2="8" y2="13"/></svg>
+        <svg class="icon" aria-hidden="true"><use href="#i-warning"/></svg>
       </div>
       <div class="phone-callout-body">
         <strong>Did someone phone you and send you here?</strong>
@@ -448,20 +602,55 @@
     </div>
     <p>Double-click FlashDesk.exe and Windows shows this before it runs anything. The blue box is a Windows SmartScreen warning:</p>
 
-    <!-- Windows SmartScreen first screen — system font per CLAUDE.md rule.
-         Uses Windows SmartScreen blue (#0053D6) to match what the user sees.
-         Explicit hex colours so the mockup renders correctly in dark mode too. -->
-    <div style="overflow:hidden; border-radius:var(--radius); border:1px solid #9AA3AE; margin-block:var(--sp-4); color-scheme:light;" role="img" aria-label="Screenshot of Windows SmartScreen: Windows protected your PC, with a More info link and a Don't run button">
-      <div style="background:#0053D6; color:#ffffff; padding:var(--sp-3) var(--sp-4); font-family:system-ui,'Segoe UI',Arial,sans-serif;">
-        <strong>Windows protected your PC</strong>
-      </div>
-      <div style="background:#f3f3f3; color:#1a1a1a; padding:var(--sp-3) var(--sp-4); font-family:system-ui,'Segoe UI',Arial,sans-serif; line-height:1.6;">
-        Microsoft Defender SmartScreen prevented an unrecognized app from starting.
-        Running this app might put your PC at risk.<br><br>
-        <span class="link-look">More info</span><br><br>
-        <span class="btn-dark">Don&rsquo;t run</span>
-      </div>
-    </div>
+    <!-- Windows SmartScreen first screen — SVG mockup with Defender shield, window chrome, and straight-line vocabulary -->
+    <figure style="margin-block:var(--sp-4);max-width:480px;" role="img" aria-label="Windows SmartScreen dialog: Windows protected your PC, with a More info link and a Don't run button">
+    <svg viewBox="0 0 460 222" width="100%" style="display:block;font-family:system-ui,'Segoe UI',Arial,sans-serif;" aria-hidden="true">
+      <defs>
+        <linearGradient id="ss2-hdr" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#1068F0"/>
+          <stop offset="100%" stop-color="#0053D6"/>
+        </linearGradient>
+        <filter id="ss2-sh" x="-5%" y="-5%" width="110%" height="115%">
+          <feDropShadow dx="0" dy="4" stdDeviation="10" flood-color="rgba(0,0,0,0.22)"/>
+        </filter>
+      </defs>
+      <!-- Window border + shadow -->
+      <rect x="20" y="10" width="420" height="202" fill="white" stroke="#9AA3AE" stroke-width="1" filter="url(#ss2-sh)"/>
+      <!-- Title bar -->
+      <rect x="20" y="10" width="420" height="42" fill="url(#ss2-hdr)"/>
+      <!-- Window chrome: minimize -->
+      <rect x="368" y="20" width="14" height="14" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>
+      <line x1="371" y1="29" x2="379" y2="29" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>
+      <!-- Window chrome: maximize -->
+      <rect x="386" y="20" width="14" height="14" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>
+      <rect x="389" y="23" width="8" height="8" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>
+      <!-- Window chrome: close (red) -->
+      <rect x="404" y="20" width="14" height="14" fill="#C42B1C"/>
+      <line x1="407" y1="23" x2="415" y2="31" stroke="white" stroke-width="1.5"/>
+      <line x1="415" y1="23" x2="407" y2="31" stroke="white" stroke-width="1.5"/>
+      <!-- Windows Defender shield (pentagonal, white outline, checkmark inside) -->
+      <polyline points="46,16 37,16 37,30 46,36 55,30 55,16 46,16" fill="rgba(255,255,255,0.12)" stroke="white" stroke-width="2"/>
+      <polyline points="41,25 45,29 52,22" fill="none" stroke="white" stroke-width="2"/>
+      <!-- Title text -->
+      <text x="65" y="37" font-size="15" font-weight="700" fill="white">Windows protected your PC</text>
+      <!-- Body background -->
+      <rect x="20" y="52" width="420" height="160" fill="#F3F3F3"/>
+      <!-- Defender shield icon in body (larger, blue, exclamation) -->
+      <polyline points="76,74 60,74 60,97 76,107 92,97 92,74 76,74" fill="rgba(0,83,214,0.07)" stroke="#0053D6" stroke-width="2"/>
+      <line x1="76" y1="81" x2="76" y2="94" stroke="#0053D6" stroke-width="2.5"/>
+      <line x1="76" y1="98" x2="76" y2="100" stroke="#0053D6" stroke-width="2.5"/>
+      <!-- Body text (two lines) -->
+      <text x="108" y="77" font-size="12.5" fill="#1a1a1a">Microsoft Defender SmartScreen prevented an</text>
+      <text x="108" y="95" font-size="12.5" fill="#1a1a1a">unrecognized app from starting. Running this</text>
+      <text x="108" y="113" font-size="12.5" fill="#1a1a1a">app might put your PC at risk.</text>
+      <!-- More info underlined link -->
+      <text x="108" y="141" font-size="12.5" fill="#0053D6">More info</text>
+      <line x1="108" y1="143" x2="160" y2="143" stroke="#0053D6" stroke-width="1"/>
+      <!-- Don't run button (solid blue) -->
+      <rect x="108" y="158" width="112" height="36" fill="#0053D6"/>
+      <text x="164" y="181" text-anchor="middle" font-size="13" fill="white" font-weight="600">Don&#39;t run</text>
+    </svg>
+    </figure>
 
     <p><strong>There is no way forward on this screen.</strong> The only button is <strong>Don&rsquo;t run</strong>.</p>
 
@@ -484,18 +673,61 @@
     </div>
     <p>After clicking <strong>More info</strong>, the box changes to show the app name, the publisher line, and now two buttons:</p>
 
-    <!-- Windows SmartScreen second screen — system font per CLAUDE.md rule.
-         Uses Windows SmartScreen blue (#0053D6). Explicit hex for dark-mode safety. -->
-    <div style="overflow:hidden; border-radius:var(--radius); border:1px solid #9AA3AE; margin-block:var(--sp-4); color-scheme:light;" role="img" aria-label="Screenshot of Windows SmartScreen after clicking More info, showing App: FlashDesk.exe, Publisher: Unknown publisher, and two buttons: Run anyway and Don't run">
-      <div style="background:#0053D6; color:#ffffff; padding:var(--sp-3) var(--sp-4); font-family:system-ui,'Segoe UI',Arial,sans-serif;">
-        <strong>Windows protected your PC</strong>
-      </div>
-      <div style="background:#f3f3f3; color:#1a1a1a; padding:var(--sp-3) var(--sp-4); font-family:system-ui,'Segoe UI',Arial,sans-serif; line-height:1.8;">
-        App:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FlashDesk.exe<br>
-        Publisher:&nbsp;<strong>Unknown publisher</strong><br><br>
-        <span class="btn-pale">Run anyway</span>&nbsp;<span class="btn-dark">Don&rsquo;t run</span>
-      </div>
-    </div>
+    <!-- Windows SmartScreen second screen — SVG mockup with Defender shield (checkmark), app/publisher info, and two buttons -->
+    <figure style="margin-block:var(--sp-4);max-width:480px;" role="img" aria-label="Windows SmartScreen after clicking More info: App FlashDesk.exe, Publisher Unknown publisher, with Run anyway button (pale, left) and Don't run button (dark blue, right)">
+    <svg viewBox="0 0 460 248" width="100%" style="display:block;font-family:system-ui,'Segoe UI',Arial,sans-serif;" aria-hidden="true">
+      <defs>
+        <linearGradient id="ss3-hdr" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#1068F0"/>
+          <stop offset="100%" stop-color="#0053D6"/>
+        </linearGradient>
+        <filter id="ss3-sh" x="-5%" y="-5%" width="110%" height="115%">
+          <feDropShadow dx="0" dy="4" stdDeviation="10" flood-color="rgba(0,0,0,0.22)"/>
+        </filter>
+      </defs>
+      <!-- Window border + shadow -->
+      <rect x="20" y="10" width="420" height="228" fill="white" stroke="#9AA3AE" stroke-width="1" filter="url(#ss3-sh)"/>
+      <!-- Title bar -->
+      <rect x="20" y="10" width="420" height="42" fill="url(#ss3-hdr)"/>
+      <!-- Window chrome: minimize -->
+      <rect x="368" y="20" width="14" height="14" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>
+      <line x1="371" y1="29" x2="379" y2="29" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>
+      <!-- Window chrome: maximize -->
+      <rect x="386" y="20" width="14" height="14" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>
+      <rect x="389" y="23" width="8" height="8" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>
+      <!-- Window chrome: close (red) -->
+      <rect x="404" y="20" width="14" height="14" fill="#C42B1C"/>
+      <line x1="407" y1="23" x2="415" y2="31" stroke="white" stroke-width="1.5"/>
+      <line x1="415" y1="23" x2="407" y2="31" stroke="white" stroke-width="1.5"/>
+      <!-- Windows Defender shield in title bar (with checkmark — indicating info view) -->
+      <polyline points="46,16 37,16 37,30 46,36 55,30 55,16 46,16" fill="rgba(255,255,255,0.12)" stroke="white" stroke-width="2"/>
+      <polyline points="41,25 45,29 52,22" fill="none" stroke="white" stroke-width="2"/>
+      <!-- Title text -->
+      <text x="65" y="37" font-size="15" font-weight="700" fill="white">Windows protected your PC</text>
+      <!-- Body background -->
+      <rect x="20" y="52" width="420" height="186" fill="#F3F3F3"/>
+      <!-- Defender shield in body (with checkmark, green-tinted — "you chose to view more") -->
+      <polyline points="76,68 60,68 60,90 76,100 92,90 92,68 76,68" fill="rgba(0,83,214,0.07)" stroke="#0053D6" stroke-width="2"/>
+      <polyline points="68,80 74,86 85,75" fill="none" stroke="#0053D6" stroke-width="2"/>
+      <!-- App: label + value -->
+      <text x="108" y="75" font-size="12.5" fill="#555555">App:</text>
+      <text x="172" y="75" font-size="12.5" fill="#1a1a1a">FlashDesk.exe</text>
+      <!-- Publisher: label + value -->
+      <text x="108" y="97" font-size="12.5" fill="#555555">Publisher:</text>
+      <text x="172" y="97" font-size="12.5" font-weight="700" fill="#1a1a1a">Unknown publisher</text>
+      <!-- Divider -->
+      <line x1="108" y1="113" x2="420" y2="113" stroke="#D0D7DE" stroke-width="1"/>
+      <!-- Body text -->
+      <text x="108" y="131" font-size="12.5" fill="#1a1a1a">Microsoft Defender SmartScreen prevented an</text>
+      <text x="108" y="149" font-size="12.5" fill="#1a1a1a">unrecognized app from starting.</text>
+      <!-- Run anyway button (pale — outlined, white fill — this is what the user clicks) -->
+      <rect x="108" y="166" width="118" height="36" fill="white" stroke="#9AA3AE" stroke-width="1.5"/>
+      <text x="167" y="189" text-anchor="middle" font-size="13" fill="#1a1a1a" font-weight="600">Run anyway</text>
+      <!-- Don't run button (solid dark blue — do NOT click this) -->
+      <rect x="236" y="166" width="112" height="36" fill="#0053D6"/>
+      <text x="292" y="189" text-anchor="middle" font-size="13" fill="white" font-weight="600">Don&#39;t run</text>
+    </svg>
+    </figure>
 
     <p>Press <strong>Run anyway</strong> — the pale button on the <strong>left</strong>. The solid dark blue button says <strong>Don&rsquo;t run</strong>.</p>
 
@@ -503,7 +735,7 @@
 
     <div class="phone-callout" role="alert">
       <div class="phone-callout-icon" aria-hidden="true">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="2,14 8,2 14,14 2,14"/><line x1="8" y1="6" x2="8" y2="10"/><line x1="8" y1="12" x2="8" y2="13"/></svg>
+        <svg class="icon" aria-hidden="true"><use href="#i-warning"/></svg>
       </div>
       <div class="phone-callout-body">
         <strong>Did someone phone you and send you here?</strong>
@@ -560,12 +792,27 @@
 
     <p>FlashDesk is open about exactly what it can and cannot do during a session. There are no hidden capabilities. The <a class="inline-link" href="/privacy/">privacy page</a> lists everything plainly.</p>
 
-    <ul class="plain mt-4">
-      <li>It can see your screen and move your mouse — <em>only</em> while a session is active and you have accepted the connection.</li>
-      <li>It cannot access your files, camera, microphone, or saved passwords.</li>
-      <li>It runs only while you have it open. There is no background process, no startup entry, and nothing is installed on your computer.</li>
-      <li>It stops the moment you close the window. The person helping you loses access instantly.</li>
-      <li>You can end a session at any time by clicking the red stop button or closing the window. That is a design requirement, not a courtesy.</li>
+    <ul class="plain mt-4" style="list-style:none;padding:0;">
+      <li style="display:flex;gap:var(--sp-3);align-items:flex-start;margin-bottom:var(--sp-3);">
+        <svg class="icon" aria-hidden="true" style="flex-shrink:0;color:#1A73E8;margin-top:2px;"><use href="#i-screen"/></svg>
+        <span>It can see your screen and move your mouse — <em>only</em> while a session is active and you have accepted the connection.</span>
+      </li>
+      <li style="display:flex;gap:var(--sp-3);align-items:flex-start;margin-bottom:var(--sp-3);">
+        <svg class="icon" aria-hidden="true" style="flex-shrink:0;color:#E84040;margin-top:2px;"><use href="#i-folder"/></svg>
+        <span>It cannot access your files, camera, microphone, or saved passwords.</span>
+      </li>
+      <li style="display:flex;gap:var(--sp-3);align-items:flex-start;margin-bottom:var(--sp-3);">
+        <svg class="icon" aria-hidden="true" style="flex-shrink:0;color:#868E96;margin-top:2px;"><use href="#i-monitors"/></svg>
+        <span>It runs only while you have it open. There is no background process, no startup entry, and nothing is installed on your computer.</span>
+      </li>
+      <li style="display:flex;gap:var(--sp-3);align-items:flex-start;margin-bottom:var(--sp-3);">
+        <svg class="icon" aria-hidden="true" style="flex-shrink:0;color:#E84040;margin-top:2px;"><use href="#i-close"/></svg>
+        <span>It stops the moment you close the window. The person helping you loses access instantly.</span>
+      </li>
+      <li style="display:flex;gap:var(--sp-3);align-items:flex-start;margin-bottom:var(--sp-3);">
+        <svg class="icon" aria-hidden="true" style="flex-shrink:0;color:#2BD16B;margin-top:2px;"><use href="#i-arrival"/></svg>
+        <span>You can end a session at any time by clicking the red stop button or closing the window. That is a design requirement, not a courtesy.</span>
+      </li>
     </ul>
 
     <p class="mt-4"><a class="inline-link" href="/privacy/">Read the full privacy policy &rarr;</a></p>
@@ -597,7 +844,7 @@
   <div class="contained">
     <div class="safe-proceed">
       <div class="safe-proceed-badge">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" width="14" height="14"><polyline points="2,9 6,13 14,4"/></svg>
+        <svg class="icon" aria-hidden="true" style="width:14px;height:14px;"><use href="#i-check"/></svg>
         Safe to proceed
       </div>
       <h2>Ready to proceed?</h2>

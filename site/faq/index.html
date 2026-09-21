@@ -508,7 +508,7 @@
 }
 
 .faq-item[open] summary::after {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%231B1F24' stroke-width='2.5' stroke-linecap='butt' stroke-linejoin='miter'%3E%3Cline x1='4' y1='10' x2='16' y2='10'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%231B1F24' stroke-width='2' stroke-linecap='butt' stroke-linejoin='miter'%3E%3Cline x1='4' y1='10' x2='16' y2='10'/%3E%3C/svg%3E");
 }
 
 .faq-item summary:hover {
@@ -633,6 +633,36 @@
   color: #2BD16B;
   font-style: normal;
   font-weight: 700;
+}
+
+/* ── FAQ: hero flow diagram ─────────────────────────────────────────────────── */
+.hero-flow-diagram {
+  display:    block;
+  margin-top: 1.5rem;
+  max-width:  520px;
+}
+
+@media (max-width: 420px) {
+  .hero-flow-diagram { display: none; }
+}
+
+/* ── Consent statement inner layout ─────────────────────────────────────────── */
+.statement-inner {
+  display:     flex;
+  align-items: flex-start;
+  gap:         1rem;
+}
+
+/* ── Scam warning with icon ──────────────────────────────────────────────────── */
+.scam-inner {
+  display:     flex;
+  align-items: flex-start;
+  gap:         0.75rem;
+}
+
+.scam-inner svg {
+  flex-shrink: 0;
+  margin-top:  2px;
 }
 </style>
 </head>
@@ -868,6 +898,35 @@
     <p class="lead">Straightforward answers to the questions people actually ask before
     letting someone use FlashDesk on their computer. Every answer is written by the person
     who built it.</p>
+    <svg class="hero-flow-diagram" viewBox="0 0 500 96" width="100%" aria-label="How FlashDesk works in three steps: open to get your code, share it, helper presses Accept" role="img">
+      <!-- Step 1: Open FlashDesk -->
+      <rect x="2" y="2" width="136" height="84" rx="5" fill="#F8F9FA" stroke="#E9ECEF" stroke-width="1.5"/>
+      <text x="70" y="16" text-anchor="middle" font-family="inherit" font-size="7.5" font-weight="700" fill="#868E96" letter-spacing="0.08em">STEP 1</text>
+      <use href="#i-screen" x="59" y="20" width="22" height="22" style="color:#17191E"/>
+      <text x="70" y="56" text-anchor="middle" font-family="inherit" font-size="9.5" font-weight="700" fill="#212529">Open FlashDesk</text>
+      <text x="70" y="69" text-anchor="middle" font-family="inherit" font-size="8" fill="#868E96">9-digit code appears</text>
+      <text x="70" y="80" text-anchor="middle" font-family="inherit" font-size="8" fill="#868E96">on your screen</text>
+      <!-- Arrow 1 -->
+      <line x1="142" y1="44" x2="177" y2="44" stroke="#2BD16B" stroke-width="2" stroke-linecap="butt"/>
+      <polyline points="171,38 178,44 171,50" fill="none" stroke="#2BD16B" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter"/>
+      <!-- Step 2: Share the code -->
+      <rect x="182" y="2" width="136" height="84" rx="5" fill="#F8F9FA" stroke="#E9ECEF" stroke-width="1.5"/>
+      <text x="250" y="16" text-anchor="middle" font-family="inherit" font-size="7.5" font-weight="700" fill="#868E96" letter-spacing="0.08em">STEP 2</text>
+      <use href="#i-address" x="239" y="20" width="22" height="22" style="color:#17191E"/>
+      <text x="250" y="56" text-anchor="middle" font-family="inherit" font-size="9.5" font-weight="700" fill="#212529">Share the code</text>
+      <text x="250" y="69" text-anchor="middle" font-family="inherit" font-size="8" fill="#868E96">Tell your helper</text>
+      <text x="250" y="80" text-anchor="middle" font-family="inherit" font-size="8" fill="#868E96">the 9-digit number</text>
+      <!-- Arrow 2 -->
+      <line x1="322" y1="44" x2="357" y2="44" stroke="#2BD16B" stroke-width="2" stroke-linecap="butt"/>
+      <polyline points="351,38 358,44 351,50" fill="none" stroke="#2BD16B" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter"/>
+      <!-- Step 3: Press Accept -->
+      <rect x="362" y="2" width="136" height="84" rx="5" fill="#E6F9EE" stroke="#B3EDCC" stroke-width="1.5"/>
+      <text x="430" y="16" text-anchor="middle" font-family="inherit" font-size="7.5" font-weight="700" fill="#1A7040" letter-spacing="0.08em">STEP 3</text>
+      <use href="#i-dialog" x="419" y="20" width="22" height="22" style="color:#1A7040"/>
+      <text x="430" y="56" text-anchor="middle" font-family="inherit" font-size="9.5" font-weight="700" fill="#212529">Press Accept</text>
+      <text x="430" y="69" text-anchor="middle" font-family="inherit" font-size="8" fill="#868E96">Helper sees your screen</text>
+      <text x="430" y="80" text-anchor="middle" font-family="inherit" font-size="8" fill="#1A7040">You stay in control</text>
+    </svg>
   </div>
 </section>
 
@@ -877,8 +936,16 @@
 <section class="band band-alt" aria-label="Key fact">
   <div class="contained">
     <div class="statement-gradient">
-      <p class="statement">The first time anyone connects, a human has to press <em>Accept</em>.
-      There is no way around it, and no way to do it for them.</p>
+      <div class="statement-inner">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#2BD16B" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter" aria-hidden="true" style="flex-shrink:0;margin-top:2px;">
+          <rect x="4" y="5" width="16" height="13"/>
+          <line x1="4" y1="9" x2="20" y2="9"/>
+          <rect x="7" y="12.5" width="4" height="3"/>
+          <rect x="13" y="12.5" width="4" height="3"/>
+        </svg>
+        <p class="statement">The first time anyone connects, a human has to press <em>Accept</em>.
+        There is no way around it, and no way to do it for them.</p>
+      </div>
     </div>
   </div>
 </section>
@@ -899,10 +966,10 @@
 
     <!-- Jump navigation -->
     <nav class="faq-nav" aria-label="Jump to section">
-      <a href="#faq-safety">Safety</a>
-      <a href="#faq-privacy">Privacy</a>
-      <a href="#faq-technical">Technical</a>
-      <a href="#faq-helpers">For the person helping</a>
+      <a href="#faq-safety"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="miter" aria-hidden="true" width="14" height="14"><polyline points="7,1 12,3.5 12,8 7,13 2,8 2,3.5 7,1"/><polyline points="4.5,7 6.5,9 9.5,5"/></svg>Safety</a>
+      <a href="#faq-privacy"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="miter" aria-hidden="true" width="14" height="14"><rect x="2" y="6" width="10" height="7"/><polyline points="4,6 4,3.5 10,3.5 10,6"/><line x1="7" y1="9" x2="7" y2="11"/></svg>Privacy</a>
+      <a href="#faq-technical"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="miter" aria-hidden="true" width="14" height="14"><rect x="3" y="3" width="8" height="8"/><line x1="5.5" y1="3" x2="5.5" y2="1"/><line x1="8.5" y1="3" x2="8.5" y2="1"/><line x1="5.5" y1="11" x2="5.5" y2="13"/><line x1="8.5" y1="11" x2="8.5" y2="13"/><line x1="3" y1="5.5" x2="1" y2="5.5"/><line x1="3" y1="8.5" x2="1" y2="8.5"/><line x1="11" y1="5.5" x2="13" y2="5.5"/><line x1="11" y1="8.5" x2="13" y2="8.5"/></svg>Technical</a>
+      <a href="#faq-helpers"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="miter" aria-hidden="true" width="14" height="14"><rect x="4.5" y="1" width="5" height="4"/><line x1="7" y1="5" x2="7" y2="8"/><polyline points="1.5,13 3,8 11,8 12.5,13"/></svg>For the person helping</a>
     </nav>
 
     <!-- Expand all / Collapse all -->
@@ -914,7 +981,7 @@
     <div class="faq-section" id="faq-safety" aria-labelledby="faq-safety-label">
       <div class="faq-section-header">
         <span class="faq-section-badge badge--safety">
-          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 1L2 3v4c0 3 2.5 5 5 6 2.5-1 5-3 5-6V3L7 1z"/></svg>
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="miter" aria-hidden="true"><polyline points="7,1 12,3.5 12,8 7,13 2,8 2,3.5 7,1"/><polyline points="4.5,7 6.5,9 9.5,5"/></svg>
           Safety
         </span>
         <span class="faq-count-badge">12 questions</span>
@@ -1089,7 +1156,7 @@
     <div class="faq-section" id="faq-privacy" aria-labelledby="faq-privacy-label">
       <div class="faq-section-header">
         <span class="faq-section-badge badge--privacy">
-          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="6" width="8" height="7" rx="1"/><path d="M5 6V4a2 2 0 0 1 4 0v2"/></svg>
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="miter" aria-hidden="true"><rect x="2" y="6" width="10" height="7"/><polyline points="4,6 4,3.5 10,3.5 10,6"/><line x1="7" y1="9" x2="7" y2="11"/></svg>
           Privacy
         </span>
         <span class="faq-count-badge">8 questions</span>
@@ -1192,7 +1259,7 @@
     <div class="faq-section" id="faq-technical" aria-labelledby="faq-technical-label">
       <div class="faq-section-header">
         <span class="faq-section-badge badge--technical">
-          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="7" cy="7" r="2"/><path d="M7 1v2M7 11v2M1 7h2M11 7h2M3 3l1.5 1.5M9.5 9.5L11 11M11 3l-1.5 1.5M4.5 9.5L3 11"/></svg>
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="miter" aria-hidden="true"><rect x="3" y="3" width="8" height="8"/><line x1="5.5" y1="3" x2="5.5" y2="1"/><line x1="8.5" y1="3" x2="8.5" y2="1"/><line x1="5.5" y1="11" x2="5.5" y2="13"/><line x1="8.5" y1="11" x2="8.5" y2="13"/><line x1="3" y1="5.5" x2="1" y2="5.5"/><line x1="3" y1="8.5" x2="1" y2="8.5"/><line x1="11" y1="5.5" x2="13" y2="5.5"/><line x1="11" y1="8.5" x2="13" y2="8.5"/></svg>
           Technical
         </span>
         <span class="faq-count-badge">12 questions</span>
@@ -1343,7 +1410,7 @@
     <div class="faq-section" id="faq-helpers" aria-labelledby="faq-helpers-label">
       <div class="faq-section-header">
         <span class="faq-section-badge badge--helpers">
-          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="7" cy="4" r="2.5"/><path d="M2 13c0-2.8 2.2-5 5-5s5 2.2 5 5"/></svg>
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="butt" stroke-linejoin="miter" aria-hidden="true"><rect x="4.5" y="1" width="5" height="4"/><line x1="7" y1="5" x2="7" y2="8"/><polyline points="1.5,13 3,8 11,8 12.5,13"/></svg>
           For the person helping
         </span>
         <span class="faq-count-badge">3 questions</span>
@@ -1394,9 +1461,16 @@
       This must match the footer wording exactly. Do not paraphrase.
     -->
     <aside class="scam" role="note" aria-label="Scam warning" style="margin-top: var(--sp-7);">
-      <p><strong>FlashDesk will never telephone you.</strong> If someone calls claiming to be us,
-      hang up. Legitimate remote-support sessions only ever start with you downloading FlashDesk
-      yourself — not because someone told you to in an unsolicited call.</p>
+      <div class="scam-inner">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#E84040" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter" aria-hidden="true">
+          <polygon points="12,3 22,21 2,21"/>
+          <line x1="12" y1="9" x2="12" y2="15"/>
+          <line x1="12" y1="18" x2="12" y2="19"/>
+        </svg>
+        <p><strong>FlashDesk will never telephone you.</strong> If someone calls claiming to be us,
+        hang up. Legitimate remote-support sessions only ever start with you downloading FlashDesk
+        yourself — not because someone told you to in an unsolicited call.</p>
+      </div>
     </aside>
 
   </div>

@@ -194,6 +194,43 @@
         <line x1="4" y1="12" x2="20" y2="12"/>
         <polyline points="14,6 20,12 14,18"/>
       </symbol>
+      <!-- i-tag: price tag / label shape — used for "It is free" -->
+      <symbol id="i-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <polyline points="2,5 2,19 14,19 21,12 14,5 2,5"/>
+        <rect x="5" y="9" width="4" height="4"/>
+      </symbol>
+      <!-- i-prohibited: rectangle with diagonal slash — used for "No deception" -->
+      <symbol id="i-prohibited" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <rect x="3" y="3" width="18" height="18"/>
+        <line x1="3" y1="21" x2="21" y2="3"/>
+      </symbol>
+      <!-- i-lock: straight-line padlock — inverted-U shackle (three segments), no arcs -->
+      <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <rect x="4" y="11" width="16" height="10"/>
+        <polyline points="8,11 8,6 16,6 16,11"/>
+      </symbol>
+      <!-- i-envelope: rectangle with V-flap — used for contact section -->
+      <symbol id="i-envelope" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <rect x="3" y="6" width="18" height="13"/>
+        <polyline points="3,6 12,14 21,6"/>
+      </symbol>
+      <!-- i-warning: triangle with exclamation — used for no-warranty and scam callout -->
+      <symbol id="i-warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <polyline points="2,20 12,3 22,20 2,20"/>
+        <line x1="12" y1="9" x2="12" y2="14"/>
+        <line x1="12" y1="17" x2="12" y2="18"/>
+      </symbol>
+      <!-- i-check: checkmark — used for permitted-uses section -->
+      <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <polyline points="3,12 9,18 21,6"/>
+      </symbol>
+      <!-- i-doc-revision: document with up-arrow inside — used for changes-to-terms section -->
+      <symbol id="i-doc-revision" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter">
+        <polyline points="5,2 5,22 19,22 19,8 13,2 5,2"/>
+        <polyline points="13,2 13,8 19,8"/>
+        <line x1="12" y1="18" x2="12" y2="11"/>
+        <polyline points="9,14 12,11 15,14"/>
+      </symbol>
   </defs>
 </svg>
 
@@ -279,7 +316,7 @@
 
         <div class="card short-version-card-free">
           <div class="icon-tile" aria-hidden="true">
-            <svg class="icon icon-lg"><use href="#i-file"/></svg>
+            <svg class="icon icon-lg"><use href="#i-tag"/></svg>
           </div>
           <h3>It is free</h3>
           <p>FlashDesk costs nothing to download or use. There is no subscription, no account, and no in-app purchase.</p>
@@ -287,7 +324,7 @@
 
         <div class="card short-version-card-warranty">
           <div class="icon-tile" aria-hidden="true">
-            <svg class="icon icon-lg"><use href="#i-log"/></svg>
+            <svg class="icon icon-lg"><use href="#i-warning"/></svg>
           </div>
           <h3>No warranty</h3>
           <p>FlashDesk is provided as is. If something goes wrong I will try to help, but I cannot promise a fix or take responsibility for the outcome.</p>
@@ -295,7 +332,7 @@
 
         <div class="card short-version-card-deception">
           <div class="icon-tile" aria-hidden="true">
-            <svg class="icon icon-lg"><use href="#i-band"/></svg>
+            <svg class="icon icon-lg"><use href="#i-prohibited"/></svg>
           </div>
           <h3>No deception</h3>
           <p>You must not use FlashDesk to deceive or defraud anyone. Using it to gain access under false pretences is not a permitted use.</p>
@@ -314,7 +351,7 @@
   <div class="contained">
     <div class="prose">
       <div class="terms-section-icon tsicon--blue" aria-hidden="true">
-        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="16" height="12"/><line x1="7" y1="19" x2="13" y2="19"/><line x1="10" y1="15" x2="10" y2="19"/></svg>
+        <svg class="icon"><use href="#i-screen"/></svg>
       </div>
       <h2>1. What FlashDesk is</h2>
       <p>FlashDesk is a remote support tool for Windows. When you run it, it generates a 9-digit ID. Someone who already has your trust — a family member, a friend, a support person you called — can enter that ID on their own computer to see your screen and control your mouse, so they can help you with a problem.</p>
@@ -332,7 +369,7 @@
   <div class="contained">
     <div class="prose">
       <div class="terms-section-icon tsicon--green" aria-hidden="true">
-        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="2,10 7,15 18,5"/></svg>
+        <svg class="icon"><use href="#i-check"/></svg>
       </div>
       <h2>2. What you can and cannot do</h2>
 
@@ -351,7 +388,8 @@
         <li><strong>Sharing access without consent.</strong> Do not allow a third party to use a session the other person did not know would be shared.</li>
       </ul>
 
-      <div class="scam mt-4" role="note" aria-label="Scam warning">
+      <div class="scam mt-4" role="note" aria-label="Scam warning" style="display:flex;align-items:flex-start;gap:var(--sp-3)">
+        <svg class="icon icon-lg" aria-hidden="true" style="color:#E84040;flex-shrink:0;margin-top:2px"><use href="#i-warning"/></svg>
         <p><strong>FlashDesk will never telephone you unsolicited.</strong> If you receive a call from someone claiming to be from FlashDesk, Microsoft, your internet provider, or any other company — and they ask you to download FlashDesk or give them your 9-digit ID — hang up. That is a scam. Legitimate support starts with you making contact, not the other way around.</p>
       </div>
     </div>
@@ -366,7 +404,7 @@
   <div class="contained">
     <div class="prose">
       <div class="terms-section-icon tsicon--amber" aria-hidden="true">
-        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="2,17 10,3 18,17 2,17"/><line x1="10" y1="8" x2="10" y2="12"/><line x1="10" y1="14" x2="10" y2="15.5"/></svg>
+        <svg class="icon"><use href="#i-warning"/></svg>
       </div>
       <h2>3. No warranty</h2>
       <p>FlashDesk is provided <strong>as is</strong>, without any warranty of any kind — express or implied. This includes, but is not limited to, any implied warranty of merchantability, fitness for a particular purpose, or non-infringement.</p>
@@ -393,7 +431,7 @@
   <div class="contained">
     <div class="prose">
       <div class="terms-section-icon tsicon--purple" aria-hidden="true">
-        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="8" width="14" height="10" rx="1"/><path d="M7 8V6a3 3 0 0 1 6 0v2"/></svg>
+        <svg class="icon"><use href="#i-lock"/></svg>
       </div>
       <h2>4. Governing law</h2>
       <p>These terms are governed by the laws of Ireland. Any dispute that cannot be resolved informally will be subject to the non-exclusive jurisdiction of the courts of Ireland.</p>
@@ -410,7 +448,7 @@
   <div class="contained">
     <div class="prose">
       <div class="terms-section-icon tsicon--teal" aria-hidden="true">
-        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,10 8,5 13,10"/><line x1="8" y1="5" x2="8" y2="17"/><line x1="11" y1="15" x2="17" y2="15"/><line x1="14" y1="12" x2="17" y2="15"/><line x1="14" y1="18" x2="17" y2="15"/></svg>
+        <svg class="icon"><use href="#i-doc-revision"/></svg>
       </div>
       <h2>5. Changes to these terms</h2>
       <p>If these terms change, the revision will be dated and posted here. There is no mailing list or notification — check back if it matters to you. Continuing to use FlashDesk after a change has been posted means you accept the revised terms.</p>
@@ -427,7 +465,7 @@
   <div class="contained">
     <div class="prose">
       <div class="terms-section-icon tsicon--red" aria-hidden="true">
-        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 2L3 5v5c0 5 3.5 8 7 9 3.5-1 7-4 7-9V5L10 2z"/></svg>
+        <svg class="icon"><use href="#i-envelope"/></svg>
       </div>
       <h2>6. Questions about these terms</h2>
       <p>If anything here is unclear, or if you have a concern about how FlashDesk is being used, write to:</p>
