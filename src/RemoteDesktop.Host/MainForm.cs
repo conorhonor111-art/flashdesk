@@ -9,6 +9,7 @@ using RemoteDesktop.Shared.Identity;
 using RemoteDesktop.Shared.Protocol;
 using RemoteDesktop.UI;
 using RemoteDesktop.Viewer;
+using RemoteDesktop.Viewer.Files;
 using RemoteDesktop.Viewer.Net;
 
 namespace RemoteDesktop.Host;
@@ -73,6 +74,18 @@ public sealed class MainForm : Form
     // downloaded FlashDesk for help will never take. See UpdateConnectAffordance.
     private readonly Button _connect = Theme.MakeButton("Connect", ButtonKind.Neutral);
     private readonly Label _connectNote = Theme.Caption("");
+
+    /// <summary>
+    /// Rolling list of the last 10 peer IDs this operator connected to. Persists between
+    /// sessions; the host side never sees it. Populated on each successful connection.
+    /// </summary>
+    private readonly ConnectionHistory _connectionHistory = new(FlashDeskFolder.Current);
+
+    /// <summary>
+    /// Link shown below the connect row when <see cref="_connectionHistory"/> has entries.
+    /// Clicking it opens a dropdown of recent numbers; picking one fills the peer box and dials.
+    /// </summary>
+    private readonly LinkLabel _recentLink = Theme.MakeLink("Recent connections");
     private readonly Button _toggle = Theme.MakeButton("Stop sharing", ButtonKind.Neutral);
     private readonly LinkLabel _detailsLink = Theme.MakeLink("Technical details");
 
@@ -519,9 +532,15 @@ public sealed class MainForm : Form
         // from. It appears only when it has something to say — same rule as _heroNote.
         _connectNote.Visible = false;
 
+        // Recent-connections link. Only visible when at least one past connection is recorded;
+        // hidden for first-time operators so the card stays uncluttered until history exists.
+        _recentLink.Margin = new Padding(0, 0, 0, Theme.S1);
+        _recentLink.Visible = _connectionHistory.Entries.Count > 0;
+        _recentLink.Click += (_, _) => ShowRecentMenu();
+
         // Same padding as the hero card. Uneven padding between two cards in one window is exactly
         // what CLAUDE.md's spacing rationale names as what makes software look assembled.
-        return MakeCard(new Padding(Theme.S4), caption, row, _connectNote);
+        return MakeCard(new Padding(Theme.S4), caption, row, _recentLink, _connectNote);
     }
 
     /// <summary>
@@ -532,6 +551,30 @@ public sealed class MainForm : Form
     {
         bool ready = FlashDeskId.IsValid(FlashDeskId.Normalise(_peerBox.Text));
         Theme.Style(_connect, ready ? ButtonKind.Primary : ButtonKind.Neutral);
+    }
+
+    /// <summary>
+    /// Pops up a context menu of recent connections below the "Recent connections" link.
+    /// Picking an entry fills the peer box with that number and immediately dials it, so one
+    /// click is all that is needed to reconnect to someone you have helped before.
+    /// </summary>
+    private void ShowRecentMenu()
+    {
+        var menu = new ContextMenuStrip();
+        foreach (var digits in _connectionHistory.Entries)
+        {
+            string label = FlashDeskId.Format(digits);
+            var item = new ToolStripMenuItem(label);
+            string captured = digits; // capture for the lambda
+            item.Click += (_, _) =>
+            {
+                _peerBox.Text = label;
+                _ = ConnectToPeerAsync();
+            };
+            menu.Items.Add(item);
+        }
+        if (menu.Items.Count > 0)
+            menu.Show(_recentLink, new Point(0, _recentLink.Height));
     }
 
     /// <summary>Shows the note only when it has something to say, so it never holds open a gap.</summary>
@@ -638,6 +681,12 @@ public sealed class MainForm : Form
         SetConnectNote(string.Empty);
         _connect.Enabled = true;
         _peerBox.Enabled = true;
+
+        // Record this number in the operator's local history so they can reconnect with one click.
+        // Done after a confirmed successful connection — a failed dial is not worth remembering.
+        // The host side never learns about this; it is purely local to the operator's machine.
+        _connectionHistory.Add(digits);
+        _recentLink.Visible = true;
 
         // Opening the session window is its own try/catch on purpose: this method is started with
         // a discarded task, so an exception thrown here would otherwise vanish silently and leave
