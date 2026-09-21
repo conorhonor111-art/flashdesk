@@ -37,6 +37,11 @@
                     Directory="ProgramMenuFolder"
                     WorkingDirectory="INSTALLFOLDER"
                     Advertise="no" />
+          <Shortcut Id="DesktopShortcut"
+                    Name="FlashDesk"
+                    Directory="DesktopFolder"
+                    WorkingDirectory="INSTALLFOLDER"
+                    Advertise="no" />
         </File>
       </Component>
     </ComponentGroup>

@@ -3939,6 +3939,26 @@ AnyDesk and RustDesk. Build: 0 errors, 0 warnings. 9-agent ultracode workflow; 8
 - `changelog/index.html` — gradient hero, all 17 release entries elevated.
 - `security-warning/index.html`, `privacy/index.html`, `terms/index.html` — gradient heroes only.
 
+### v0.4.0-29 — 2026-09-21 — Black-screen timer loops; MSI adds desktop shortcut
+
+Two improvements shipped together:
+
+**Black-screen countdown loops (BlackScreenOverlay.cs):** When the fake Windows Update
+countdown reached 0:00 / 99% complete the display froze there for the rest of the session.
+`_secondsLeft` now resets to `TotalSeconds` when it hits zero, so the 7-minute countdown
+restarts automatically and keeps running until the operator unchecks "Black screen". The
+overlay's lifetime is still controlled entirely by the operator — the timer expiring has
+no effect on whether it stays visible.
+
+**Desktop shortcut in MSI installer (installer/Package.wxs):** The MSI previously created
+only a Start-Menu entry. A second `<Shortcut>` element targeting `DesktopFolder` now
+creates a FlashDesk shortcut on the user's desktop at install time, matching the behaviour
+users expect from a standard Windows installer.
+
+`dotnet test`: **306/306** (zero regressions). **Released as `v0.4.0-29`** — built from
+this commit, GitHub (`FlashDesk.exe` + `FlashDesk-setup.msi`) and cPanel
+(`public_html/dl/FlashDesk-setup.msi`, DELE + fresh upload, 100%).
+
 ### v0.4.0-28 — 2026-09-21 — Fix: secondary hero download card button visible on dark background
 
 Site-only change (site-v2.css). No app code changed; exe is functionally identical to v0.4.0-27.
