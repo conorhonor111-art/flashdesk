@@ -3939,6 +3939,19 @@ AnyDesk and RustDesk. Build: 0 errors, 0 warnings. 9-agent ultracode workflow; 8
 - `changelog/index.html` — gradient hero, all 17 release entries elevated.
 - `security-warning/index.html`, `privacy/index.html`, `terms/index.html` — gradient heroes only.
 
+### v0.4.0-27 — 2026-09-21 — Home page hero visual upgrade: darker gradient, dot grid, dual glow
+
+Site-only change (index.html + site-v2.css). No app code changed; exe is functionally identical to v0.4.0-26.
+- site-v2.css: HERO VISUAL UPGRADE block — deeper midnight base gradient (#0D0F12 → #0F1A12)
+- site-v2.css: ::before dot-grid texture overlay (28px pitch, 5.5 % opacity white dots)
+- site-v2.css: ::after dual-radial glow — green spotlight 18 % at top-right + blue hint 7 % at bottom-left
+- site-v2.css: .hero-deco-svg absolutely-positioned circuit-node SVG (right edge, z-index: 0, hidden <900px)
+- site-v2.css: .hero-accent token (#2BD16B) for h1 accent word
+- site-v2.css: frosted-glass download cards, light callout labels, elevated shot-frame shadows
+- index.html: circuit-node SVG injected as first child of hero section
+- index.html: h1 "one file" wrapped in .hero-accent span for green accent
+- index.html: CSS link cache-busted to /site-v2.css?v=0427 (bypasses 7-day max-age on LiteSpeed)
+
 ### v0.4.0-26 — 2026-09-21 — Icon visual quality overhaul: round linecaps, redesigned icon set
 
 Site-only changes across all 9 pages. No app code changed; exe is functionally identical to v0.4.0-25.
