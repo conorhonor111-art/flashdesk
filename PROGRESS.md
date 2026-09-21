@@ -3939,6 +3939,16 @@ AnyDesk and RustDesk. Build: 0 errors, 0 warnings. 9-agent ultracode workflow; 8
 - `changelog/index.html` — gradient hero, all 17 release entries elevated.
 - `security-warning/index.html`, `privacy/index.html`, `terms/index.html` — gradient heroes only.
 
+### v0.4.0-28 — 2026-09-21 — Fix: secondary hero download card button visible on dark background
+
+Site-only change (site-v2.css). No app code changed; exe is functionally identical to v0.4.0-27.
+- Root cause: inline <style> block selector `.download-card:not(.is-primary) .download-card__btn`
+  has specificity [0,3,0], beating the hero frosted-glass override in site-v2.css at [0,2,0];
+  result was background: transparent with dark color: var(--color-text) — invisible on dark card.
+- Fix: added `.hero-gradient-wrap .download-card:not(.is-primary) .download-card__btn` at [0,4,0]
+  — frosted glass rgba(255,255,255,0.10) background, #ECEFF3 text, rgba(255,255,255,0.28) border.
+- Hover state also added: rgba(0.18) background, rgba(0.45) border, translateY(-1px).
+
 ### v0.4.0-27 — 2026-09-21 — Home page hero visual upgrade: darker gradient, dot grid, dual glow
 
 Site-only change (index.html + site-v2.css). No app code changed; exe is functionally identical to v0.4.0-26.
