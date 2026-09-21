@@ -555,6 +555,85 @@
     max-width: 40rem;
   }
 }
+
+/* ── FAQ COLORED SECTION HEADERS ──────────────────────────────────────────── */
+.faq-section-header {
+  display:       flex;
+  align-items:   center;
+  gap:           var(--sp-3);
+  margin-bottom: var(--sp-4);
+  padding-bottom: var(--sp-3);
+  border-bottom: 2px solid var(--color-border);
+}
+
+.faq-section-badge {
+  display:         inline-flex;
+  align-items:     center;
+  gap:             var(--sp-2);
+  padding:         4px 12px;
+  border-radius:   20px;
+  font-size:       var(--fs-kicker);
+  font-weight:     700;
+  letter-spacing:  0.06em;
+  text-transform:  uppercase;
+  flex-shrink:     0;
+}
+
+.faq-section-badge svg {
+  width:  14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.badge--safety   { background: #E6F9EE; color: #1A7040; border: 1px solid #B3EDCC; }
+.badge--privacy  { background: #EBF3FD; color: #1A3E6E; border: 1px solid #BBD4F7; }
+.badge--technical { background: #F3E8FF; color: #5B21B6; border: 1px solid #DDD6FE; }
+.badge--helpers  { background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; }
+
+.faq-section-title {
+  font-size:      var(--fs-kicker);
+  font-weight:    700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color:          var(--color-muted);
+  flex:           1;
+  margin:         0;
+}
+
+.faq-count-badge {
+  display:      inline-block;
+  font-size:    0.6875rem;
+  font-weight:  700;
+  color:        var(--color-muted);
+  background:   var(--color-bg);
+  border:       1px solid var(--color-border);
+  border-radius: 12px;
+  padding:      2px 8px;
+  margin-left:  auto;
+  flex-shrink:  0;
+}
+
+/* ── CONSENT STATEMENT GRADIENT BOX ──────────────────────────────────────── */
+.statement-gradient {
+  background: linear-gradient(135deg, #17191E 0%, #1F2A20 60%, #17191E 100%);
+  border-radius: var(--radius);
+  padding: var(--sp-6) var(--sp-7);
+  border-left: 4px solid #2BD16B;
+  max-width: 54rem;
+  margin: 0 auto;
+}
+
+.statement-gradient .statement {
+  color: #ECEFF3;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.statement-gradient .statement em {
+  color: #2BD16B;
+  font-style: normal;
+  font-weight: 700;
+}
 </style>
 </head>
 <body>
@@ -797,8 +876,10 @@
      ──────────────────────────────────────────────────────────────────────────── -->
 <section class="band band-alt" aria-label="Key fact">
   <div class="contained">
-    <p class="statement">The first time anyone connects, a human has to press Accept.
-    There is no way around it, and no way to do it for them.</p>
+    <div class="statement-gradient">
+      <p class="statement">The first time anyone connects, a human has to press <em>Accept</em>.
+      There is no way around it, and no way to do it for them.</p>
+    </div>
   </div>
 </section>
 
@@ -831,7 +912,14 @@
 
     <!-- ── GROUP 1: Safety ─────────────────────────────────────────────── -->
     <div class="faq-section" id="faq-safety" aria-labelledby="faq-safety-label">
-      <h2 class="faq-section-label" id="faq-safety-label">Safety</h2>
+      <div class="faq-section-header">
+        <span class="faq-section-badge badge--safety">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 1L2 3v4c0 3 2.5 5 5 6 2.5-1 5-3 5-6V3L7 1z"/></svg>
+          Safety
+        </span>
+        <span class="faq-count-badge">12 questions</span>
+      </div>
+      <h2 class="faq-section-label" id="faq-safety-label" style="display:none">Safety</h2>
       <div class="faq-list" role="list">
 
         <details class="faq-item card--elevated" role="listitem">
@@ -999,7 +1087,14 @@
 
     <!-- ── GROUP 2: Privacy ────────────────────────────────────────────── -->
     <div class="faq-section" id="faq-privacy" aria-labelledby="faq-privacy-label">
-      <h2 class="faq-section-label" id="faq-privacy-label">Privacy</h2>
+      <div class="faq-section-header">
+        <span class="faq-section-badge badge--privacy">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="6" width="8" height="7" rx="1"/><path d="M5 6V4a2 2 0 0 1 4 0v2"/></svg>
+          Privacy
+        </span>
+        <span class="faq-count-badge">8 questions</span>
+      </div>
+      <h2 class="faq-section-label" id="faq-privacy-label" style="display:none">Privacy</h2>
       <div class="faq-list" role="list">
 
         <details class="faq-item card--elevated" role="listitem">
@@ -1095,7 +1190,14 @@
 
     <!-- ── GROUP 3: Technical ──────────────────────────────────────────── -->
     <div class="faq-section" id="faq-technical" aria-labelledby="faq-technical-label">
-      <h2 class="faq-section-label" id="faq-technical-label">Technical</h2>
+      <div class="faq-section-header">
+        <span class="faq-section-badge badge--technical">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="7" cy="7" r="2"/><path d="M7 1v2M7 11v2M1 7h2M11 7h2M3 3l1.5 1.5M9.5 9.5L11 11M11 3l-1.5 1.5M4.5 9.5L3 11"/></svg>
+          Technical
+        </span>
+        <span class="faq-count-badge">12 questions</span>
+      </div>
+      <h2 class="faq-section-label" id="faq-technical-label" style="display:none">Technical</h2>
       <div class="faq-list" role="list">
 
         <details class="faq-item card--elevated" role="listitem">
@@ -1239,7 +1341,14 @@
 
     <!-- ── GROUP 4: For the person helping ───────────────────────────── -->
     <div class="faq-section" id="faq-helpers" aria-labelledby="faq-helpers-label">
-      <h2 class="faq-section-label" id="faq-helpers-label">For the person helping</h2>
+      <div class="faq-section-header">
+        <span class="faq-section-badge badge--helpers">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="7" cy="4" r="2.5"/><path d="M2 13c0-2.8 2.2-5 5-5s5 2.2 5 5"/></svg>
+          For the person helping
+        </span>
+        <span class="faq-count-badge">3 questions</span>
+      </div>
+      <h2 class="faq-section-label" id="faq-helpers-label" style="display:none">For the person helping</h2>
       <div class="faq-list" role="list">
 
         <details class="faq-item card--elevated" role="listitem">

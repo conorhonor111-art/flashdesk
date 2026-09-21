@@ -72,6 +72,33 @@
 .nav-more-menu a:hover, .nav-more-menu a:focus-visible { color: var(--color-text); background: var(--color-bg); }
 /* ── HEADER RIGHT ───────────────────────────────────────────────────────── */
 .header-right { display: flex; align-items: center; gap: var(--sp-3); }
+
+/* ── At-a-glance short version card color accents ────────────────────────── */
+.short-version-card-free   { border-top: 3px solid #2BD16B !important; }
+.short-version-card-free .icon-tile   { background:#E6F9EE !important; color:#1A7040 !important; border-color:#B3EDCC !important; }
+.short-version-card-warranty { border-top: 3px solid #1A73E8 !important; }
+.short-version-card-warranty .icon-tile { background:#EBF3FD !important; color:#1A3E6E !important; border-color:#BBD4F7 !important; }
+.short-version-card-deception { border-top: 3px solid #EF4444 !important; }
+.short-version-card-deception .icon-tile { background:#FEE2E2 !important; color:#991B1B !important; border-color:#FECACA !important; }
+
+/* ── Section icons ────────────────────────────────────────────────────────── */
+.terms-section-icon {
+  display:         inline-flex;
+  align-items:     center;
+  justify-content: center;
+  width:           2.5rem;
+  height:          2.5rem;
+  border-radius:   var(--radius);
+  margin-bottom:   var(--sp-3);
+  flex-shrink:     0;
+}
+.terms-section-icon svg { width: 1.25rem; height: 1.25rem; }
+.tsicon--blue   { background:#EBF3FD; color:#1A73E8; }
+.tsicon--green  { background:#E6F9EE; color:#1A7040; }
+.tsicon--amber  { background:#FEF3C7; color:#92400E; }
+.tsicon--purple { background:#F3E8FF; color:#6D28D9; }
+.tsicon--teal   { background:#CCFBF1; color:#0F766E; }
+.tsicon--red    { background:#FEE2E2; color:#991B1B; }
 </style>
 </head>
 <body>
@@ -250,7 +277,7 @@
 
       <div class="grid cols-3 mt-4" style="max-width: 100%;">
 
-        <div class="card">
+        <div class="card short-version-card-free">
           <div class="icon-tile" aria-hidden="true">
             <svg class="icon icon-lg"><use href="#i-file"/></svg>
           </div>
@@ -258,7 +285,7 @@
           <p>FlashDesk costs nothing to download or use. There is no subscription, no account, and no in-app purchase.</p>
         </div>
 
-        <div class="card">
+        <div class="card short-version-card-warranty">
           <div class="icon-tile" aria-hidden="true">
             <svg class="icon icon-lg"><use href="#i-log"/></svg>
           </div>
@@ -266,7 +293,7 @@
           <p>FlashDesk is provided as is. If something goes wrong I will try to help, but I cannot promise a fix or take responsibility for the outcome.</p>
         </div>
 
-        <div class="card">
+        <div class="card short-version-card-deception">
           <div class="icon-tile" aria-hidden="true">
             <svg class="icon icon-lg"><use href="#i-band"/></svg>
           </div>
@@ -286,6 +313,9 @@
 <section id="what-flashdesk-is" class="band band-paper">
   <div class="contained">
     <div class="prose">
+      <div class="terms-section-icon tsicon--blue" aria-hidden="true">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="16" height="12"/><line x1="7" y1="19" x2="13" y2="19"/><line x1="10" y1="15" x2="10" y2="19"/></svg>
+      </div>
       <h2>1. What FlashDesk is</h2>
       <p>FlashDesk is a remote support tool for Windows. When you run it, it generates a 9-digit ID. Someone who already has your trust — a family member, a friend, a support person you called — can enter that ID on their own computer to see your screen and control your mouse, so they can help you with a problem.</p>
       <p>Every session requires your active permission. You see a dialog showing the 9-digit number of the person requesting access. You can end the session at any time by clicking the visible amber strip or closing the window. No background process runs when the session ends, and nothing is left installed on your computer.</p>
@@ -301,6 +331,9 @@
 <section id="permitted-uses" class="band band-alt">
   <div class="contained">
     <div class="prose">
+      <div class="terms-section-icon tsicon--green" aria-hidden="true">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="2,10 7,15 18,5"/></svg>
+      </div>
       <h2>2. What you can and cannot do</h2>
 
       <h3 class="mt-3">Permitted uses</h3>
@@ -332,6 +365,9 @@
 <section id="no-warranty" class="band band-paper">
   <div class="contained">
     <div class="prose">
+      <div class="terms-section-icon tsicon--amber" aria-hidden="true">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="2,17 10,3 18,17 2,17"/><line x1="10" y1="8" x2="10" y2="12"/><line x1="10" y1="14" x2="10" y2="15.5"/></svg>
+      </div>
       <h2>3. No warranty</h2>
       <p>FlashDesk is provided <strong>as is</strong>, without any warranty of any kind — express or implied. This includes, but is not limited to, any implied warranty of merchantability, fitness for a particular purpose, or non-infringement.</p>
 
@@ -356,6 +392,9 @@
 <section id="governing-law" class="band band-alt">
   <div class="contained">
     <div class="prose">
+      <div class="terms-section-icon tsicon--purple" aria-hidden="true">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="8" width="14" height="10" rx="1"/><path d="M7 8V6a3 3 0 0 1 6 0v2"/></svg>
+      </div>
       <h2>4. Governing law</h2>
       <p>These terms are governed by the laws of Ireland. Any dispute that cannot be resolved informally will be subject to the non-exclusive jurisdiction of the courts of Ireland.</p>
       <p>Nothing in these terms limits any rights you may have under the consumer protection laws of your own country. If a clause in these terms conflicts with a mandatory legal right you hold, that clause does not apply to you to the extent of the conflict.</p>
@@ -370,6 +409,9 @@
 <section id="changes" class="band band-paper">
   <div class="contained">
     <div class="prose">
+      <div class="terms-section-icon tsicon--teal" aria-hidden="true">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,10 8,5 13,10"/><line x1="8" y1="5" x2="8" y2="17"/><line x1="11" y1="15" x2="17" y2="15"/><line x1="14" y1="12" x2="17" y2="15"/><line x1="14" y1="18" x2="17" y2="15"/></svg>
+      </div>
       <h2>5. Changes to these terms</h2>
       <p>If these terms change, the revision will be dated and posted here. There is no mailing list or notification — check back if it matters to you. Continuing to use FlashDesk after a change has been posted means you accept the revised terms.</p>
       <p>The current version of these terms was last updated on <strong>20 September 2026</strong>.</p>
@@ -384,6 +426,9 @@
 <section id="contact" class="band band-alt">
   <div class="contained">
     <div class="prose">
+      <div class="terms-section-icon tsicon--red" aria-hidden="true">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 2L3 5v5c0 5 3.5 8 7 9 3.5-1 7-4 7-9V5L10 2z"/></svg>
+      </div>
       <h2>6. Questions about these terms</h2>
       <p>If anything here is unclear, or if you have a concern about how FlashDesk is being used, write to:</p>
       <p class="mt-2"><a class="inline-link" href="mailto:support@flashdesk.org">support@flashdesk.org</a></p>

@@ -45,6 +45,170 @@
      earned"); only where and in what colour it appears changed. -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Crect%20x='1'%20y='1'%20width='14'%20height='14'%20rx='3.5'%20fill='%2317191E'/%3E%3Cpolyline%20points='4.631,2.512%209.387,11.495%2011.325,7.620'%20fill='none'%20stroke='%232BD16B'%20stroke-width='2.6'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="/site-v2.css">
+
+<style>
+/* ── Step progress indicator ──────────────────────────────────────────────── */
+.step-progress {
+  display:    flex;
+  align-items: center;
+  gap:         0;
+  margin-bottom: var(--sp-6);
+  max-width:   32rem;
+}
+.step-progress-item {
+  display:     flex;
+  flex-direction: column;
+  align-items: center;
+  gap:         var(--sp-2);
+  flex:        1;
+}
+.step-progress-dot {
+  width:           2rem;
+  height:          2rem;
+  border-radius:   50%;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  font-size:       0.8125rem;
+  font-weight:     800;
+  color:           #ffffff;
+  background:      var(--color-muted);
+  position:        relative;
+  z-index:         1;
+}
+.step-progress-dot--active { background: #1A73E8; }
+.step-progress-dot--done   { background: #2BD16B; color: #0e4d28; }
+.step-progress-label {
+  font-size:   0.6875rem;
+  font-weight: 600;
+  color:       var(--color-muted);
+  text-align:  center;
+  white-space: nowrap;
+}
+.step-progress-line {
+  flex:       1;
+  height:     2px;
+  background: var(--color-border);
+  margin-bottom: 1.2rem;
+}
+
+/* ── Step header with large circle ───────────────────────────────────────── */
+.step-heading {
+  display:     flex;
+  align-items: flex-start;
+  gap:         var(--sp-4);
+  margin-bottom: var(--sp-4);
+}
+.step-circle {
+  display:         inline-flex;
+  align-items:     center;
+  justify-content: center;
+  width:           3rem;
+  height:          3rem;
+  border-radius:   50%;
+  font-size:       1.25rem;
+  font-weight:     800;
+  color:           #ffffff;
+  flex-shrink:     0;
+  line-height:     1;
+}
+.step-circle--blue   { background: #1A73E8; box-shadow: 0 2px 10px rgba(26,115,232,0.32); }
+.step-circle--green  { background: #2BD16B; box-shadow: 0 2px 10px rgba(43,209,107,0.32); color: #0e4d28; }
+.step-circle--purple { background: #7C3AED; box-shadow: 0 2px 10px rgba(124,58,237,0.32); }
+
+/* ── Phone scam callout ───────────────────────────────────────────────────── */
+.phone-callout {
+  display:       flex;
+  gap:           var(--sp-3);
+  align-items:   flex-start;
+  background:    #FEF3C7;
+  border:        2px solid #F59E0B;
+  border-left:   4px solid #DC2626;
+  border-radius: var(--radius);
+  padding:       var(--sp-4) var(--sp-5);
+  margin-top:    var(--sp-4);
+  max-width:     44rem;
+}
+.phone-callout-icon {
+  display:         inline-flex;
+  align-items:     center;
+  justify-content: center;
+  width:           2rem;
+  height:          2rem;
+  background:      #DC2626;
+  border-radius:   50%;
+  flex-shrink:     0;
+  color:           #ffffff;
+  margin-top:      2px;
+}
+.phone-callout-icon svg { width: 1rem; height: 1rem; }
+.phone-callout-body strong {
+  display:       block;
+  font-weight:   700;
+  color:         #7F1D1D;
+  margin-bottom: 4px;
+}
+.phone-callout-body p {
+  margin:      0;
+  color:       #92400E;
+  font-size:   var(--fs-small);
+  line-height: 1.5;
+}
+
+/* ── SAFE TO PROCEED CTA block ────────────────────────────────────────────── */
+.safe-proceed {
+  background:    linear-gradient(135deg, #0A3D20 0%, #14532D 100%);
+  border-radius: var(--radius-lg);
+  padding:       var(--sp-7);
+  text-align:    center;
+  border:        1px solid rgba(43,209,107,0.3);
+  max-width:     48rem;
+  margin-inline: auto;
+}
+.safe-proceed-badge {
+  display:        inline-flex;
+  align-items:    center;
+  gap:            var(--sp-2);
+  background:     #2BD16B;
+  color:          #0e4d28;
+  font-weight:    800;
+  font-size:      var(--fs-kicker);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding:        6px 16px;
+  border-radius:  20px;
+  margin-bottom:  var(--sp-4);
+}
+.safe-proceed h2 {
+  color:         #ECEFF3 !important;
+  margin-bottom: var(--sp-3);
+}
+.safe-proceed .lead {
+  color:         rgba(255,255,255,0.8);
+  margin-bottom: var(--sp-5);
+}
+.safe-proceed .btn-primary {
+  background:  #2BD16B !important;
+  color:       #0e4d28 !important;
+  border-color: #2BD16B !important;
+  font-weight: 700 !important;
+}
+.safe-proceed .btn-primary:hover {
+  background: #22C55E !important;
+}
+.safe-proceed .btn-secondary {
+  color: rgba(255,255,255,0.8) !important;
+  border-color: rgba(255,255,255,0.3) !important;
+  background:   transparent !important;
+}
+.safe-proceed .meta {
+  color: rgba(255,255,255,0.55) !important;
+  margin-top: var(--sp-4) !important;
+}
+.safe-proceed .meta a {
+  color: rgba(255,255,255,0.8);
+}
+</style>
 </head>
 <body>
 <!-- Skip link — first focusable element; announced by screen readers before the header. -->
@@ -196,6 +360,22 @@
     <span class="kicker">Before you run it</span>
     <h1>Windows showed you a warning. That is expected.</h1>
     <p class="lead">Windows warns about every program it has not seen many people run before — including FlashDesk. This page shows you exactly what you will see, word for word, and what to click at each step.</p>
+    <div class="step-progress">
+      <div class="step-progress-item">
+        <div class="step-progress-dot step-progress-dot--active">1</div>
+        <span class="step-progress-label">Browser download</span>
+      </div>
+      <div class="step-progress-line"></div>
+      <div class="step-progress-item">
+        <div class="step-progress-dot step-progress-dot--active">2</div>
+        <span class="step-progress-label">SmartScreen</span>
+      </div>
+      <div class="step-progress-line"></div>
+      <div class="step-progress-item">
+        <div class="step-progress-dot step-progress-dot--active">3</div>
+        <span class="step-progress-label">Run anyway</span>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -207,8 +387,13 @@
      ══════════════════════════════════════════════════════════════════════════ -->
 <section class="band band-alt">
   <div class="contained prose">
-    <span class="kicker">Step 1 — if your browser blocks the download</span>
-    <h2>Your browser may flag the file when you download it.</h2>
+    <div class="step-heading">
+      <span class="step-circle step-circle--blue" aria-hidden="true">1</span>
+      <div>
+        <span class="kicker">If your browser blocks the download</span>
+        <h2>Your browser may flag the file when you download it.</h2>
+      </div>
+    </div>
     <p>Most browsers let the file through without any warning. If yours flags it, you will see something like this in the downloads area at the top of the browser window:</p>
 
     <!-- Chrome/Edge download warning mockup — system font per CLAUDE.md rule -->
@@ -233,9 +418,15 @@
 
     <p>Press <strong>Download suspicious file</strong> — the pale button on the <strong>right</strong>. The solid dark blue button says <strong>Delete from history</strong> and removes the file.</p>
 
-    <aside role="alert" style="background:#FFFBEB;border:2px solid #F59E0B;border-radius:6px;padding:var(--sp-3) var(--sp-4);margin-top:var(--sp-4);max-width:38rem;">
-      <strong>Did someone phone you and send you here?</strong> If you did not contact the helper yourself, press <strong>Delete from history</strong> and hang up. Legitimate technical support does not cold-call you and then walk you through a download.
-    </aside>
+    <div class="phone-callout" role="alert">
+      <div class="phone-callout-icon" aria-hidden="true">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="2,14 8,2 14,14 2,14"/><line x1="8" y1="6" x2="8" y2="10"/><line x1="8" y1="12" x2="8" y2="13"/></svg>
+      </div>
+      <div class="phone-callout-body">
+        <strong>Did someone phone you and send you here?</strong>
+        <p>If you did not contact the helper yourself, press <strong>Delete from history</strong> and hang up. Legitimate technical support does not cold-call you and then walk you through a download.</p>
+      </div>
+    </div>
 
     <p class="mt-4 text-muted">If your browser downloaded the file without any warning, skip to step 2.</p>
   </div>
@@ -248,8 +439,13 @@
      ══════════════════════════════════════════════════════════════════════════ -->
 <section class="band band-paper">
   <div class="contained prose">
-    <span class="kicker">Step 2 — when you open the downloaded file</span>
-    <h2>A blue box appears. There is no run button yet.</h2>
+    <div class="step-heading">
+      <span class="step-circle step-circle--purple" aria-hidden="true">2</span>
+      <div>
+        <span class="kicker">When you open the downloaded file</span>
+        <h2>A blue box appears. There is no run button yet.</h2>
+      </div>
+    </div>
     <p>Double-click FlashDesk.exe and Windows shows this before it runs anything. The blue box is a Windows SmartScreen warning:</p>
 
     <!-- Windows SmartScreen first screen — system font per CLAUDE.md rule.
@@ -279,8 +475,13 @@
      ══════════════════════════════════════════════════════════════════════════ -->
 <section class="band band-alt">
   <div class="contained prose">
-    <span class="kicker">Step 3 — after clicking "More info"</span>
-    <h2>The box grows and shows two buttons. Click "Run anyway".</h2>
+    <div class="step-heading">
+      <span class="step-circle step-circle--green" aria-hidden="true">3</span>
+      <div>
+        <span class="kicker">After clicking "More info"</span>
+        <h2>The box grows and shows two buttons. Click "Run anyway".</h2>
+      </div>
+    </div>
     <p>After clicking <strong>More info</strong>, the box changes to show the app name, the publisher line, and now two buttons:</p>
 
     <!-- Windows SmartScreen second screen — system font per CLAUDE.md rule.
@@ -300,9 +501,15 @@
 
     <p>The name next to <strong>App:</strong> is whatever your browser saved the file as. If you have downloaded FlashDesk before, it may read <em>FlashDesk&nbsp;(1).exe</em> or <em>FlashDesk&nbsp;(2).exe</em>. That is the same file with a number added by your browser.</p>
 
-    <aside role="alert" style="background:#FFFBEB;border:2px solid #F59E0B;border-radius:6px;padding:var(--sp-3) var(--sp-4);margin-top:var(--sp-4);max-width:38rem;">
-      <strong>Did someone phone you and send you here?</strong> If you did not contact the helper yourself, press <strong>Don&rsquo;t run</strong> and hang up. Somebody who phoned you unsolicited and guided you this far is not helping you.
-    </aside>
+    <div class="phone-callout" role="alert">
+      <div class="phone-callout-icon" aria-hidden="true">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="2,14 8,2 14,14 2,14"/><line x1="8" y1="6" x2="8" y2="10"/><line x1="8" y1="12" x2="8" y2="13"/></svg>
+      </div>
+      <div class="phone-callout-body">
+        <strong>Did someone phone you and send you here?</strong>
+        <p>If you did not contact the helper yourself, press <strong>Don&rsquo;t run</strong> and hang up. Somebody who phoned you unsolicited and guided you this far is not helping you.</p>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -387,21 +594,27 @@
      CTA BAND — every page ends with a call to action (audit finding: high)
      ══════════════════════════════════════════════════════════════════════════ -->
 <section class="band band-alt">
-  <div class="contained" style="text-align:center; max-width:48rem; margin-inline:auto;">
-    <p class="statement">Ready to proceed?</p>
-    <p class="lead mt-3" style="max-width:var(--reading-max); margin-inline:auto;">
-      Download FlashDesk and follow the three steps above. The whole process takes under a minute.
-    </p>
-    <div style="display:flex; flex-wrap:wrap; gap:var(--sp-3); justify-content:center; margin-top:var(--sp-5);">
-      <a class="btn btn-primary" href="https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe">
-        <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
-        Download FlashDesk — free
-      </a>
-      <a class="btn btn-secondary" href="/faq/">
-        More questions
-      </a>
+  <div class="contained">
+    <div class="safe-proceed">
+      <div class="safe-proceed-badge">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" width="14" height="14"><polyline points="2,9 6,13 14,4"/></svg>
+        Safe to proceed
+      </div>
+      <h2>Ready to proceed?</h2>
+      <p class="lead">
+        Download FlashDesk and follow the three steps above. The whole process takes under a minute.
+      </p>
+      <div style="display:flex; flex-wrap:wrap; gap:var(--sp-3); justify-content:center;">
+        <a class="btn btn-primary" href="https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe">
+          <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+          Download FlashDesk &#8212; free
+        </a>
+        <a class="btn btn-secondary" href="/faq/">
+          More questions
+        </a>
+      </div>
+      <p class="meta">Still unsure? Email <a href="mailto:support@flashdesk.org">support@flashdesk.org</a> &#8212; we will help.</p>
     </div>
-    <p class="meta mt-4">Still unsure? Email <a class="inline-link" href="mailto:support@flashdesk.org">support@flashdesk.org</a> — we will help.</p>
   </div>
 </section>
 
