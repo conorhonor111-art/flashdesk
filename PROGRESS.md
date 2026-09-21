@@ -3884,3 +3884,22 @@ The WDSI submission builds reputation in the interim.
 **Submission pages:**
 - EXE: `https://www.microsoft.com/en-us/wdsi/submission/88f2448c-0d6b-44aa-9347-0d7bba00731c`
 - MSI: `https://www.microsoft.com/en-us/wdsi/submission/f376099c-0458-4872-931a-bd2c327c5e13`
+
+
+---
+
+### v0.4.0-21 — 2026-09-21 — documentation rebuild, exe and MSI brought to HEAD
+
+No source changes. WDSI submissions recorded in PROGRESS.md (`daf29c5`), leaving the live
+exe one doc-only commit behind HEAD. Rebuilt both exe and MSI from `daf29c5` and released
+to GitHub (`v0.4.0-21`, `FlashDesk.exe` + `FlashDesk-setup.msi`) and MSI to cPanel
+(`public_html/dl/FlashDesk-setup.msi`, DELE + fresh upload, 100%).
+
+Also fixed in this cycle: `scripts/Check-LiveBuild.ps1` default `$Url` corrected from
+`https://flashdesk.org/dl/FlashDesk.exe` (EXE was never hosted on cPanel — Chrome blocked
+it) to `https://github.com/conorhonor111-art/flashdesk/releases/latest/download/FlashDesk.exe`.
+Commit `4d3da16`. Script was silently 404-ing on every run; now resolves correctly.
+
+**Check-LiveBuild result (v0.4.0-21):** READY — server serving `daf29c5`, exact HEAD match.
+Both download routes byte-identical (`2C66487348EBDCCE...`, 162,492,578 bytes). All 9 pages
+match repo with all assets resolving.
