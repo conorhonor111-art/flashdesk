@@ -20,6 +20,9 @@ public enum ConsentAnswerMethod
 
     /// <summary>The X button or Alt+F4 — reached the FormClosing fallback without either button's Click firing.</summary>
     WindowClosed,
+
+    /// <summary>No dialog was shown because the caller is already in <see cref="KnownCallers"/> — accepted silently.</summary>
+    AutoAccepted,
 }
 
 public static class ConsentAnswerMethodExtensions
@@ -31,6 +34,7 @@ public static class ConsentAnswerMethodExtensions
         ConsentAnswerMethod.Keyboard => "keyboard",
         ConsentAnswerMethod.TimedOut => "timed out",
         ConsentAnswerMethod.WindowClosed => "window closed",
+        ConsentAnswerMethod.AutoAccepted => "auto-accepted (known caller)",
         _ => "unknown",
     };
 }

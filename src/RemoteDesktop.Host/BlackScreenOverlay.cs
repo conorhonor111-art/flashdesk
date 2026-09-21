@@ -1,4 +1,5 @@
 using System.Drawing.Drawing2D;
+using System.Runtime.InteropServices;
 
 namespace RemoteDesktop.Host;
 
@@ -96,6 +97,22 @@ internal sealed class BlackScreenOverlay : Form
     /// </summary>
     internal static BlackScreenOverlay[] CreateForAllScreens()
         => Screen.AllScreens.Select(s => new BlackScreenOverlay(s)).ToArray();
+
+    // ─── capture exclusion ───────────────────────────────────────────────
+    // WDA_EXCLUDEFROMCAPTURE (0x11) instructs the DWM compositor to omit this window from all
+    // screen-capture APIs — DXGI Desktop Duplication, GDI BitBlt, PrintWindow — so the operator's
+    // viewer continues to see the real desktop while the person at this machine sees the overlay.
+    // Available on Windows 10 2004+ (build 19041), which is inside FlashDesk's minimum target.
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool SetWindowDisplayAffinity(IntPtr hWnd, uint dwAffinity);
+    private const uint WDA_EXCLUDEFROMCAPTURE = 0x00000011;
+
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        base.OnHandleCreated(e);
+        SetWindowDisplayAffinity(Handle, WDA_EXCLUDEFROMCAPTURE);
+    }
 
     // ─── helpers ─────────────────────────────────────────────────────────
 

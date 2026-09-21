@@ -252,15 +252,30 @@ public sealed class MainForm : Form
                     try
                     {
                         _sessionLog.ConnectAsked(callerId);
-                        using var dialog = new ConsentDialog(callerId, _knownCallers.IsKnown(callerId));
-                        dialog.ShowDialog(this);
-                        accepted = dialog.Accepted;
-                        // Carried to SessionLogged below: "accepted" here is only the CLAIM the
-                        // relay loop acts on, and Started() writes the CONNECTED line later, once a
-                        // session genuinely begins — but only this scope knows HOW it was answered.
-                        _lastConnectHow = dialog.How.Describe();
-                        if (accepted) _knownCallers.Remember(callerId);
-                        else _sessionLog.Refused(callerId, _lastConnectHow);
+
+                        // Known callers (previously accepted on this machine) are let straight through
+                        // — no dialog, no delay. This is what makes "Recent connections" on the
+                        // operator side work seamlessly: the person they are calling already said yes
+                        // to this number before, so asking again every time adds friction for no
+                        // safety gain. First-time callers still get the full consent dialog.
+                        if (_knownCallers.IsKnown(callerId))
+                        {
+                            accepted = true;
+                            _lastConnectHow = ConsentAnswerMethod.AutoAccepted.Describe();
+                            _knownCallers.Remember(callerId); // update LastSeenUtc / Times
+                        }
+                        else
+                        {
+                            using var dialog = new ConsentDialog(callerId, isKnown: false);
+                            dialog.ShowDialog(this);
+                            accepted = dialog.Accepted;
+                            // Carried to SessionLogged below: "accepted" here is only the CLAIM the
+                            // relay loop acts on, and Started() writes the CONNECTED line later, once a
+                            // session genuinely begins — but only this scope knows HOW it was answered.
+                            _lastConnectHow = dialog.How.Describe();
+                            if (accepted) _knownCallers.Remember(callerId);
+                            else _sessionLog.Refused(callerId, _lastConnectHow);
+                        }
                     }
                     catch { accepted = false; _lastConnectHow = ConsentAnswerMethod.WindowClosed.Describe(); }
                     done.TrySetResult(accepted);
