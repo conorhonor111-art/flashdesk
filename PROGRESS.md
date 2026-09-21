@@ -3635,3 +3635,39 @@ verified, 9 distinct fixes after deduplication). Commit `2615a45`.
 
 `dotnet test`: **306/306** (zero regressions). **Released as `v0.4.0-11`** — built from
 `2615a45`, 162.5 MB, GitHub and cPanel (DELE + fresh upload, 100%).
+
+
+---
+
+### v0.4.0-12 — 2026-09-21 — MSI installer shipped; exe brought to HEAD
+
+**Doc rebuild:** v0.4.0-11 updated PROGRESS.md (`dfa2785`), leaving the live exe one
+doc-only commit behind HEAD. Rebuilt exe from `dfa2785` and released to GitHub (`v0.4.0-12`)
+and cPanel (`public_html/dl/FlashDesk.exe`, DELE + fresh upload, 162 MB, 100%).
+
+**WiX v7 MSI installer:** Added a proper Windows Installer package alongside the raw exe.
+No user input required — `dotnet tool install --global wix` (v7.0.0) installed automatically;
+EULA accepted; `WixToolset.UI.wixext` extension installed; `installer/Package.wxs` authored
+with WiX v7 syntax (`<StandardDirectory Id="ProgramFiles64Folder">`,
+`<MediaTemplate EmbedCab="yes" />`).
+
+Installer features:
+- Installs to `Program Files\FlashDesk\FlashDesk.exe`
+- Start Menu shortcut created
+- Listed in Add/Remove Programs with version and publisher
+- MajorUpgrade element — new version auto-removes old install
+- WixUI_Minimal dialog (one screen: license agree + Install)
+- Fully self-contained: cabinet embedded in the MSI (no loose files)
+- Output: `FlashDesk-setup.msi`, 57 MB (compressed from 162 MB exe)
+
+**Releases:** MSI added as second asset on GitHub `v0.4.0-12` and uploaded to
+`public_html/dl/FlashDesk-setup.msi` on cPanel. Both files confirmed in directory:
+`FlashDesk.exe` (162 MB) and `FlashDesk-setup.msi` (57 MB).
+
+**SmartScreen note:** The unsigned MSI still triggers the SmartScreen warning, same as the
+exe — packaging format is secondary; a code-signing EV cert (~$300-500/yr) is what
+eliminates it for both. The MSI does provide a noticeably more legitimate install path:
+Program Files location, proper uninstaller, and version metadata in Programs and Features.
+
+Installer project files committed as `76c3bd4` (`installer/FlashDesk.wixproj`,
+`installer/Package.wxs`, `installer/License.rtf`).
