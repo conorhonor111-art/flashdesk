@@ -3813,3 +3813,21 @@ of what the relay logs vs does not log; retention policy stated.
 **Check-LiveBuild result:** READY — server serving `e01b814` (doc-only gap). Both download
 routes byte-identical (`ECED7FB4921D9A68...`, 162,492,578 bytes). All 9 pages match repo
 exactly with all assets resolving. how-it-works now also checks `/flashdesk-window.png`.
+
+
+---
+
+### v0.4.0-19 — 2026-09-21 — documentation rebuild, exe and MSI brought to HEAD
+
+No source changes. Round-2 site upgrade and MSI rebuild recorded in PROGRESS.md (`a465964`),
+leaving the live exe one doc-only commit behind HEAD. Rebuilt both exe and MSI from `a465964`
+and released to GitHub (`v0.4.0-19`, `FlashDesk.exe` + `FlashDesk-setup.msi`) and to
+cPanel (`public_html/dl/FlashDesk.exe` 155 MB + `public_html/dl/FlashDesk-setup.msi` 54 MB,
+DELE + fresh upload on both, 100%).
+
+From this release onward the MSI is rebuilt every time the exe is rebuilt — both always
+contain the same binary.
+
+**Check-LiveBuild result (v0.4.0-19):** READY — server serving `a465964`, exact HEAD match.
+Both download routes byte-identical (`2C66487348EBDCCE...`, 162,492,578 bytes). All 9 pages
+match repo with all assets resolving.
