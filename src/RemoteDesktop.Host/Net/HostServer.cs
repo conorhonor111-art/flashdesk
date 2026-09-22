@@ -145,6 +145,13 @@ public sealed class HostServer : IDisposable
     /// </summary>
     private volatile MessageChannel? _activeChannel;
 
+    /// <summary>
+    /// True while the black-screen overlay is active on this host. Read by
+    /// <see cref="FrameLoopAsync"/> to suppress the stale-tile refresh and to force a full
+    /// frame reset the moment the overlay closes — see the comments in the frame loop.
+    /// </summary>
+    private volatile bool _blackScreenActive;
+
     private readonly TileDiffer _differ = new(ProtocolConstants.TileSize);
     private readonly JpegTileEncoder _encoder = new(ProtocolConstants.DefaultJpegQuality);
 
@@ -399,6 +406,7 @@ public sealed class HostServer : IDisposable
                     // The operator is gone so they can no longer dismiss the overlay themselves.
                     // Close it now — the person at the client machine must not be left staring at
                     // a permanent black screen because a link dropped mid-session.
+                    _blackScreenActive = false;
                     BlackScreenChanged?.Invoke(false);
                     // Start the grace window from the END of the session: that is the moment a
                     // dropped link would need to be resumed from.
@@ -593,9 +601,13 @@ public sealed class HostServer : IDisposable
                     break;
 
                 case MessageType.BlackScreen:
+                {
                     // payload[0] == 1 → show, 0 → hide. An empty payload is treated as hide.
-                    BlackScreenChanged?.Invoke(msg.Value.Payload.Length > 0 && msg.Value.Payload[0] != 0);
+                    bool show = msg.Value.Payload.Length > 0 && msg.Value.Payload[0] != 0;
+                    _blackScreenActive = show;
+                    BlackScreenChanged?.Invoke(show);
                     break;
+                }
             }
         }
     }
@@ -642,6 +654,10 @@ public sealed class HostServer : IDisposable
         // IScreenCapture contract requires a false return to leave the buffer untouched.
         CapturedFrame lastGood = default;
         bool haveLastGood = false;
+
+        // Tracks the black-screen state from the previous loop iteration so we can detect the
+        // exact moment the overlay is dismissed and force a clean full frame.
+        bool prevBlackScreen = false;
 
         Governor.Reset(); // every session starts at the top of the ladder and re-measures its own link
 
@@ -714,6 +730,32 @@ public sealed class HostServer : IDisposable
                 continue;
             }
 
+            // ── Black-screen overlay transition handling ──────────────────────────────────────────
+            //
+            // Two behaviours are needed:
+            //
+            // (A) While the overlay IS active: skip the stale-tile re-sharpen pass. The stale pass
+            //     re-encodes pixels from lastGood. If WDA_EXCLUDEFROMCAPTURE ever fails to exclude
+            //     the overlay from capture, lastGood holds the black overlay pixels; replaying them
+            //     at increasing quality would permanently overwrite the viewer's good tiles with
+            //     black at max sharpness, making the frozen-black state irrecoverable without a
+            //     reconnect. Suppressing the pass is safe: the viewer has already received the
+            //     real desktop and does not need quality sharpening during a remote-support hold.
+            //
+            // (B) The MOMENT the overlay closes: force a full frame reset. WDA_EXCLUDEFROMCAPTURE
+            //     should show the live desktop to DXGI throughout, but if the desktop was idle the
+            //     differ's stored hashes still match the last captured pixels (which may be stale).
+            //     Resetting the differ and clearing lastGood guarantees the very next captured frame
+            //     is sent in full, giving the viewer an immediate, clean view of the current desktop.
+            bool currBlackScreen = _blackScreenActive;
+            if (prevBlackScreen && !currBlackScreen)
+            {
+                // Overlay just closed — full frame on the next capture tick.
+                _differ.Configure(lastWidth, lastHeight);
+                haveLastGood = false;
+            }
+            prevBlackScreen = currBlackScreen;
+
             // The captured resolution can change mid-session (DXGI recovering at a new resolution after a
             // mode change, or a fall-back to GDI). Reconfigure and tell the viewer the new size.
             if (capture.Width != lastWidth || capture.Height != lastHeight)
@@ -750,7 +792,8 @@ public sealed class HostServer : IDisposable
             // otherwise stay soft for the rest of the session — a tile is only re-sent when its pixels
             // change, and text that has finished moving never changes again. A handful at a time, only
             // while the screen is nearly still, so the client sees the picture settle rather than flash.
-            if (haveLastGood && changedCount < RefreshWhenChangedBelow)
+            // Suppressed while the black-screen overlay is active — see the transition block above.
+            if (haveLastGood && changedCount < RefreshWhenChangedBelow && !_blackScreenActive)
             {
                 var refresh = new List<TileDiffer.ChangedTile>();
                 stageStart = System.Diagnostics.Stopwatch.GetTimestamp();

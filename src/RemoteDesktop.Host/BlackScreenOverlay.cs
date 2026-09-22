@@ -108,36 +108,45 @@ internal sealed class BlackScreenOverlay : Form
     internal static BlackScreenOverlay[] CreateForAllScreens()
         => Screen.AllScreens.Select(s => new BlackScreenOverlay(s)).ToArray();
 
-    // ─── capture exclusion + input pass-through ──────────────────────────
-    // WDA_EXCLUDEFROMCAPTURE (0x11) instructs the DWM compositor to omit this window from all
-    // screen-capture APIs — DXGI Desktop Duplication, GDI BitBlt, PrintWindow — so the operator's
-    // viewer continues to see the real desktop while the person at this machine sees the overlay.
-    // Available on Windows 10 2004+ (build 19041), which is inside FlashDesk's minimum target.
+    // ─── capture exclusion ───────────────────────────────────────────────
+    // WDA_EXCLUDEFROMCAPTURE (0x11) instructs DWM to omit this window from all screen-capture
+    // APIs so the operator's viewer sees the real desktop while the person at the machine sees
+    // the overlay. Available on Windows 10 2004+ (build 19041), our minimum target.
     //
-    // WS_EX_TRANSPARENT makes all mouse messages fall through to the window behind the overlay.
-    // Without it every SendInput click the operator injects lands on this form and is swallowed —
-    // the underlying applications never hear it and the viewer sees a frozen, unresponsive desktop.
-    // The physical person at the machine can also click through, but they see only black, so they
-    // cannot aim — the visual barrier is the deterrent, not input blocking.
+    // IMPORTANT: Do NOT combine with WS_EX_LAYERED. Layered windows use a separate DWM
+    // composition path that does not honour WDA_EXCLUDEFROMCAPTURE — the overlay then appears
+    // as solid black in DXGI capture despite the flag, which is exactly what we want to prevent.
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool SetWindowDisplayAffinity(IntPtr hWnd, uint dwAffinity);
     private const uint WDA_EXCLUDEFROMCAPTURE = 0x00000011;
 
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
-    private const int GWL_EXSTYLE   = -20;
-    private const int WS_EX_LAYERED     = 0x00080000;
-    private const int WS_EX_TRANSPARENT = 0x00000020;
-
     protected override void OnHandleCreated(EventArgs e)
     {
         base.OnHandleCreated(e);
         SetWindowDisplayAffinity(Handle, WDA_EXCLUDEFROMCAPTURE);
-        int exStyle = GetWindowLong(Handle, GWL_EXSTYLE);
-        SetWindowLong(Handle, GWL_EXSTYLE, exStyle | WS_EX_LAYERED | WS_EX_TRANSPARENT);
+    }
+
+    // ─── input pass-through ──────────────────────────────────────────────
+    // Returning HTTRANSPARENT from WM_NCHITTEST tells the system to route the mouse message to
+    // the next window in the Z-order instead of this one. This is the correct cross-thread way
+    // to make a topmost window click-through: WS_EX_TRANSPARENT only works for same-thread
+    // siblings, and WS_EX_LAYERED (needed by WS_EX_TRANSPARENT) breaks WDA_EXCLUDEFROMCAPTURE.
+    // With HTTRANSPARENT every SendInput click the operator injects reaches the underlying
+    // application. The person at the machine sees only black and cannot aim, so the visual
+    // barrier is still the deterrent.
+
+    private const int WM_NCHITTEST  = 0x0084;
+    private const int HTTRANSPARENT = -1;
+
+    protected override void WndProc(ref Message m)
+    {
+        if (m.Msg == WM_NCHITTEST)
+        {
+            m.Result = (IntPtr)HTTRANSPARENT;
+            return;
+        }
+        base.WndProc(ref m);
     }
 
     // ─── helpers ─────────────────────────────────────────────────────────
