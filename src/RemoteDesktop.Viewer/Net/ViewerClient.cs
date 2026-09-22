@@ -51,6 +51,13 @@ public sealed class ViewerClient : IDisposable
     public event Action<string>? Disconnected;
 
     /// <summary>
+    /// Raised when the HOST sends a black-screen state change — currently only "off" (false), fired
+    /// when the countdown timer on the host expires. The operator's "Black screen" checkbox should
+    /// be unchecked without re-sending a hide command back to the host (it has already closed).
+    /// </summary>
+    public event Action<bool>? HostBlackScreenChanged;
+
+    /// <summary>
     /// The host can or cannot currently see its own screen, with a sentence explaining why not.
     /// Raised so the operator gets plain words instead of a frozen picture — a locked desktop or a
     /// Windows security prompt looks identical to a crash unless somebody says otherwise.
@@ -199,6 +206,13 @@ public sealed class ViewerClient : IDisposable
                         long sentAt = PingPayload.ToTimestamp(msg.Value.Payload);
                         LastLatencyMs = (Stopwatch.GetTimestamp() - sentAt) * 1000.0 / Stopwatch.Frequency;
                         _latencyMeasured = true;
+                        break;
+
+                    case MessageType.BlackScreen:
+                        // Host is telling us the overlay closed (timer expired). Fire the event so
+                        // SessionWindow can uncheck the "Black screen" button without re-sending.
+                        HostBlackScreenChanged?.Invoke(
+                            msg.Value.Payload.Length > 0 && msg.Value.Payload[0] != 0);
                         break;
                 }
             }

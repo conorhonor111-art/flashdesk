@@ -216,6 +216,7 @@ public sealed class SessionWindow : Form
         _client.FrameReceived += OnFrame;
         _client.Disconnected += OnDisconnected;
         _client.ScreenStateChanged += OnScreenState;
+        _client.HostBlackScreenChanged += OnHostBlackScreenChanged;
 
         _timer.Tick += (_, _) => _statusItem.Text = StatusText();
         _timer.Start();
@@ -333,6 +334,22 @@ public sealed class SessionWindow : Form
         });
     }
 
+    /// <summary>
+    /// Called when the HOST sends a black-screen state change (currently only "off" = timer expired).
+    /// Unchecks the checkbox without re-sending the hide command — the overlay is already gone.
+    /// Arrives on the receive thread, so marshal to the UI thread.
+    /// </summary>
+    private void OnHostBlackScreenChanged(bool on)
+    {
+        if (on) return; // host can only broadcast "off" today; ignore unexpected "on" from host
+        SafeBeginInvoke(() =>
+        {
+            _suppressBlackScreenSend = true;
+            _blackScreen.Checked = false;
+            _suppressBlackScreenSend = false;
+        });
+    }
+
     private async Task ReconnectAsync()
     {
         var giveUpAt = DateTimeOffset.UtcNow + ReconnectFor;
@@ -368,6 +385,7 @@ public sealed class SessionWindow : Form
             fresh.ScreenStateChanged += OnScreenState;
             fresh.FrameReceived += OnFrame;
             fresh.Disconnected += OnDisconnected;
+            fresh.HostBlackScreenChanged += OnHostBlackScreenChanged;
 
             // The file panel, if one exists, is bound to OLD's ViewerFileClient (captured once, at
             // construction, in ToggleFilePanel) — old.Dispose() below tears that client down, so a

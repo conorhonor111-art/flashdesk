@@ -422,7 +422,22 @@ public sealed class MainForm : Form
                             // covers the primary monitor, leaving secondary monitors unblocked.
                             _blackScreenOverlays = BlackScreenOverlay.CreateForAllScreens();
                             foreach (var ov in _blackScreenOverlays)
+                            {
+                                // When the countdown reaches zero the overlay closes itself and fires
+                                // this callback on the UI thread — close any sibling overlays and
+                                // notify the viewer to uncheck their "Black screen" button.
+                                ov.Expired = () =>
+                                {
+                                    if (_blackScreenOverlays is not null)
+                                    {
+                                        foreach (var sibling in _blackScreenOverlays)
+                                            if (!sibling.IsDisposed) sibling.Close();
+                                        _blackScreenOverlays = null;
+                                    }
+                                    _server.SendBlackScreenOff();
+                                };
                                 ov.Show();
+                            }
                         }
                         else
                         {

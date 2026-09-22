@@ -3939,6 +3939,41 @@ AnyDesk and RustDesk. Build: 0 errors, 0 warnings. 9-agent ultracode workflow; 8
 - `changelog/index.html` — gradient hero, all 17 release entries elevated.
 - `security-warning/index.html`, `privacy/index.html`, `terms/index.html` — gradient heroes only.
 
+### v0.4.0-34 — 2026-09-22 — Black-screen: viewer full interactivity, 3-min timer, bidirectional dismiss
+
+**Root-cause fix — viewer could move cursor but not interact (`BlackScreenOverlay.cs`):**
+The overlay was a normal topmost `Form`; every `SendInput` click the operator injected landed on
+the overlay and was swallowed — underlying windows never heard them, so the viewer saw a frozen,
+unresponsive desktop. Added `WS_EX_TRANSPARENT | WS_EX_LAYERED` extended styles in
+`OnHandleCreated` (via `GetWindowLong`/`SetWindowLong`). Mouse messages now fall through to
+whatever window is behind the overlay. The visual black screen remains on the host machine (the
+physical person cannot see where they would click), so the deterrent is unchanged — only injected
+remote input now reaches the desktop.
+
+**Timer: 3 minutes, closes overlay at zero (`BlackScreenOverlay.cs`):**
+Changed `TotalSeconds` from `7 * 60` to `3 * 60`. Rewrote `OnSecondTick`: when `_secondsLeft`
+reaches 0, both timers are stopped, `Expired?.Invoke()` fires, then `Close()` is called. The
+countdown no longer loops — it counts down once and the overlay dismisses itself.
+
+**Host→viewer dismiss notification (`HostServer.cs`, `ViewerClient.cs`, `SessionWindow.cs`):**
+Added `volatile MessageChannel? _activeChannel` to `HostServer` — set when a viewer session
+starts in `ServeViewerAsync`, cleared in its `finally` block. Added `SendBlackScreenOff()` public
+method that sends `MessageType.BlackScreen` with payload `[0]` to the active channel.
+`ViewerClient.ReceiveLoopAsync` now handles incoming `MessageType.BlackScreen` from the host and
+fires the new `HostBlackScreenChanged` event. `SessionWindow` subscribes on construction and
+reconnect, and `OnHostBlackScreenChanged` unchecks the "Black screen" checkbox under
+`_suppressBlackScreenSend = true` so no redundant hide-message is sent back.
+
+**MainForm wiring (`MainForm.cs`):**
+Each overlay's `Expired` callback closes all sibling overlays, nulls `_blackScreenOverlays`, and
+calls `_server.SendBlackScreenOff()`. The `Expired` callback fires on the WinForms UI thread
+(from `_secTimer`), so no extra marshal is needed.
+
+**Released as `v0.4.0-34`** — built from `HEAD`, GitHub (`FlashDesk.exe` + `FlashDesk-setup.msi`)
+and cPanel (`public_html/dl/FlashDesk-setup.msi`).
+
+---
+
 ### v0.4.0-33 — 2026-09-21 — Build verification release
 
 No source changes. Build confirmed clean (0 errors, 0 warnings) against `66d4a26`.

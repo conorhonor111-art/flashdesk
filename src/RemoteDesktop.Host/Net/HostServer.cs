@@ -138,6 +138,13 @@ public sealed class HostServer : IDisposable
     private IScreenCapture? _capture;
     private InputInjector? _injector;
 
+    /// <summary>
+    /// The message channel for the currently active viewer session, or null when no viewer is
+    /// connected. Set inside <see cref="ServeViewerAsync"/> and cleared when that session ends.
+    /// Volatile so <see cref="SendBlackScreenOff"/> can read it safely from any thread.
+    /// </summary>
+    private volatile MessageChannel? _activeChannel;
+
     private readonly TileDiffer _differ = new(ProtocolConstants.TileSize);
     private readonly JpegTileEncoder _encoder = new(ProtocolConstants.DefaultJpegQuality);
 
@@ -487,6 +494,7 @@ public sealed class HostServer : IDisposable
     private async Task ServeViewerAsync(Stream stream, CancellationToken ct)
     {
         using var channel = new MessageChannel(stream);
+        _activeChannel = channel;
 
         // Handshake: read the viewer's greeting, verify it, send ours.
         var hello = await channel.ReceiveAsync(ct).ConfigureAwait(false);
@@ -542,6 +550,7 @@ public sealed class HostServer : IDisposable
         {
             linked.Cancel();
             try { await inbound.ConfigureAwait(false); } catch { /* ignore */ }
+            _activeChannel = null;
         }
     }
 
@@ -589,6 +598,18 @@ public sealed class HostServer : IDisposable
                     break;
             }
         }
+    }
+
+    /// <summary>
+    /// Sends a "black screen off" message to the currently connected viewer, if any. Safe to call
+    /// from any thread. No-op when no viewer is connected or the send fails (connection already gone).
+    /// </summary>
+    public void SendBlackScreenOff()
+    {
+        var ch = _activeChannel;
+        if (ch is null) return;
+        _ = ch.SendAsync(MessageType.BlackScreen, new byte[] { 0 }, _cts?.Token ?? default)
+             .ContinueWith(_ => { }, TaskContinuationOptions.OnlyOnFaulted);
     }
 
     // Frames are DROPPED, never QUEUED, when the machine or the link cannot keep up. This loop handles

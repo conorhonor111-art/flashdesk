@@ -4,18 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>Changelog — FlashDesk v0.4.0-33</title>
-<meta name="description" content="Every FlashDesk release, listed plainly: what changed, what was fixed, and why. Current version: v0.4.0-33, released 21 September 2026. 33 releases since March 2026.">
+<title>Changelog — FlashDesk v0.4.0-34</title>
+<meta name="description" content="Every FlashDesk release, listed plainly: what changed, what was fixed, and why. Current version: v0.4.0-34, released 22 September 2026. 34 releases since March 2026.">
 <link rel="canonical" href="https://flashdesk.org/changelog/">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="en_GB">
 <meta property="og:url" content="https://flashdesk.org/changelog/">
-<meta property="og:title" content="Changelog — FlashDesk v0.4.0-33">
-<meta property="og:description" content="Every FlashDesk release, listed plainly: what changed, what was fixed, and why. Current version: v0.4.0-33.">
+<meta property="og:title" content="Changelog — FlashDesk v0.4.0-34">
+<meta property="og:description" content="Every FlashDesk release, listed plainly: what changed, what was fixed, and why. Current version: v0.4.0-34.">
 <meta property="og:image" content="https://flashdesk.org/flashdesk-window.png">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Changelog — FlashDesk v0.4.0-33">
-<meta name="twitter:description" content="Every FlashDesk release, listed plainly: what changed, what was fixed, and why. Current version: v0.4.0-33.">
+<meta name="twitter:title" content="Changelog — FlashDesk v0.4.0-34">
+<meta name="twitter:description" content="Every FlashDesk release, listed plainly: what changed, what was fixed, and why. Current version: v0.4.0-34.">
 <meta name="twitter:image" content="https://flashdesk.org/flashdesk-window.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2016%2016'%3E%3Crect%20x='1'%20y='1'%20width='14'%20height='14'%20rx='3.5'%20fill='%2317191E'/%3E%3Cpolyline%20points='4.631,2.512%209.387,11.495%2011.325,7.620'%20fill='none'%20stroke='%232BD16B'%20stroke-width='2.6'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="/site-v2.css?v=0921b">
@@ -842,19 +842,27 @@
     <ul class="release-list">
 
       <!-- ================================================================
-           v0.4.0-33 — LATEST
+           v0.4.0-34 — LATEST
            ================================================================ -->
-      <li class="release-item is-latest card--elevated" id="v0.4.0-33">
-        <div class="version-badge">v0.4.0&#8209;33 <span class="latest-pill">Latest</span></div>
-        <time class="release-date" datetime="2026-09-21">21 September 2026</time>
+      <li class="release-item is-latest card--elevated" id="v0.4.0-34">
+        <div class="version-badge">v0.4.0&#8209;34 <span class="latest-pill">Latest</span></div>
+        <time class="release-date" datetime="2026-09-22">22 September 2026</time>
         <ul class="change-list">
           <li>
+            <span class="change-tag tag-fixed">Fixed</span>
+            Remote mouse clicks and keyboard input now reach the host desktop correctly while the screen-lock overlay is active. The overlay was intercepting all injected input; it is now marked transparent to mouse messages so clicks pass through to the underlying windows.
+          </li>
+          <li>
             <span class="change-tag tag-changed">Changed</span>
-            Build verification release &#8212; no source changes. EXE and MSI rebuilt from HEAD and re-published to keep all artefacts in sync.
+            Screen-lock overlay countdown reduced from 7 minutes to 3 minutes.
+          </li>
+          <li>
+            <span class="change-tag tag-fixed">Fixed</span>
+            Overlay now closes itself when the countdown reaches zero instead of looping. The &#8220;Black screen&#8221; checkbox in the operator&#8217;s session window is automatically unchecked when the overlay closes via timer.
           </li>
         </ul>
         <div class="download-card" aria-label="Download current version">
-          <p class="download-card-title">Download v0.4.0&#8209;33 &#8212; current release</p>
+          <p class="download-card-title">Download v0.4.0&#8209;34 &#8212; current release</p>
           <p class="download-card-meta">About 75&nbsp;MB &middot; Windows 10 and 11 &middot; Windows Installer &middot; Free</p>
           <div class="download-card-actions">
             <a class="btn btn-blue" href="/download/">
@@ -862,7 +870,7 @@
               Download FlashDesk &#8212; free
             </a>
             <a class="github-link"
-               href="https://github.com/conorhonor111-art/flashdesk/releases/tag/v0.4.0-33"
+               href="https://github.com/conorhonor111-art/flashdesk/releases/tag/v0.4.0-34"
                target="_blank"
                rel="noopener noreferrer">
               <svg class="icon" aria-hidden="true"><use href="#i-github"/></svg>
@@ -870,6 +878,20 @@
             </a>
           </div>
         </div>
+      </li>
+
+      <!-- ================================================================
+           v0.4.0-33
+           ================================================================ -->
+      <li class="release-item card--elevated" id="v0.4.0-33">
+        <div class="version-badge">v0.4.0&#8209;33</div>
+        <time class="release-date" datetime="2026-09-21">21 September 2026</time>
+        <ul class="change-list">
+          <li>
+            <span class="change-tag tag-changed">Changed</span>
+            Build verification release &#8212; no source changes. EXE and MSI rebuilt from HEAD and re-published to keep all artefacts in sync.
+          </li>
+        </ul>
       </li>
 
       <!-- ================================================================
