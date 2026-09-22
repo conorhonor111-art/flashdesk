@@ -3939,6 +3939,17 @@ AnyDesk and RustDesk. Build: 0 errors, 0 warnings. 9-agent ultracode workflow; 8
 - `changelog/index.html` — gradient hero, all 17 release entries elevated.
 - `security-warning/index.html`, `privacy/index.html`, `terms/index.html` — gradient heroes only.
 
+### v0.4.0-35 — 2026-09-22 — Build verification release
+
+No source changes. Build confirmed clean (0 errors, 0 warnings) against `e11149a`.
+Rebuilt EXE and MSI from HEAD and released to GitHub and cPanel to keep all three
+artefacts (EXE, MSI, download link) in sync with the current commit.
+
+**Released as `v0.4.0-35`** — built from `e11149a`, GitHub (`FlashDesk.exe` +
+`FlashDesk-setup.msi`) and cPanel (`public_html/dl/FlashDesk-setup.msi`, overwrite, 100%).
+
+---
+
 ### v0.4.0-34 — 2026-09-22 — Black-screen: viewer full interactivity, 3-min timer, bidirectional dismiss
 
 **Root-cause fix — viewer could move cursor but not interact (`BlackScreenOverlay.cs`):**
